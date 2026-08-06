@@ -1,0 +1,728 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.carbon.identity.openid4vc.presentation.management.dao.impl;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
+import org.wso2.carbon.identity.core.model.ExpressionNode;
+import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.management.dao.PresentationDefinitionDAO;
+import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementClientException;
+import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementErrorCode;
+import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementException;
+import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementServerException;
+import org.wso2.carbon.identity.openid4vc.presentation.management.model.ConnectedConnectionInfo;
+import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
+import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.ClaimConstraint;
+import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
+import org.wso2.carbon.identity.openid4vc.presentation.management.util.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.management.util.PresentationDefinitionFilterQueryBuilder;
+import org.wso2.carbon.identity.openid4vc.presentation.management.util.PresentationDefinitionFilterUtil;
+
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Implementation of {@link PresentationDefinitionDAO} using JDBC.
+ * Uses two tables: {@code IDN_PRESENTATION_DEFINITION} (parent) and
+ * {@code IDN_PD_CREDENTIAL} (child).
+ */
+public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO {
+
+    private static final Gson GSON = new Gson();
+    private static final Type CLAIM_CONSTRAINT_LIST_TYPE =
+            new TypeToken<List<ClaimConstraint>>() { }.getType();
+    private static final Pattern PEM_PATTERN = Pattern.compile(
+            "-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----");
+
+    private static final String SQL_INSERT_DEFINITION =
+            "INSERT INTO IDN_PRESENTATION_DEFINITION (DEFINITION_ID, NAME, DESCRIPTION, TENANT_ID) " +
+            "VALUES (?, ?, ?, ?)";
+
+    private static final String SQL_INSERT_CREDENTIAL =
+            "INSERT INTO IDN_PD_CREDENTIAL " +
+            "(DEFINITION_ID, CREDENTIAL_ID, CREDENTIAL_TYPE, CREDENTIAL_FORMAT, CLAIMS, " +
+            "ENFORCE_TRUSTED_ISSUER, TRUSTED_CAS, KEY_RESOLUTION_METHOD, JWKS_URI, ISSUER_PEM) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    private static final String SQL_SELECT_DEFINITION_BY_ID =
+            "SELECT pd.DEFINITION_ID, pd.NAME, pd.DESCRIPTION, pd.TENANT_ID, " +
+            "c.CREDENTIAL_ID, c.CREDENTIAL_TYPE, c.CREDENTIAL_FORMAT, c.CLAIMS, " +
+            "c.ENFORCE_TRUSTED_ISSUER, c.TRUSTED_CAS, " +
+            "c.KEY_RESOLUTION_METHOD, c.JWKS_URI, c.ISSUER_PEM " +
+            "FROM IDN_PRESENTATION_DEFINITION pd " +
+            "LEFT JOIN IDN_PD_CREDENTIAL c ON pd.DEFINITION_ID = c.DEFINITION_ID " +
+            "WHERE pd.DEFINITION_ID = ? AND pd.TENANT_ID = ?";
+
+    private static final String SQL_SELECT_ALL_DEFINITIONS =
+            "SELECT pd.DEFINITION_ID, pd.NAME, pd.DESCRIPTION, pd.TENANT_ID, " +
+            "c.CREDENTIAL_ID, c.CREDENTIAL_TYPE, c.CREDENTIAL_FORMAT, c.CLAIMS, " +
+            "c.ENFORCE_TRUSTED_ISSUER, c.TRUSTED_CAS, " +
+            "c.KEY_RESOLUTION_METHOD, c.JWKS_URI, c.ISSUER_PEM " +
+            "FROM IDN_PRESENTATION_DEFINITION pd " +
+            "LEFT JOIN IDN_PD_CREDENTIAL c ON pd.DEFINITION_ID = c.DEFINITION_ID " +
+            "WHERE pd.TENANT_ID = ?";
+
+    private static final String SQL_SELECT_DEFINITION_BY_NAME =
+            "SELECT pd.DEFINITION_ID, pd.NAME, pd.DESCRIPTION, pd.TENANT_ID, " +
+            "c.CREDENTIAL_ID, c.CREDENTIAL_TYPE, c.CREDENTIAL_FORMAT, c.CLAIMS, " +
+            "c.ENFORCE_TRUSTED_ISSUER, c.TRUSTED_CAS, " +
+            "c.KEY_RESOLUTION_METHOD, c.JWKS_URI, c.ISSUER_PEM " +
+            "FROM IDN_PRESENTATION_DEFINITION pd " +
+            "LEFT JOIN IDN_PD_CREDENTIAL c ON pd.DEFINITION_ID = c.DEFINITION_ID " +
+            "WHERE pd.NAME = ? AND pd.TENANT_ID = ?";
+
+    private static final String SQL_UPDATE_DEFINITION =
+            "UPDATE IDN_PRESENTATION_DEFINITION SET NAME = ?, DESCRIPTION = ? " +
+            "WHERE DEFINITION_ID = ? AND TENANT_ID = ?";
+
+    private static final String SQL_DELETE_CREDENTIALS =
+            "DELETE FROM IDN_PD_CREDENTIAL WHERE DEFINITION_ID = ?";
+
+    private static final String SQL_DELETE_DEFINITION =
+            "DELETE FROM IDN_PRESENTATION_DEFINITION WHERE DEFINITION_ID = ? AND TENANT_ID = ?";
+
+    private static final String SQL_EXISTS_DEFINITION =
+            "SELECT 1 FROM IDN_PRESENTATION_DEFINITION WHERE DEFINITION_ID = ? AND TENANT_ID = ?";
+
+    private static final String SQL_COUNT_CONNECTIONS_USING_DEFINITION =
+            "SELECT COUNT(*) FROM IDP_AUTHENTICATOR_PROPERTY " +
+            "WHERE PROPERTY_KEY = 'presentationDefinitionId' AND PROPERTY_VALUE = ? AND TENANT_ID = ?";
+
+    private static final String SQL_DELETE_STALE_IDP_CLAIMS_PREFIX =
+            "DELETE FROM IDP_CLAIM WHERE TENANT_ID = ? AND CLAIM IN (";
+
+    private static final String SQL_DELETE_STALE_IDP_CLAIMS_SUFFIX =
+            ") AND IDP_ID IN (" +
+            "SELECT auth.IDP_ID FROM IDP_AUTHENTICATOR_PROPERTY prop " +
+            "JOIN IDP_AUTHENTICATOR auth ON prop.AUTHENTICATOR_ID = auth.ID " +
+            "WHERE prop.PROPERTY_KEY = 'presentationDefinitionId' " +
+            "AND prop.PROPERTY_VALUE = ? AND prop.TENANT_ID = ?)";
+
+    private static final String SQL_GET_CONNECTED_CONNECTIONS =
+            "SELECT idp.UUID AS connection_id, COALESCE(idp.DISPLAY_NAME, idp.NAME) AS connection_name " +
+            "FROM IDP_AUTHENTICATOR_PROPERTY prop " +
+            "JOIN IDP_AUTHENTICATOR auth ON prop.AUTHENTICATOR_ID = auth.ID " +
+            "JOIN IDP ON auth.IDP_ID = IDP.ID " +
+            "WHERE prop.PROPERTY_KEY = 'presentationDefinitionId' " +
+            "AND prop.PROPERTY_VALUE = ? AND prop.TENANT_ID = ?";
+
+    @Override
+    public void createPresentationDefinition(PresentationDefinition presentationDefinition)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
+            try {
+                try (PreparedStatement ps = connection.prepareStatement(SQL_INSERT_DEFINITION)) {
+                    ps.setString(1, presentationDefinition.getDefinitionId());
+                    ps.setString(2, presentationDefinition.getName());
+                    ps.setString(3, presentationDefinition.getDescription());
+                    ps.setInt(4, presentationDefinition.getTenantId());
+                    ps.executeUpdate();
+                }
+                insertCredentials(connection, presentationDefinition.getDefinitionId(),
+                        presentationDefinition.getRequestedCredentials());
+                IdentityDatabaseUtil.commitTransaction(connection);
+
+            } catch (SQLException e) {
+                IdentityDatabaseUtil.rollbackTransaction(connection);
+                if (e.getSQLState() != null && e.getSQLState().startsWith("23")) {
+                    throw new PresentationManagementClientException(
+                            PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS,
+                            "Presentation definition with name '" +
+                                    presentationDefinition.getName() + "' already exists.", e);
+                }
+                throw new PresentationManagementServerException(
+                        PresentationManagementErrorCode.DATABASE_ERROR,
+                        "Error creating presentation definition: " +
+                                presentationDefinition.getDefinitionId(), e);
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error obtaining DB connection for createPresentationDefinition.", e);
+        }
+    }
+
+    @Override
+    public PresentationDefinition getPresentationDefinitionById(String definitionId, int tenantId)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQL_SELECT_DEFINITION_BY_ID)) {
+                ps.setString(1, definitionId);
+                ps.setInt(2, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return buildSingleDefinition(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error retrieving presentation definition: " + definitionId, e);
+        }
+    }
+
+    @Override
+    public List<PresentationDefinition> getAllPresentationDefinitions(int tenantId)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQL_SELECT_ALL_DEFINITIONS)) {
+                ps.setInt(1, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return buildDefinitionList(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error retrieving all presentation definitions.", e);
+        }
+    }
+
+    @Override
+    public void updatePresentationDefinition(PresentationDefinition presentationDefinition)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
+            try {
+                try (PreparedStatement ps = connection.prepareStatement(SQL_UPDATE_DEFINITION)) {
+                    ps.setString(1, presentationDefinition.getName());
+                    ps.setString(2, presentationDefinition.getDescription());
+                    ps.setString(3, presentationDefinition.getDefinitionId());
+                    ps.setInt(4, presentationDefinition.getTenantId());
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = connection.prepareStatement(SQL_DELETE_CREDENTIALS)) {
+                    ps.setString(1, presentationDefinition.getDefinitionId());
+                    ps.executeUpdate();
+                }
+                insertCredentials(connection, presentationDefinition.getDefinitionId(),
+                        presentationDefinition.getRequestedCredentials());
+                IdentityDatabaseUtil.commitTransaction(connection);
+
+            } catch (SQLException e) {
+                IdentityDatabaseUtil.rollbackTransaction(connection);
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error updating presentation definition: " +
+                            presentationDefinition.getDefinitionId(), e);
+        }
+    }
+
+    @Override
+    public void deletePresentationDefinition(String definitionId, int tenantId)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
+            try {
+                try (PreparedStatement ps = connection.prepareStatement(SQL_DELETE_DEFINITION)) {
+                    ps.setString(1, definitionId);
+                    ps.setInt(2, tenantId);
+                    ps.executeUpdate();
+                }
+                IdentityDatabaseUtil.commitTransaction(connection);
+            } catch (SQLException e) {
+                IdentityDatabaseUtil.rollbackTransaction(connection);
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error deleting presentation definition: " + definitionId, e);
+        }
+    }
+
+    @Override
+    public boolean presentationDefinitionExists(String definitionId, int tenantId)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQL_EXISTS_DEFINITION)) {
+                ps.setString(1, definitionId);
+                ps.setInt(2, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error checking presentation definition existence: " + definitionId, e);
+        }
+    }
+
+    @Override
+    public List<PresentationDefinition> list(Integer limit, Integer tenantId, String sortOrder,
+            List<ExpressionNode> expressionNodes) throws PresentationManagementException {
+
+        List<PresentationDefinition> results = new ArrayList<>();
+        try {
+            PresentationDefinitionFilterQueryBuilder filterQueryBuilder =
+                    PresentationDefinitionFilterUtil.getFilterQueryBuilder(expressionNodes);
+            Map<Integer, String> filterAttributeValue = filterQueryBuilder.getFilterAttributeValue();
+
+            try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+                String databaseName = connection.getMetaData().getDatabaseProductName();
+                String sqlStmt = buildListSql(databaseName, tenantId, filterQueryBuilder.getFilterQuery(),
+                        sortOrder, limit);
+
+                try (PreparedStatement ps = connection.prepareStatement(sqlStmt)) {
+                    if (filterAttributeValue != null) {
+                        for (Map.Entry<Integer, String> entry : filterAttributeValue.entrySet()) {
+                            ps.setString(entry.getKey(), entry.getValue());
+                        }
+                    }
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            PresentationDefinition definition = new PresentationDefinition.Builder()
+                                    .definitionId(rs.getString("DEFINITION_ID"))
+                                    .name(rs.getString("NAME"))
+                                    .description(rs.getString("DESCRIPTION"))
+                                    .tenantId(tenantId)
+                                    .build();
+                            definition.setCursorKey(rs.getInt("CURSOR_KEY"));
+                            results.add(definition);
+                        }
+                    }
+                }
+            }
+        } catch (PresentationManagementClientException e) {
+            throw e;
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error listing presentation definitions with pagination.", e);
+        }
+        return results;
+    }
+
+    @Override
+    public Integer getDefinitionsCount(Integer tenantId, List<ExpressionNode> expressionNodes)
+            throws PresentationManagementException {
+
+        try {
+            List<ExpressionNode> expressionNodesCopy = new ArrayList<>(expressionNodes);
+            expressionNodesCopy.removeIf(expressionNode ->
+                    Constants.AFTER.equals(expressionNode.getAttributeValue()) ||
+                    Constants.BEFORE.equals(expressionNode.getAttributeValue()));
+
+            PresentationDefinitionFilterQueryBuilder filterQueryBuilder =
+                    PresentationDefinitionFilterUtil.getFilterQueryBuilder(expressionNodesCopy);
+            Map<Integer, String> filterAttributeValue = filterQueryBuilder.getFilterAttributeValue();
+
+            String sqlStmt = Constants.GET_PD_COUNT
+                    + filterQueryBuilder.getFilterQuery()
+                    + Constants.GET_PD_COUNT_TAIL;
+
+            try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+                 PreparedStatement ps = connection.prepareStatement(sqlStmt)) {
+
+                if (filterAttributeValue != null) {
+                    for (Map.Entry<Integer, String> entry : filterAttributeValue.entrySet()) {
+                        ps.setString(entry.getKey(), entry.getValue());
+                    }
+                }
+                ps.setInt((filterAttributeValue != null ? filterAttributeValue.size() : 0) + 1, tenantId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (PresentationManagementClientException e) {
+            throw e;
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error counting presentation definitions.", e);
+        }
+        return 0;
+    }
+
+    @Override
+    public boolean isDefinitionInUse(String definitionId, int tenantId)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+             PreparedStatement ps = connection.prepareStatement(SQL_COUNT_CONNECTIONS_USING_DEFINITION)) {
+            ps.setString(1, definitionId);
+            ps.setInt(2, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error checking whether presentation definition is in use: " + definitionId, e);
+        }
+    }
+
+    @Override
+    public List<ConnectedConnectionInfo> getConnectedConnections(String definitionId, int tenantId)
+            throws PresentationManagementException {
+
+        List<ConnectedConnectionInfo> connections = new ArrayList<>();
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+             PreparedStatement ps = connection.prepareStatement(SQL_GET_CONNECTED_CONNECTIONS)) {
+            ps.setString(1, definitionId);
+            ps.setInt(2, tenantId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    connections.add(new ConnectedConnectionInfo(
+                            rs.getString("connection_id"),
+                            rs.getString("connection_name")));
+                }
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error fetching connections using presentation definition: " + definitionId, e);
+        }
+        return connections;
+    }
+
+    @Override
+    public void removeStaleIdpClaimMappings(String definitionId, List<String> staleClaimPaths, int tenantId)
+            throws PresentationManagementException {
+
+        if (staleClaimPaths == null || staleClaimPaths.isEmpty()) {
+            return;
+        }
+        String placeholders = String.join(",", Collections.nCopies(staleClaimPaths.size(), "?"));
+        String sql = SQL_DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders + SQL_DELETE_STALE_IDP_CLAIMS_SUFFIX;
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                int paramIndex = 1;
+                ps.setInt(paramIndex++, tenantId);
+                for (String claimPath : staleClaimPaths) {
+                    ps.setString(paramIndex++, claimPath);
+                }
+                ps.setString(paramIndex++, definitionId);
+                ps.setInt(paramIndex, tenantId);
+                ps.executeUpdate();
+                IdentityDatabaseUtil.commitTransaction(connection);
+            } catch (SQLException e) {
+                IdentityDatabaseUtil.rollbackTransaction(connection);
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error removing stale IDP claim mappings for presentation definition: " + definitionId, e);
+        }
+    }
+
+    @Override
+    public PresentationDefinition getPresentationDefinitionByName(String name, int tenantId)
+            throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQL_SELECT_DEFINITION_BY_NAME)) {
+                ps.setString(1, name);
+                ps.setInt(2, tenantId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return buildSingleDefinition(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error retrieving presentation definition by name: " + name, e);
+        }
+    }
+
+    // ---- Private helpers ----
+
+    /**
+     * Builds the paginated list SQL statement for the given database type, applying
+     * the appropriate dialect-specific syntax for MSSQL, Oracle, and standard databases.
+     *
+     * @param databaseName the database product name used to detect dialect
+     * @param tenantId     the tenant whose definitions are being listed
+     * @param filterQuery  the WHERE clause fragment produced by the filter query builder
+     * @param sortOrder    the sort direction, either {@code ASC} or {@code DESC}
+     * @param limit        the maximum number of rows to return
+     * @return the complete SQL SELECT statement with limit and sort applied
+     */
+    private String buildListSql(String databaseName, Integer tenantId, String filterQuery,
+            String sortOrder, Integer limit) {
+
+        if (databaseName.contains(Constants.MICROSOFT)) {
+            return String.format(Constants.GET_PD_LIST_MSSQL, limit)
+                    + filterQuery
+                    + String.format(Constants.GET_PD_LIST_TAIL_MSSQL, tenantId, sortOrder);
+        } else if (databaseName.contains(Constants.ORACLE)) {
+            return Constants.GET_PD_LIST + filterQuery
+                    + String.format(Constants.GET_PD_LIST_TAIL_ORACLE,
+                        tenantId, sortOrder, limit);
+        }
+        return Constants.GET_PD_LIST + filterQuery
+                + String.format(Constants.GET_PD_LIST_TAIL, tenantId, sortOrder, limit);
+    }
+
+    /**
+     * Inserts the given list of requested credentials into {@code IDN_PD_CREDENTIAL}
+     * under the supplied definition ID, using a JDBC batch execute.
+     *
+     * @param connection   the active database connection with an open transaction
+     * @param definitionId the ID of the parent presentation definition
+     * @param credentials  the list of requested credentials to persist; no-op when null or empty
+     * @throws SQLException if any JDBC operation fails
+     */
+    private void insertCredentials(Connection connection, String definitionId,
+            List<RequestedCredential> credentials) throws SQLException {
+
+        if (credentials == null || credentials.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement ps = connection.prepareStatement(SQL_INSERT_CREDENTIAL)) {
+            for (RequestedCredential cred : credentials) {
+                ps.setString(1, definitionId);
+                ps.setString(2, cred.getCredentialId());
+                ps.setString(3, cred.getType());
+                ps.setString(4, cred.getFormat());
+                ps.setString(5, serializeClaimConstraints(cred.getClaims()));
+                ps.setString(6, cred.isEnforceTrustedIssuer() ? "1" : "0");
+                ps.setString(7, encodeCertBlob(cred.getTrustedCas()));
+                ps.setString(8, cred.getKeyResolutionMethod());
+                ps.setString(9, cred.getJwksUri());
+                ps.setString(10, cred.getIssuerPem());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /**
+     * Reads a single {@link PresentationDefinition} with its associated credentials from
+     * the given result set, where the first row carries the definition metadata and
+     * subsequent rows carry additional credential columns from the LEFT JOIN.
+     *
+     * @param rs the result set positioned before the first row
+     * @return the assembled {@link PresentationDefinition}, or {@code null} if the result set is empty
+     * @throws SQLException if reading any column from the result set fails
+     */
+    private PresentationDefinition buildSingleDefinition(ResultSet rs) throws SQLException {
+
+        String definitionId = null;
+        String name = null;
+        String description = null;
+        int tenantId = 0;
+        List<RequestedCredential> credentials = new ArrayList<>();
+
+        while (rs.next()) {
+            if (definitionId == null) {
+                definitionId = rs.getString("DEFINITION_ID");
+                name = rs.getString("NAME");
+                description = rs.getString("DESCRIPTION");
+                tenantId = rs.getInt("TENANT_ID");
+            }
+            String credentialId = rs.getString("CREDENTIAL_ID");
+            if (credentialId != null) {
+                credentials.add(mapCredentialRow(rs));
+            }
+        }
+
+        if (definitionId == null) {
+            return null;
+        }
+        return new PresentationDefinition.Builder()
+                .definitionId(definitionId)
+                .name(name)
+                .description(description)
+                .tenantId(tenantId)
+                .requestedCredentials(credentials)
+                .build();
+    }
+
+    /**
+     * Reads all {@link PresentationDefinition} instances with their associated credentials from
+     * the given result set, grouping credential rows by definition ID.
+     *
+     * @param rs the result set positioned before the first row
+     * @return an ordered list of assembled {@link PresentationDefinition} instances
+     * @throws SQLException if reading any column from the result set fails
+     */
+    private List<PresentationDefinition> buildDefinitionList(ResultSet rs) throws SQLException {
+
+        Map<String, PresentationDefinition.Builder> builders = new LinkedHashMap<>();
+        Map<String, List<RequestedCredential>> credentialsMap = new LinkedHashMap<>();
+
+        while (rs.next()) {
+            String definitionId = rs.getString("DEFINITION_ID");
+            if (!builders.containsKey(definitionId)) {
+                builders.put(definitionId, new PresentationDefinition.Builder()
+                        .definitionId(definitionId)
+                        .name(rs.getString("NAME"))
+                        .description(rs.getString("DESCRIPTION"))
+                        .tenantId(rs.getInt("TENANT_ID")));
+                credentialsMap.put(definitionId, new ArrayList<>());
+            }
+            String credentialId = rs.getString("CREDENTIAL_ID");
+            if (credentialId != null) {
+                credentialsMap.get(definitionId).add(mapCredentialRow(rs));
+            }
+        }
+
+        List<PresentationDefinition> result = new ArrayList<>();
+        for (Map.Entry<String, PresentationDefinition.Builder> builderEntry : builders.entrySet()) {
+            result.add(builderEntry.getValue()
+                    .requestedCredentials(credentialsMap.get(builderEntry.getKey()))
+                    .build());
+        }
+        return result;
+    }
+
+    /**
+     * Maps the credential columns of the current result set row to a {@link RequestedCredential}.
+     * Falls back to the default key resolution method when the column is null.
+     *
+     * @param rs the result set positioned at the row to map
+     * @return a {@link RequestedCredential} populated from the current row
+     * @throws SQLException if reading any column from the result set fails
+     */
+    private RequestedCredential mapCredentialRow(ResultSet rs) throws SQLException {
+
+        RequestedCredential cred = new RequestedCredential();
+        cred.setCredentialId(rs.getString("CREDENTIAL_ID"));
+        cred.setType(rs.getString("CREDENTIAL_TYPE"));
+        cred.setFormat(rs.getString("CREDENTIAL_FORMAT"));
+        cred.setClaims(deserializeClaimConstraints(rs.getString("CLAIMS")));
+        cred.setEnforceTrustedIssuer(!"0".equals(rs.getString("ENFORCE_TRUSTED_ISSUER")));
+        cred.setTrustedCas(decodeCertBlob(rs.getString("TRUSTED_CAS")));
+        cred.setKeyResolutionMethod(rs.getString("KEY_RESOLUTION_METHOD") != null ?
+                rs.getString("KEY_RESOLUTION_METHOD") : OpenID4VPConstants.Defaults.KEY_RESOLUTION_METHOD);
+        cred.setJwksUri(rs.getString("JWKS_URI"));
+        cred.setIssuerPem(rs.getString("ISSUER_PEM"));
+        return cred;
+    }
+
+    /**
+     * Serialises the given list of claim constraints to a JSON string for storage.
+     *
+     * @param claims the claim constraints to serialise; may be null or empty
+     * @return the JSON representation of the constraints, or {@code null} if the list is null or empty
+     */
+    private String serializeClaimConstraints(List<ClaimConstraint> claims) {
+
+        if (claims == null || claims.isEmpty()) {
+            return null;
+        }
+        return GSON.toJson(claims);
+    }
+
+    /**
+     * Concatenates the given PEM certificate strings and encodes the result as a base64
+     * UTF-8 string suitable for storage in a single text column.
+     *
+     * @param certs the list of PEM-formatted certificate strings; may be null or empty
+     * @return the base64-encoded concatenated PEM blob, or {@code null} if the list is null or empty
+     */
+    private String encodeCertBlob(List<String> certs) {
+
+        if (certs == null || certs.isEmpty()) {
+            return null;
+        }
+        StringBuilder pemBuilder = new StringBuilder();
+        for (String cert : certs) {
+            pemBuilder.append(cert);
+            if (!cert.endsWith("\n")) {
+                pemBuilder.append("\n");
+            }
+        }
+        return Base64.getEncoder().encodeToString(pemBuilder.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Decodes a base64 certificate blob back into a list of individual PEM certificate strings.
+     * Uses a regex to extract each {@code -----BEGIN CERTIFICATE-----…-----END CERTIFICATE-----} block.
+     *
+     * @param encodedCertBlob the base64-encoded PEM blob stored in the database; may be null or blank
+     * @return the list of PEM certificate strings, or an empty list if the blob is null or blank
+     */
+    private List<String> decodeCertBlob(String encodedCertBlob) {
+
+        if (encodedCertBlob == null || encodedCertBlob.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        String decodedPem = new String(Base64.getDecoder().decode(encodedCertBlob), StandardCharsets.UTF_8);
+        List<String> certs = new ArrayList<>();
+        Matcher matcher = PEM_PATTERN.matcher(decodedPem);
+        while (matcher.find()) {
+            certs.add(matcher.group().trim());
+        }
+        return certs;
+    }
+
+    /**
+     * Deserialises a claim-constraints JSON string back into a list of {@link ClaimConstraint} objects.
+     * Falls back to legacy comma-separated path parsing when the value is not a JSON array.
+     *
+     * @param claimsStr the JSON or CSV claim-constraints string stored in the database; may be null or blank
+     * @return the deserialised list of {@link ClaimConstraint} objects, or an empty list if the input is
+     *         null or blank
+     */
+    private List<ClaimConstraint> deserializeClaimConstraints(String claimsStr) {
+
+        if (claimsStr == null || claimsStr.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        String claimsJson = claimsStr.trim();
+        if (claimsJson.startsWith("[")) {
+            try {
+                List<ClaimConstraint> result = GSON.fromJson(claimsJson, CLAIM_CONSTRAINT_LIST_TYPE);
+                return result != null ? result : new ArrayList<>();
+            } catch (JsonSyntaxException e) {
+                // Fall through to legacy CSV parsing.
+            }
+        }
+        List<ClaimConstraint> result = new ArrayList<>();
+        for (String claimToken : claimsJson.split(",")) {
+            String claimPath = claimToken.trim();
+            if (!claimPath.isEmpty()) {
+                ClaimConstraint claimConstraint = new ClaimConstraint();
+                claimConstraint.setPath(Collections.singletonList(claimPath));
+                claimConstraint.setMandatory(true);
+                result.add(claimConstraint);
+            }
+        }
+        return result;
+    }
+}
