@@ -45,6 +45,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -74,13 +75,13 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
 
 /**
  * OSGi HTTP whiteboard servlet that receives the wallet's VP token submission at
- * {@code /oid4vp/v1/response}. Validates the submission and updates the VP flow session.
+ * {@code /openid4vp/v1/response}. Validates the submission and updates the VP flow session.
  */
 @Component(
     service = Servlet.class,
     immediate = true,
     property = {
-        "osgi.http.whiteboard.servlet.pattern=/oid4vp/v1/response",
+        "osgi.http.whiteboard.servlet.pattern=/openid4vp/v1/response",
         "osgi.http.whiteboard.servlet.name=OpenID4VPSubmission",
         "osgi.http.whiteboard.servlet.asyncSupported=true"
     }
@@ -113,6 +114,10 @@ public class WalletSubmissionServlet extends HttpServlet {
             return;
         }
 
+        // Hoisted so every catch block can mark the right session as FAILED and stop the
+        // browser's polling loop. Assigned as soon as the submission is parsed.
+        String requestId = null;
+
         try {
             if (request.getContentLength() > MAX_BODY_BYTES) {
                 response.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
@@ -122,19 +127,22 @@ public class WalletSubmissionServlet extends HttpServlet {
 
             WalletSubmission submission = parseWalletSubmission(request);
 
+            // Capture requestId immediately so outer catch blocks can mark the session.
+            requestId = submission.getRequestId();
+
             // Handle wallet error responses.
             if (StringUtils.isNotBlank(submission.getError())) {
                 LOG.warn("Wallet sent error response: error=" + sanitize(submission.getError())
                         + ", error_description=" + sanitize(submission.getErrorDescription()));
-                if (StringUtils.isNotBlank(submission.getRequestId())) {
-                    VPFlowSession errorSession = VPSessionCache.getInstance().get(submission.getRequestId());
+                if (StringUtils.isNotBlank(requestId)) {
+                    VPFlowSession errorSession = VPSessionCache.getInstance().get(requestId);
                     if (errorSession != null) {
                         errorSession.setStatus(VPFlowStatus.FAILED);
                         String walletReason = StringUtils.isNotBlank(submission.getErrorDescription())
                                 ? submission.getErrorDescription()
                                 : submission.getError();
                         errorSession.setFailureReason(sanitize(walletReason));
-                        VPSessionCache.getInstance().put(submission.getRequestId(), errorSession);
+                        VPSessionCache.getInstance().put(requestId, errorSession);
                     }
                 }
                 sendSuccessResponse(response);
@@ -143,7 +151,6 @@ public class WalletSubmissionServlet extends HttpServlet {
 
             validateSubmission(submission);
 
-            String requestId = submission.getRequestId();
             VPFlowSession session = VPSessionCache.getInstance().get(requestId);
             if (session == null) {
                 throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
@@ -188,12 +195,15 @@ public class WalletSubmissionServlet extends HttpServlet {
             sendSuccessResponse(response);
 
         } catch (VPAuthenticatorClientException e) {
+            VPAuthenticatorUtil.markSessionFailed(requestId, sanitize(e.getMessage()));
             sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, e);
         } catch (VPAuthenticatorServerException e) {
             LOG.error("Server error processing VP submission.", e);
+            VPAuthenticatorUtil.markSessionFailed(requestId, "An internal server error occurred during verification.");
             sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
         } catch (RuntimeException e) {
             LOG.error("Unexpected error processing VP submission.", e);
+            VPAuthenticatorUtil.markSessionFailed(requestId, "An unexpected error occurred during verification.");
             sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
                             "Internal server error.", e));
@@ -370,9 +380,12 @@ public class WalletSubmissionServlet extends HttpServlet {
     private WalletSubmission decryptJweResponse(String jweCompact)
             throws VPAuthenticatorClientException, VPAuthenticatorServerException {
 
+        // Hoisted so the ParseException/JOSEException catch can mark the right session as FAILED.
+        // The JWE header is not encrypted, so kid is readable even when decryption later fails.
+        String requestId = null;
         try {
             JWEObject jweObject = JWEObject.parse(jweCompact);
-            String requestId = jweObject.getHeader().getKeyID();
+            requestId = jweObject.getHeader().getKeyID();
             if (StringUtils.isBlank(requestId)) {
                 throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
                         "direct_post.jwt: missing kid in JWE header.");
@@ -385,7 +398,12 @@ public class WalletSubmissionServlet extends HttpServlet {
             }
 
             jweObject.decrypt(new ECDHDecrypter(ECKey.parse(session.getEphemeralPrivateKeyJwk())));
-            JWTClaimsSet claims = SignedJWT.parse(jweObject.getPayload().toString()).getJWTClaimsSet();
+
+            // Some wallets (e.g. Inji) encrypt plain JSON claims directly without an inner signed JWT.
+            SignedJWT innerJwt = jweObject.getPayload().toSignedJWT();
+            JWTClaimsSet claims = (innerJwt != null)
+                    ? innerJwt.getJWTClaimsSet()
+                    : JWTClaimsSet.parse(jweObject.getPayload().toJSONObject());
 
             WalletSubmission submission = new WalletSubmission();
             Map<String, Object> vpTokenMap = claims.getJSONObjectClaim(OpenID4VPConstants.ResponseParams.VP_TOKEN);
@@ -401,6 +419,8 @@ public class WalletSubmissionServlet extends HttpServlet {
             return submission;
 
         } catch (ParseException | JOSEException e) {
+            // requestId is set when JWE header was parsed successfully but decryption/claim-parsing failed.
+            VPAuthenticatorUtil.markSessionFailed(requestId, "Failed to decrypt wallet response.");
             throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
                     "Failed to decrypt or parse direct_post.jwt JWE response.", e);
         }

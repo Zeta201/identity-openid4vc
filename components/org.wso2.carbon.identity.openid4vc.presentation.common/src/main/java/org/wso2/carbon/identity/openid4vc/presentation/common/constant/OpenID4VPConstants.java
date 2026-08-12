@@ -149,6 +149,7 @@ public class OpenID4VPConstants {
         public static final String NONCE = "nonce";
         public static final String CNF = "cnf";
         public static final String JWK = "jwk";
+        public static final String JKT = "jkt";
         public static final String VCT = "vct";
         public static final String CLIENT_ID_SCHEME = "client_id_scheme";
         public static final String DCQL_QUERY = "dcql_query";
@@ -270,6 +271,9 @@ public class OpenID4VPConstants {
         }
     }
     
+    /**
+     * Default configuration values for OpenID4VP.
+     */
     public static class Defaults {
 
         public static final String CLIENT_ID_SCHEME = "x509_san_dns";

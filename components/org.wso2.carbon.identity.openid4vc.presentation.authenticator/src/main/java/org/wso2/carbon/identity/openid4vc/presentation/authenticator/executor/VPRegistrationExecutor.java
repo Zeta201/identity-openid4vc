@@ -83,6 +83,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
     private static final String AMR_VALUE = Constants.CONTEXT_AMR_OPENID4VP;
 
     static final String VP_REQUEST_ID = Constants.CONTEXT_VP_REQUEST_ID;
+    static final String VP_POLL_TOKEN = Constants.CONTEXT_VP_POLL_TOKEN;
     static final String WALLET_URL = Constants.CONTEXT_WALLET_URL;
 
     private final VPFlowService vpFlowService;
@@ -133,9 +134,22 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         } catch (VPAuthenticatorException e) {
             LOG.error("VP registration executor failed for tenant: "
                     + context.getTenantDomain().replace("\r", "").replace("\n", ""), e);
+            // Best-effort: mark session FAILED so the browser polling loop stops.
+            // VP_REQUEST_ID is present when this is a second-phase call (wallet already responded).
+            VPAuthenticatorUtil.markSessionFailed((String) context.getProperty(VP_REQUEST_ID),
+                    "VP registration failed: " + e.getMessage());
             ExecutorResponse response = new ExecutorResponse();
             response.setResult(STATUS_ERROR);
             response.setErrorMessage("VP registration failed: " + e.getMessage());
+            return response;
+        } catch (RuntimeException e) {
+            LOG.error("Unexpected error in VP registration executor for tenant: "
+                    + context.getTenantDomain().replace("\r", "").replace("\n", ""), e);
+            VPAuthenticatorUtil.markSessionFailed((String) context.getProperty(VP_REQUEST_ID),
+                    "An unexpected error occurred during VP registration.");
+            ExecutorResponse response = new ExecutorResponse();
+            response.setResult(STATUS_ERROR);
+            response.setErrorMessage("VP registration failed due to an unexpected error.");
             return response;
         }
     }
@@ -178,6 +192,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         Map<String, String> additionalInfo = new HashMap<>();
         additionalInfo.put(REDIRECT_URL, flowResult.getWalletUrl());
         additionalInfo.put(VP_REQUEST_ID, flowResult.getRequestId());
+        additionalInfo.put(VP_POLL_TOKEN, flowResult.getPollToken());
 
         ExecutorResponse response = new ExecutorResponse();
         response.setResult(STATUS_EXTERNAL_REDIRECTION);
@@ -341,4 +356,5 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         response.setErrorMessage(message);
         return response;
     }
+
 }

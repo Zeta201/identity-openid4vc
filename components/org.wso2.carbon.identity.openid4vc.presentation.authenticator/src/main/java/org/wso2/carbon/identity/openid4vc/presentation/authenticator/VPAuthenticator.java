@@ -20,6 +20,8 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.owasp.encoder.Encode;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
@@ -55,12 +57,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.AUTHENTICATOR_FRIENDLY_NAME;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.AUTHENTICATOR_NAME;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.CONTEXT_VP_REQUEST_ID;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.DISPLAY_ORDER_1;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.DISPLAY_ORDER_3;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.PARAM_STATUS;
@@ -91,8 +95,11 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
     @java.io.Serial
     private static final long serialVersionUID = 1L;
 
+    private static final Log LOG = LogFactory.getLog(VPAuthenticator.class);
+
     private static final String WALLET_LOGIN_PAGE = "/authenticationendpoint/wallet_login.jsp";
     private static final String PARAM_SESSION_DATA_KEY = "sessionDataKey";
+    private static final String PARAM_POLL_TOKEN = "pollToken";
     private static final String PARAM_WALLET_URL = "walletUrl";
     private static final String PARAM_TENANT_DOMAIN = "tenantDomain";
     private static final String PARAM_ORG_ID = "orgId";
@@ -165,10 +172,14 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
             long timeoutMs = VPAuthenticatorUtil.resolveTimeoutMs(context.getAuthenticatorProperties());
 
-            VPFlowInitiationResult initiationResult = VPDataHolder.getVPFlowService()
-                    .initiate(context.getContextIdentifier(), presentationDefinitionId, tenantDomain, timeoutMs);
+            String requestId = UUID.randomUUID().toString();
+            context.setProperty(CONTEXT_VP_REQUEST_ID, requestId);
 
-            String redirectUrl = createRedirectUrl(initiationResult, tenantDomain, subOrganizationId);
+            VPFlowInitiationResult initiationResult = VPDataHolder.getVPFlowService()
+                    .initiate(requestId, presentationDefinitionId, tenantDomain, timeoutMs);
+
+            String redirectUrl = createRedirectUrl(initiationResult, context.getContextIdentifier(),
+                    tenantDomain, subOrganizationId);
 
             response.sendRedirect(redirectUrl);
 
@@ -194,13 +205,15 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
         String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdP());
         if (StringUtils.isBlank(subjectClaimName)) {
-            throw new AuthenticationFailedException(
-                    VPAuthenticatorErrorCode.INVALID_REQUEST.getCode(),
-                    "Subject Attribute is not configured on the Digital Wallet connection. " +
-                            "Set a Subject Attribute on the Attributes tab before using this authenticator.");
+            LOG.debug("No subject attribute configured on Digital Wallet IdP; will fall back to cnf claim.");
         }
 
-        String requestId = context.getContextIdentifier();
+        String requestId = (String) context.getProperty(CONTEXT_VP_REQUEST_ID);
+        if (StringUtils.isBlank(requestId)) {
+            throw new AuthenticationFailedException(
+                    VPAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getCode(),
+                    "VP request ID not found in authentication context.");
+        }
 
         VPFlowSession session = VPSessionCache.getInstance().get(requestId);
         if (session == null) {
@@ -235,8 +248,10 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
         if (subjectIdentifier == null) {
             throw new AuthenticationFailedException(
                     VPAuthenticatorErrorCode.VERIFICATION_FAILED.getCode(),
-                    "The configured Subject Attribute '" + subjectClaimName
-                            + "' was not found in the verified credential claims.");
+                    "Could not determine subject identifier: " + (StringUtils.isNotBlank(subjectClaimName)
+                            ? "configured attribute '" + subjectClaimName + "' not found in credential claims, and"
+                            : "no subject attribute configured, and")
+                            + " no usable cnf claim found in the verified credential.");
         }
 
         String idpName = context.getExternalIdP() != null
@@ -295,11 +310,12 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
      * Builds the redirect URL for the wallet login page, appending all required query parameters.
      *
      * @param initiationResult the result from the VP flow service containing the request ID and wallet URL
+     * @param sessionDataKey   the IS authentication context identifier (distinct from the VP requestId)
      * @param tenantDomain     the resolved tenant domain for the current authentication
      * @param organizationId   the sub-organization ID, or empty string if not in a sub-org context
      * @return the fully constructed redirect URL
      */
-    private String createRedirectUrl(VPFlowInitiationResult initiationResult,
+    private String createRedirectUrl(VPFlowInitiationResult initiationResult, String sessionDataKey,
                                      String tenantDomain, String organizationId) {
 
         String rootTenantDomain = StringUtils.defaultIfBlank(
@@ -307,7 +323,9 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
         return new StringBuilder(WALLET_LOGIN_PAGE)
                 .append('?').append(PARAM_SESSION_DATA_KEY).append('=')
-                        .append(encode(initiationResult.getRequestId()))
+                        .append(encode(sessionDataKey))
+                .append('&').append(PARAM_POLL_TOKEN).append('=')
+                        .append(encode(initiationResult.getPollToken()))
                 .append('&').append(PARAM_WALLET_URL).append('=')
                         .append(encode(StringUtils.defaultString(initiationResult.getWalletUrl())))
                 .append('&').append(PARAM_TENANT_DOMAIN).append('=')

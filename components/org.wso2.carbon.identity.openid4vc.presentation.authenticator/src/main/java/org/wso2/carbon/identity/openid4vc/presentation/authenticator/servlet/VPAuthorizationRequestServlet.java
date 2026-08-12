@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
 import org.owasp.encoder.Encode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorClientException;
@@ -31,6 +33,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.V
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
 
 import java.io.IOException;
@@ -47,24 +50,24 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_CODE;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_DESCRIPTION;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_MESSAGE;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_REQUEST_ID;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_STATUS;
 
 /**
  * Servlet handling VP (Verifiable Presentation) authorization request operations.
  *
- * <p>Endpoints:</p>
+ * <p>Endpoint:</p>
  * <ul>
- *     <li>GET /oid4vp/v1/vp-request/{requestId} - Get authorization request JWT.</li>
- *     <li>GET /oid4vp/v1/vp-request/{requestId}/status - Get request status (with polling).</li>
+ *     <li>GET /openid4vp/v1/request/{requestId} - Get authorization request JWT (wallet-facing, public).</li>
  * </ul>
+ *
+ * <p>VP session status polling for the authentication portal browser session is handled by
+ * {@link VPFlowStatusServlet} at {@code GET /openid4vp/v1/status?sessionDataKey={key}},
+ * which validates the caller via the IS authentication context before returning status.</p>
  */
 @Component(
     service = Servlet.class,
     immediate = true,
     property = {
-        "osgi.http.whiteboard.servlet.pattern=/oid4vp/v1/vp-request/*",
+        "osgi.http.whiteboard.servlet.pattern=/openid4vp/v1/request/*",
         "osgi.http.whiteboard.servlet.name=OpenID4VPRequest",
         "osgi.http.whiteboard.servlet.asyncSupported=true"
     }
@@ -73,6 +76,8 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    private static final Log LOG = LogFactory.getLog(VPAuthorizationRequestServlet.class);
 
     private static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
@@ -111,78 +116,52 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
             return;
         }
         
+        // Only the bare /{requestId} path is served here (wallet fetches the authorization JWT).
+        // Status polling is handled by VPFlowStatusServlet at /openid4vp/v1/status.
+        if (pathParts.length >= 3) {
+            sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND,
+                    new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                            "Unknown path: " + pathInfo));
+            return;
+        }
+
         String requestId = pathParts[1];
-        boolean isStatusRequest = pathParts.length >= 3
-                && OpenID4VPConstants.Endpoints.STATUS.equals(pathParts[2]);
 
         try {
             VPFlowSession session = VPDataHolder.getVPFlowService().getSession(requestId);
             if (session == null) {
-                if (isStatusRequest) {
-                    JsonObject statusResponse = new JsonObject();
-                    statusResponse.addProperty(RESPONSE_REQUEST_ID, requestId);
-                    statusResponse.addProperty(RESPONSE_STATUS, VPFlowStatus.NOT_FOUND.name());
-                    sendJsonResponse(response, HttpServletResponse.SC_OK, statusResponse);
-                } else {
-                    sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND,
-                            new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND,
-                                    "VP request not found: " + requestId));
-                }
+                sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND,
+                        new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND,
+                                "VP request not found: " + requestId));
                 return;
             }
 
             VPFlowStatus status = session.getStatus();
 
-            if (status == VPFlowStatus.FAILED || status == VPFlowStatus.VERIFIED) {
-                JsonObject statusResponse = new JsonObject();
-                statusResponse.addProperty(RESPONSE_REQUEST_ID, requestId);
-                statusResponse.addProperty(RESPONSE_STATUS, status.name());
-                if (status == VPFlowStatus.FAILED && session.getFailureReason() != null) {
-                    statusResponse.addProperty(RESPONSE_MESSAGE, session.getFailureReason());
-                }
-                sendJsonResponse(response, HttpServletResponse.SC_OK, statusResponse);
-                return;
-            }
-
             if (status == VPFlowStatus.ACTIVE) {
-                // Check if the session has expired by wall-clock time even though status is still ACTIVE.
                 if (session.getExpiresAt() > 0 && System.currentTimeMillis() > session.getExpiresAt()) {
-                    JsonObject statusResponse = new JsonObject();
-                    statusResponse.addProperty(RESPONSE_REQUEST_ID, requestId);
-                    statusResponse.addProperty(RESPONSE_STATUS, VPFlowStatus.EXPIRED.name());
-                    sendJsonResponse(response, HttpServletResponse.SC_OK, statusResponse);
-                    return;
+                    throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_EXPIRED,
+                            "VP request has expired: " + requestId);
                 }
-                if (isStatusRequest) {
-                    JsonObject statusResponse = new JsonObject();
-                    statusResponse.addProperty(RESPONSE_REQUEST_ID, requestId);
-                    statusResponse.addProperty(RESPONSE_STATUS, VPFlowStatus.ACTIVE.name());
-                    sendJsonResponse(response, HttpServletResponse.SC_OK, statusResponse);
-                } else {
-                    serveAuthorizationRequestJwt(response, requestId);
-                }
+                serveAuthorizationRequestJwt(response, requestId);
                 return;
             }
 
-            if (isStatusRequest) {
-                JsonObject statusResponse = new JsonObject();
-                statusResponse.addProperty(RESPONSE_REQUEST_ID, requestId);
-                statusResponse.addProperty(RESPONSE_STATUS, status.name());
-                sendJsonResponse(response, HttpServletResponse.SC_OK, statusResponse);
-            } else {
-                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_EXPIRED,
-                        "VP request is not active: " + status);
-            }
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_EXPIRED,
+                    "VP request is not active: " + status);
 
         } catch (VPAuthenticatorClientException e) {
+            VPAuthenticatorUtil.markSessionFailed(requestId, e.getMessage());
             if (VPAuthenticatorErrorCode.VP_REQUEST_EXPIRED.getCode().equals(e.getCode())) {
                 sendErrorResponse(response, HttpServletResponse.SC_GONE, e);
             } else {
                 sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND, e);
             }
         } catch (VPAuthenticatorException e) {
+            VPAuthenticatorUtil.markSessionFailed(requestId, e.getMessage());
             sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, e);
         } catch (RuntimeException | IOException e) {
+            VPAuthenticatorUtil.markSessionFailed(requestId, "An internal server error occurred.");
             sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
                     "Internal server error.", e));

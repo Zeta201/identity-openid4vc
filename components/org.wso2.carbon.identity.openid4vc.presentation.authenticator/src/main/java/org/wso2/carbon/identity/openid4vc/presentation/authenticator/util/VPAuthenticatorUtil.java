@@ -29,10 +29,13 @@ import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.InboundProtocol;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverException;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
@@ -231,17 +234,74 @@ public class VPAuthenticatorUtil {
                                                    String subjectClaimName,
                                                    PresentationMetadata metadata) {
 
+        // 1. Configured subject attribute claim.
         if (StringUtils.isNotBlank(subjectClaimName)) {
             Object val = verifiedClaims.get(subjectClaimName);
             if (val != null && StringUtils.isNotBlank(val.toString())) {
-                String claimValue = val.toString();
-                if (metadata != null && StringUtils.isNotBlank(metadata.getIssuer())) {
-                    return metadata.getIssuer() + "#" + claimValue;
-                }
-                return claimValue;
+                return namespace(val.toString(), metadata);
             }
+            LOG.warn("Configured subject attribute '" + subjectClaimName
+                    + "' was not found in the verified credential claims; falling back to cnf.");
+        }
+
+        // 2. cnf (holder-binding) claim — the VC equivalent of OIDC's sub.
+        String cnfIdentifier = resolveSubjectFromCnf(verifiedClaims);
+        if (cnfIdentifier != null) {
+            return namespace(cnfIdentifier, metadata);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extracts a stable string identifier from the {@code cnf} (confirmation) claim.
+     * Tries, in order: {@code cnf.kid}, {@code cnf.jkt}, {@code cnf.jwk.kid}.
+     * Returns {@code null} if no usable identifier is found.
+     */
+    private static String resolveSubjectFromCnf(Map<String, Object> verifiedClaims) {
+
+        Object cnfRaw = verifiedClaims.get(OpenID4VPConstants.JWTClaims.CNF);
+        if (cnfRaw == null) {
+            return null;
+        }
+        if (cnfRaw instanceof Map) {
+            Map<?, ?> cnf = (Map<?, ?>) cnfRaw;
+
+            // cnf.kid
+            String kid = stringValue(cnf.get(OpenID4VPConstants.JWTClaims.KID));
+            if (kid != null) return kid;
+
+            // cnf.jkt (JWK thumbprint)
+            String jkt = stringValue(cnf.get(OpenID4VPConstants.JWTClaims.JKT));
+            if (jkt != null) return jkt;
+
+            // cnf.jwk.kid
+            Object jwkRaw = cnf.get(OpenID4VPConstants.JWTClaims.JWK);
+            if (jwkRaw instanceof Map) {
+                String jwkKid = stringValue(((Map<?, ?>) jwkRaw).get(OpenID4VPConstants.JWTClaims.KID));
+                if (jwkKid != null) return jwkKid;
+            }
+        } else {
+            // cnf as a plain string (e.g. a DID)
+            String plain = stringValue(cnfRaw);
+            if (plain != null) return plain;
         }
         return null;
+    }
+
+    private static String namespace(String value, PresentationMetadata metadata) {
+
+        if (metadata != null && StringUtils.isNotBlank(metadata.getIssuer())) {
+            return metadata.getIssuer() + "#" + value;
+        }
+        return value;
+    }
+
+    private static String stringValue(Object obj) {
+
+        if (obj == null) return null;
+        String s = obj.toString().trim();
+        return s.isEmpty() ? null : s;
     }
 
     /**
@@ -285,6 +345,38 @@ public class VPAuthenticatorUtil {
         }
 
         return Long.parseLong(Constants.PROP_TIMEOUT_DEFAULT_VALUE) * 1000L;
+    }
+
+    /**
+     * Marks a VP session as FAILED if it exists and has not already reached a terminal state.
+     * Best-effort: swallows any cache/store exceptions so it never masks the original error.
+     * All servlet and executor catch blocks must call this so the browser polling loop stops
+     * immediately instead of waiting for session expiry.
+     *
+     * @param requestId the VP session identifier; does nothing when blank or null
+     * @param reason    human-readable failure reason surfaced to the browser via the status endpoint
+     */
+    public static void markSessionFailed(String requestId, String reason) {
+
+        if (StringUtils.isBlank(requestId)) {
+            return;
+        }
+        try {
+            VPFlowSession session = VPSessionCache.getInstance().get(requestId);
+            if (session == null) {
+                return;
+            }
+            VPFlowStatus current = session.getStatus();
+            if (current == VPFlowStatus.VERIFIED || current == VPFlowStatus.FAILED) {
+                return;
+            }
+            session.setStatus(VPFlowStatus.FAILED);
+            session.setFailureReason(reason);
+            VPSessionCache.getInstance().put(requestId, session);
+        } catch (Exception e) {
+            LOG.warn("Failed to mark VP session as FAILED for requestId: "
+                    + requestId.replace("\r", "").replace("\n", ""), e);
+        }
     }
 
 }
