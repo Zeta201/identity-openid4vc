@@ -49,7 +49,40 @@ public class ModelTest {
                 "status should match the value set in the builder");
     }
 
-    @Test(priority = 2, description = "Test that WalletSubmission correctly stores requestId and credential tokens")
+    @Test(priority = 2, description = "Test that VPFlowSession builder correctly sets the pollToken field")
+    public void testVPFlowSessionPollToken() {
+
+        VPFlowSession session = new VPFlowSession.Builder()
+                .requestId("req-1")
+                .pollToken("poll-abc")
+                .status(VPFlowStatus.ACTIVE)
+                .build();
+
+        Assert.assertEquals(session.getPollToken(), "poll-abc",
+                "pollToken should match the value set in the builder");
+        Assert.assertEquals(session.getRequestId(), "req-1",
+                "requestId should match the value set in the builder");
+    }
+
+    @Test(priority = 3, description = "Test that VPFlowInitiationResult correctly stores pollToken")
+    public void testVPFlowInitiationResultPollToken() {
+
+        VPFlowInitiationResult result = new VPFlowInitiationResult(
+                "req-2", "poll-xyz",
+                "openid4vp://wallet?request_uri=https://example.com",
+                "https://example.com/request/req-2", "client-1", 9999999999L);
+
+        Assert.assertEquals(result.getRequestId(), "req-2",
+                "requestId should match the value passed to the constructor");
+        Assert.assertEquals(result.getPollToken(), "poll-xyz",
+                "pollToken should match the value passed to the constructor");
+        Assert.assertEquals(result.getClientId(), "client-1",
+                "clientId should match the value passed to the constructor");
+        Assert.assertEquals(result.getExpiresAt(), 9999999999L,
+                "expiresAt should match the value passed to the constructor");
+    }
+
+    @Test(priority = 4, description = "Test that WalletSubmission correctly stores requestId and credential tokens")
     public void testWalletSubmission() {
 
         // Build a wallet submission

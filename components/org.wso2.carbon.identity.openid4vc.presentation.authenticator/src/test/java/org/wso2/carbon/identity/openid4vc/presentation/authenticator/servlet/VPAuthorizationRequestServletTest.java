@@ -22,10 +22,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorClientException;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowInitiationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
@@ -43,7 +40,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Test class for {@link VPAuthorizationRequestServlet}.
- * Tests doGet and doPost via the public service(ServletRequest, ServletResponse) method.
+ * Tests doGet via the public service(ServletRequest, ServletResponse) method.
  */
 public class VPAuthorizationRequestServletTest {
 
@@ -116,121 +113,19 @@ public class VPAuthorizationRequestServletTest {
         verify(response).setStatus(HttpServletResponse.SC_NOT_FOUND);
     }
 
-    @Test(priority = 4,
-            description = "Test doGet returns 200 with NOT_FOUND status when session is not found on the status path")
-    public void testDoGetWhenSessionNotFoundOnStatusPath() throws Exception {
+    @Test(priority = 4, description = "Test doGet returns 404 for any sub-path")
+    public void testDoGetRejectsSubPaths() throws Exception {
 
-        // Set up status path request for a session that does not exist
+        // Status polling is handled by VPFlowStatusServlet; this servlet only serves /{requestId}
         VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getPathInfo()).thenReturn("/req-missing/status");
-        when(mockFlowService.getSession("req-missing")).thenReturn(null);
+        when(request.getPathInfo()).thenReturn("/req-abc/status");
 
-        // Execute test
         servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
-        // Verify 200 response with NOT_FOUND status in body
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        String body = responseOutput.getContent();
-        Assert.assertTrue(body.contains("NOT_FOUND"),
-                "Response body should contain status NOT_FOUND, got: " + body);
-        Assert.assertTrue(body.contains("req-missing"),
-                "Response body should contain the requestId, got: " + body);
+        verify(response).setStatus(HttpServletResponse.SC_NOT_FOUND);
     }
 
-    @Test(priority = 5, description = "Test doGet returns 200 with VERIFIED status when session is verified")
-    public void testDoGetWithVerifiedSession() throws Exception {
-
-        // Set up a verified session
-        VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getPathInfo()).thenReturn("/req-verified/status");
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-verified")
-                .status(VPFlowStatus.VERIFIED)
-                .build();
-        when(mockFlowService.getSession("req-verified")).thenReturn(session);
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        Assert.assertTrue(responseOutput.getContent().contains("VERIFIED"),
-                "Response body should contain status VERIFIED");
-    }
-
-    @Test(priority = 6,
-            description = "Test doGet returns 200 with FAILED status and failure reason when session has failed")
-    public void testDoGetWithFailedSession() throws Exception {
-
-        // Set up a failed session with a failure reason
-        VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getPathInfo()).thenReturn("/req-failed/status");
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-failed")
-                .status(VPFlowStatus.FAILED)
-                .build();
-        session.setFailureReason("Credential signature invalid");
-        when(mockFlowService.getSession("req-failed")).thenReturn(session);
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        String body = responseOutput.getContent();
-        Assert.assertTrue(body.contains("FAILED"),
-                "Response body should contain status FAILED");
-        Assert.assertTrue(body.contains("Credential signature invalid"),
-                "Response body should contain the failure reason");
-    }
-
-    @Test(priority = 7,
-            description = "Test doGet returns EXPIRED status for an active session past its expiry time")
-    public void testDoGetWithExpiredActiveSession() throws Exception {
-
-        // Set up an active session with an expiry time well in the past
-        VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getPathInfo()).thenReturn("/req-expired/status");
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-expired")
-                .status(VPFlowStatus.ACTIVE)
-                .expiresAt(1L)
-                .build();
-        when(mockFlowService.getSession("req-expired")).thenReturn(session);
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        Assert.assertTrue(responseOutput.getContent().contains("EXPIRED"),
-                "Response body should contain status EXPIRED for an active session past its expiry");
-    }
-
-    @Test(priority = 8,
-            description = "Test doGet returns ACTIVE status for a non-expired active session on the status path")
-    public void testDoGetWithActiveSessionOnStatusPath() throws Exception {
-
-        // Set up an active session that has not expired
-        VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getPathInfo()).thenReturn("/req-active/status");
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-active")
-                .status(VPFlowStatus.ACTIVE)
-                .expiresAt(Long.MAX_VALUE)
-                .build();
-        when(mockFlowService.getSession("req-active")).thenReturn(session);
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        Assert.assertTrue(responseOutput.getContent().contains("ACTIVE"),
-                "Response body should contain status ACTIVE");
-    }
-
-    @Test(priority = 9,
+    @Test(priority = 5,
             description = "Test doGet serves the authorization request JWT when path is non-status")
     public void testDoGetWithActiveSessionOnNonStatusPath() throws Exception {
 
@@ -252,64 +147,6 @@ public class VPAuthorizationRequestServletTest {
         verify(response).setStatus(HttpServletResponse.SC_OK);
         Assert.assertEquals(responseOutput.getContent(), "test.signed.jwt",
                 "Response body should be the signed authorization request JWT");
-    }
-
-    @Test(priority = 10, description = "Test doPost returns 501 when the OpenID4VP feature is not enabled")
-    public void testDoPostWhenFeatureNotEnabled() throws Exception {
-
-        // Feature is disabled when VPFlowService is null
-        VPDataHolder.setVPFlowService(null);
-        when(request.getMethod()).thenReturn("POST");
-        when(request.getPathInfo()).thenReturn("/req-abc/reinitiate");
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).sendError(HttpServletResponse.SC_NOT_IMPLEMENTED,
-                "OpenID4VP feature is not enabled.");
-    }
-
-    @Test(priority = 11, description = "Test doPost reinitiate returns 200 with walletUrl and expiresAt on success")
-    public void testDoPostReinitiateSuccess() throws Exception {
-
-        // Set up reinitiation request
-        VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getMethod()).thenReturn("POST");
-        when(request.getPathInfo()).thenReturn("/req-old/reinitiate");
-        VPFlowInitiationResult result = new VPFlowInitiationResult(
-                "req-new", "openid4vp://wallet?request_uri=https://example.com",
-                "https://example.com/request/req-new", null, 9999999999L);
-        when(mockFlowService.reinitiate("req-old")).thenReturn(result);
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        String body = responseOutput.getContent();
-        Assert.assertTrue(body.contains("walletUrl"),
-                "Response body should contain walletUrl, got: " + body);
-        Assert.assertTrue(body.contains("expiresAt"),
-                "Response body should contain expiresAt, got: " + body);
-    }
-
-    @Test(priority = 12, description = "Test doPost reinitiate returns 404 when the session to reinitiate is not found")
-    public void testDoPostReinitiateWhenSessionNotFound() throws Exception {
-
-        // Set up reinitiation request for a non-existent session
-        VPDataHolder.setVPFlowService(mockFlowService);
-        when(request.getMethod()).thenReturn("POST");
-        when(request.getPathInfo()).thenReturn("/req-missing/reinitiate");
-        when(mockFlowService.reinitiate("req-missing")).thenThrow(
-                new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND,
-                        "Session not found."));
-
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_NOT_FOUND);
     }
 
     private static class InMemoryServletOutputStream extends ServletOutputStream {
