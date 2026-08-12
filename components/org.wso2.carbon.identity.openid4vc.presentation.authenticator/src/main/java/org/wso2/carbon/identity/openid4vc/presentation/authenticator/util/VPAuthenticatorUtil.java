@@ -269,22 +269,30 @@ public class VPAuthenticatorUtil {
 
             // cnf.kid
             String kid = stringValue(cnf.get(VPConstants.JWTClaims.KID));
-            if (kid != null) return kid;
+            if (kid != null) {
+                return kid;
+            }
 
             // cnf.jkt (JWK thumbprint)
             String jkt = stringValue(cnf.get(VPConstants.JWTClaims.JKT));
-            if (jkt != null) return jkt;
+            if (jkt != null) {
+                return jkt;
+            }
 
             // cnf.jwk.kid
             Object jwkRaw = cnf.get(VPConstants.JWTClaims.JWK);
             if (jwkRaw instanceof Map) {
                 String jwkKid = stringValue(((Map<?, ?>) jwkRaw).get(VPConstants.JWTClaims.KID));
-                if (jwkKid != null) return jwkKid;
+                if (jwkKid != null) {
+                    return jwkKid;
+                }
             }
         } else {
             // cnf as a plain string (e.g. a DID)
             String plain = stringValue(cnfRaw);
-            if (plain != null) return plain;
+            if (plain != null) {
+                return plain;
+            }
         }
         return null;
     }
@@ -299,7 +307,9 @@ public class VPAuthenticatorUtil {
 
     private static String stringValue(Object obj) {
 
-        if (obj == null) return null;
+        if (obj == null) {
+            return null;
+        }
         String s = obj.toString().trim();
         return s.isEmpty() ? null : s;
     }

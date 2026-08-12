@@ -57,7 +57,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPF
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
-import static org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants.VC_SD_JWT_FORMAT;
 import org.wso2.carbon.identity.openid4vc.presentation.management.cache.PresentationDefinitionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
@@ -78,6 +77,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants.VC_SD_JWT_FORMAT;
 
 /**
  * Single implementation for VP flow session management.
