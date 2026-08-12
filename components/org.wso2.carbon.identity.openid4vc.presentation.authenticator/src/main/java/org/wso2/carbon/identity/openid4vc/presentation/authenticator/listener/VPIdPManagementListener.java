@@ -42,7 +42,7 @@ import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.Inbo
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.listener.AbstractIdentityProviderMgtListener;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
@@ -82,7 +82,7 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
     public boolean doPostAddIdP(IdentityProvider identityProvider, String tenantDomain)
             throws IdentityProviderManagementException {
 
-        if (!Boolean.parseBoolean(IdentityUtil.getProperty(OpenID4VPConstants.ConfigKeys.FEATURE_ENABLED))) {
+        if (!Boolean.parseBoolean(IdentityUtil.getProperty(VPConstants.ConfigKeys.FEATURE_ENABLED))) {
             return true;
         }
 

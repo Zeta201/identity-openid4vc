@@ -37,7 +37,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VP
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
 
 import java.security.KeyStore;
@@ -112,8 +112,8 @@ public class VPAuthenticatorUtil {
     public static String resolveClientIdForScheme(String scheme, String baseUrl, String tenantDomain)
             throws VPAuthenticatorException {
 
-        if (Constants.CLIENT_ID_SCHEME_X509_SAN_DNS.equals(scheme)) {
-            return Constants.CLIENT_ID_SCHEME_X509_SAN_DNS + ":" + resolveServerSanDns(tenantDomain);
+        if (VPConstants.DEFAULT_CLIENT_ID_SCHEME.equals(scheme)) {
+            return VPConstants.DEFAULT_CLIENT_ID_SCHEME + ":" + resolveServerSanDns(tenantDomain);
         } else if (Constants.CLIENT_ID_SCHEME_X509_HASH.equals(scheme)) {
             return Constants.CLIENT_ID_SCHEME_X509_HASH + ":" + resolveServerCertHash(tenantDomain);
         } else {
@@ -146,7 +146,7 @@ public class VPAuthenticatorUtil {
 
         try {
             byte[] derEncoded = cert.getEncoded();
-            byte[] hash = MessageDigest.getInstance(OpenID4VPConstants.Algorithms.SHA_256).digest(derEncoded);
+            byte[] hash = MessageDigest.getInstance(VPConstants.Algorithms.SHA_256).digest(derEncoded);
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (Exception e) {
             throw new VPAuthenticatorServerException(
@@ -260,7 +260,7 @@ public class VPAuthenticatorUtil {
      */
     private static String resolveSubjectFromCnf(Map<String, Object> verifiedClaims) {
 
-        Object cnfRaw = verifiedClaims.get(OpenID4VPConstants.JWTClaims.CNF);
+        Object cnfRaw = verifiedClaims.get(VPConstants.JWTClaims.CNF);
         if (cnfRaw == null) {
             return null;
         }
@@ -268,17 +268,17 @@ public class VPAuthenticatorUtil {
             Map<?, ?> cnf = (Map<?, ?>) cnfRaw;
 
             // cnf.kid
-            String kid = stringValue(cnf.get(OpenID4VPConstants.JWTClaims.KID));
+            String kid = stringValue(cnf.get(VPConstants.JWTClaims.KID));
             if (kid != null) return kid;
 
             // cnf.jkt (JWK thumbprint)
-            String jkt = stringValue(cnf.get(OpenID4VPConstants.JWTClaims.JKT));
+            String jkt = stringValue(cnf.get(VPConstants.JWTClaims.JKT));
             if (jkt != null) return jkt;
 
             // cnf.jwk.kid
-            Object jwkRaw = cnf.get(OpenID4VPConstants.JWTClaims.JWK);
+            Object jwkRaw = cnf.get(VPConstants.JWTClaims.JWK);
             if (jwkRaw instanceof Map) {
-                String jwkKid = stringValue(((Map<?, ?>) jwkRaw).get(OpenID4VPConstants.JWTClaims.KID));
+                String jwkKid = stringValue(((Map<?, ?>) jwkRaw).get(VPConstants.JWTClaims.KID));
                 if (jwkKid != null) return jwkKid;
             }
         } else {

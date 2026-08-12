@@ -30,37 +30,26 @@
 
     <artifactId>org.wso2.carbon.identity.openid4vc.presentation.common</artifactId>
     <packaging>bundle</packaging>
-    <name>WSO2 Carbon - OpenID4VP Common (Models, DTOs, Constants, Exceptions)</name>
+    <name>WSO2 Carbon - OpenID4VP Common</name>
     <description>Shared kernel for OpenID4VP: models, DTOs, constants, exceptions, and common utilities</description>
 
     <dependencies>
-        <!-- JSON Processing -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
-
-        <!-- WSO2 Identity Core (for IdentityUtil in OpenID4VPUtil) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.core</artifactId>
         </dependency>
-
-        <!-- Apache Commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
-
-
-        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
-
-        <!-- Test -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

@@ -34,7 +34,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VP
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -188,7 +188,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
                 "Failed to generate request JWT for request: " + requestId);
         }
 
-        response.setContentType(OpenID4VPConstants.HTTP.CONTENT_TYPE_OAUTH_AUTHZ_REQ);
+        response.setContentType(VPConstants.HTTP.CONTENT_TYPE_OAUTH_AUTHZ_REQ);
         response.setStatus(HttpServletResponse.SC_OK);
         writeResponse(response, requestJwt);
     }
@@ -219,7 +219,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
             throws IOException {
 
         response.setStatus(statusCode);
-        response.setContentType(OpenID4VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
+        response.setContentType(VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
 
         writeResponse(response, gson.toJson(data));
     }

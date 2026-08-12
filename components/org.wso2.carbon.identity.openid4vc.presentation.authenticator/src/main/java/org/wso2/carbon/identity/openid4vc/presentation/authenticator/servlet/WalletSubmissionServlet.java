@@ -46,7 +46,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
@@ -231,7 +231,7 @@ public class WalletSubmissionServlet extends HttpServlet {
         String contentType = StringUtils.defaultString(request.getContentType());
 
         if (contentType.startsWith("application/x-www-form-urlencoded")) {
-            String responseParam = request.getParameter(OpenID4VPConstants.ResponseParams.RESPONSE);
+            String responseParam = request.getParameter(VPConstants.ResponseParams.RESPONSE);
             if (isJweToken(responseParam)) {
                 return decryptJweResponse(responseParam);
             }
@@ -247,7 +247,7 @@ public class WalletSubmissionServlet extends HttpServlet {
         try {
             JsonObject jsonBody = JsonParser.parseString(
                     new String(rawBody, StandardCharsets.UTF_8)).getAsJsonObject();
-            JsonElement responseElem = jsonBody.get(OpenID4VPConstants.ResponseParams.RESPONSE);
+            JsonElement responseElem = jsonBody.get(VPConstants.ResponseParams.RESPONSE);
             if (responseElem != null && responseElem.isJsonPrimitive()
                     && isJweToken(responseElem.getAsString())) {
                 return decryptJweResponse(responseElem.getAsString());
@@ -305,7 +305,7 @@ public class WalletSubmissionServlet extends HttpServlet {
     private WalletSubmission parseFormParameters(HttpServletRequest request) throws VPAuthenticatorClientException {
 
         WalletSubmission submission = new WalletSubmission();
-        String rawVpToken = request.getParameter(OpenID4VPConstants.ResponseParams.VP_TOKEN);
+        String rawVpToken = request.getParameter(VPConstants.ResponseParams.VP_TOKEN);
         if (StringUtils.isNotBlank(rawVpToken)) {
             try {
                 Map<String, Object> rawMap = GSON.fromJson(rawVpToken, VP_TOKEN_RAW_TYPE);
@@ -315,9 +315,9 @@ public class WalletSubmissionServlet extends HttpServlet {
                         "vp_token is not a valid JSON object.");
             }
         }
-        submission.setRequestId(request.getParameter(OpenID4VPConstants.ResponseParams.STATE));
-        submission.setError(request.getParameter(OpenID4VPConstants.ResponseParams.ERROR));
-        submission.setErrorDescription(request.getParameter(OpenID4VPConstants.ResponseParams.ERROR_DESCRIPTION));
+        submission.setRequestId(request.getParameter(VPConstants.ResponseParams.STATE));
+        submission.setError(request.getParameter(VPConstants.ResponseParams.ERROR));
+        submission.setErrorDescription(request.getParameter(VPConstants.ResponseParams.ERROR_DESCRIPTION));
         return submission;
     }
 
@@ -406,15 +406,15 @@ public class WalletSubmissionServlet extends HttpServlet {
                     : JWTClaimsSet.parse(jweObject.getPayload().toJSONObject());
 
             WalletSubmission submission = new WalletSubmission();
-            Map<String, Object> vpTokenMap = claims.getJSONObjectClaim(OpenID4VPConstants.ResponseParams.VP_TOKEN);
+            Map<String, Object> vpTokenMap = claims.getJSONObjectClaim(VPConstants.ResponseParams.VP_TOKEN);
             if (vpTokenMap != null) {
                 submission.setCredentialTokens(flattenVpTokenMap(vpTokenMap));
             }
-            String state = claims.getStringClaim(OpenID4VPConstants.ResponseParams.STATE);
+            String state = claims.getStringClaim(VPConstants.ResponseParams.STATE);
             submission.setRequestId(state != null ? state : requestId);
-            submission.setError(claims.getStringClaim(OpenID4VPConstants.ResponseParams.ERROR));
+            submission.setError(claims.getStringClaim(VPConstants.ResponseParams.ERROR));
             submission.setErrorDescription(
-                    claims.getStringClaim(OpenID4VPConstants.ResponseParams.ERROR_DESCRIPTION));
+                    claims.getStringClaim(VPConstants.ResponseParams.ERROR_DESCRIPTION));
             submission.setEncrypted(true);
             return submission;
 
@@ -452,7 +452,7 @@ public class WalletSubmissionServlet extends HttpServlet {
 
         byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
         response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType(OpenID4VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
+        response.setContentType(VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
         response.setHeader(RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS, RESPONSE_HEADER_VALUE_NOSNIFF);
         response.setContentLength(body.length);
         response.getOutputStream().write(body);
@@ -473,7 +473,7 @@ public class WalletSubmissionServlet extends HttpServlet {
             throws IOException {
 
         response.setStatus(statusCode);
-        response.setContentType(OpenID4VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
+        response.setContentType(VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
         response.setHeader(RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS, RESPONSE_HEADER_VALUE_NOSNIFF);
 
         JsonObject errorObj = new JsonObject();

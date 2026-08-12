@@ -34,34 +34,26 @@
     <description>Verifiable credential verification and signature verification for OpenID4VP</description>
 
     <dependencies>
-        <!-- OpenID4VP Common module -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.presentation.common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.issuance.common</artifactId>
             <version>1.1.7-SNAPSHOT</version>
         </dependency>
-
-        <!-- OpenID4VP Definition module (for resolving Presentation Definitions by ID) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.presentation.management</artifactId>
             <version>${project.version}</version>
         </dependency>
- 
-        <!-- SD-JWT module -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.sdjwt</artifactId>
             <version>1.1.7-SNAPSHOT</version>
         </dependency>
-
-        <!-- Carbon Kernel - PrivilegedCarbonContext / MultitenantConstants -->
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.core</artifactId>
@@ -72,41 +64,28 @@
             <artifactId>org.wso2.carbon.utils</artifactId>
             <scope>provided</scope>
         </dependency>
-
-        <!-- JSON Processing -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
-
-        <!-- Apache Commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
-
-        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
-
-        <!-- OSGi SCR Annotations -->
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.component.annotations</artifactId>
             <version>1.3.0</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Nimbus JOSE JWT -->
         <dependency>
             <groupId>org.wso2.orbit.com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
         </dependency>
-
-        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

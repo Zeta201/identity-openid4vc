@@ -34,28 +34,26 @@
     <description>Wallet-based federated authenticator for OpenID4VP</description>
 
     <dependencies>
-        <!-- OpenID4VP Common module -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.presentation.common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- OpenID4VP Management module (PresentationDefinitionService) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.presentation.management</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- OpenID4VP Verification module (VerificationResult used by authenticator) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.presentation.verification</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- WSO2 Identity Framework -->
+        <dependency>
+            <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+            <artifactId>org.wso2.carbon.identity.openid4vc.issuance.common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
@@ -76,8 +74,6 @@
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.utils</artifactId>
         </dependency>
-
-        <!-- OSGi -->
         <dependency>
             <groupId>org.eclipse.platform</groupId>
             <artifactId>org.eclipse.osgi.services</artifactId>
@@ -88,82 +84,57 @@
             <version>${osgi.service.component.annotations.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- JSON Processing (authenticator uses JsonObject for status responses) -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
-
-        <!-- Apache Commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
-
-        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
-
-        <!-- OWASP Encoder (authenticator uses Encode.forJava) -->
         <dependency>
             <groupId>org.owasp.encoder</groupId>
             <artifactId>encoder</artifactId>
             <version>1.2.3</version>
         </dependency>
-
-        <!-- Identity Application Common (ClaimMapping, Property) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.application.common</artifactId>
         </dependency>
-
-        <!-- Application Management (ApplicationManagementService in VPServiceDataHolder) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.application.mgt</artifactId>
             <version>${carbon.identity.framework.version}</version>
         </dependency>
-
-        <!-- Identity Provider Management (OpenID4VPIdPManagementListener) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.idp.mgt</artifactId>
             <version>${carbon.identity.framework.version}</version>
         </dependency>
-
-        <!-- Flow Execution Engine (Executor interface for registration executor) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.flow.execution.engine</artifactId>
         </dependency>
-
-        <!-- OSGi HTTP Service (servlet registration) -->
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.http</artifactId>
             <version>${osgi.service.http.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Servlet API (HttpServlet, HttpServletRequest/Response) -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>3.1.0</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Nimbus JOSE JWT (JWT signing/verification in service impls) -->
         <dependency>
             <groupId>org.wso2.orbit.com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
         </dependency>
-
-        <!-- JSON Path (VP token claim extraction) -->
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
@@ -174,35 +145,25 @@
             <artifactId>json-smart</artifactId>
             <version>2.4.10</version>
         </dependency>
-
-        <!-- Commons IO (IOUtils.toString in servlets) -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
-
-        <!-- Commons Collections 4 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
         </dependency>
-
-        <!-- Registry Core (per-tenant config storage in OpenID4VPConfigServiceImpl) -->
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.registry.core</artifactId>
             <version>4.12.39</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Organization Management (sub-org tenant domain resolution) -->
         <dependency>
             <groupId>org.wso2.carbon.identity.organization.management.core</groupId>
             <artifactId>org.wso2.carbon.identity.organization.management.service</artifactId>
             <version>${identity.organization.management.version}</version>
         </dependency>
-
-        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

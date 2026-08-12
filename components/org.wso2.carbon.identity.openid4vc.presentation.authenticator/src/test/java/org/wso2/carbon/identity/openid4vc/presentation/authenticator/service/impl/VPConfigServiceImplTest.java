@@ -29,6 +29,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.OpenID4VPTenantConfigCache;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.registry.core.Resource;
@@ -92,12 +93,12 @@ public class VPConfigServiceImplTest {
                 "responseMode should be null before being set");
 
         // Set values and verify persistence
-        config.setClientIdScheme("x509_san_dns");
-        config.setResponseMode("direct_post");
+        config.setClientIdScheme(VPConstants.DEFAULT_CLIENT_ID_SCHEME);
+        config.setResponseMode(VPConstants.DEFAULT_RESPONSE_MODE);
 
-        Assert.assertEquals(config.getClientIdScheme(), "x509_san_dns",
+        Assert.assertEquals(config.getClientIdScheme(), VPConstants.DEFAULT_CLIENT_ID_SCHEME,
                 "clientIdScheme should match the value that was set");
-        Assert.assertEquals(config.getResponseMode(), "direct_post",
+        Assert.assertEquals(config.getResponseMode(), VPConstants.DEFAULT_RESPONSE_MODE,
                 "responseMode should match the value that was set");
     }
 
@@ -136,14 +137,14 @@ public class VPConfigServiceImplTest {
             when(registryService.getGovernanceSystemRegistry(1)).thenReturn(registry);
             when(registry.resourceExists(VPConfigServiceImpl.REGISTRY_PATH)).thenReturn(true);
             when(registry.get(VPConfigServiceImpl.REGISTRY_PATH)).thenReturn(resource);
-            when(resource.getProperty("clientIdScheme")).thenReturn("x509_san_dns");
+            when(resource.getProperty("clientIdScheme")).thenReturn(VPConstants.DEFAULT_CLIENT_ID_SCHEME);
             when(resource.getProperty("responseMode")).thenReturn("direct_post.jwt");
 
             // Execute test
             VPConfigService.TenantConfig config = configService.getConfig("example.com");
 
             // Verify properties are read correctly
-            Assert.assertEquals(config.getClientIdScheme(), "x509_san_dns",
+            Assert.assertEquals(config.getClientIdScheme(), VPConstants.DEFAULT_CLIENT_ID_SCHEME,
                     "clientIdScheme should match the value stored in the registry resource");
             Assert.assertEquals(config.getResponseMode(), "direct_post.jwt",
                     "responseMode should match the value stored in the registry resource");
@@ -179,8 +180,8 @@ public class VPConfigServiceImplTest {
 
             // Build and save config
             VPConfigService.TenantConfig config = new VPConfigService.TenantConfig();
-            config.setClientIdScheme("x509_san_dns");
-            config.setResponseMode("direct_post");
+            config.setClientIdScheme(VPConstants.DEFAULT_CLIENT_ID_SCHEME);
+            config.setResponseMode(VPConstants.DEFAULT_RESPONSE_MODE);
 
             // Execute test
             configService.setConfig(config, "example.com");

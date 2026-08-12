@@ -31,7 +31,6 @@ public class Constants {
 
     public static final String PROP_PRESENTATION_DEFINITION_ID = "presentationDefinitionId";
     public static final String PROP_TIMEOUT_SECONDS = "timeout";
-    public static final String CLIENT_ID_SCHEME_X509_SAN_DNS = "x509_san_dns";
     public static final String CLIENT_ID_SCHEME_X509_HASH = "x509_hash";
     public static final String RESPONSE_MODE_DIRECT_POST_JWT = "direct_post.jwt";
 

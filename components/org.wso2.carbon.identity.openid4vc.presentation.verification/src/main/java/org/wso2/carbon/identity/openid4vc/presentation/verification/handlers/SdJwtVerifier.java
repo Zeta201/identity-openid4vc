@@ -28,7 +28,8 @@ import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
@@ -94,10 +95,10 @@ public class SdJwtVerifier implements Verifier {
 
     /** JWT/SD-JWT protocol-level fields excluded from the subject-attribute claims map. */
     private static final Set<String> PROTOCOL_CLAIMS = new HashSet<>(Arrays.asList(
-            OpenID4VPConstants.JWTClaims.ISS, OpenID4VPConstants.JWTClaims.SUB,
-            OpenID4VPConstants.JWTClaims.IAT, OpenID4VPConstants.JWTClaims.EXP,
-            OpenID4VPConstants.JWTClaims.JTI, OpenID4VPConstants.JWTClaims.NBF,
-            OpenID4VPConstants.JWTClaims.AUD,
+            VPConstants.JWTClaims.ISS, VPConstants.JWTClaims.SUB,
+            VPConstants.JWTClaims.IAT, VPConstants.JWTClaims.EXP,
+            VPConstants.JWTClaims.JTI, VPConstants.JWTClaims.NBF,
+            VPConstants.JWTClaims.AUD,
             SDJWTConstants.CLAIM_CNF, SDJWTConstants.CLAIM_SD, SDJWTConstants.CLAIM_SD_ALG,
             SDJWTConstants.CLAIM_VCT
     ));
@@ -105,7 +106,7 @@ public class SdJwtVerifier implements Verifier {
     @Override
     public String getFormat() {
 
-        return OpenID4VPConstants.VCFormats.DC_SD_JWT;
+        return Constants.VC_SD_JWT_FORMAT;
     }
 
     @Override
@@ -297,7 +298,7 @@ public class SdJwtVerifier implements Verifier {
         if (StringUtils.isBlank(expectedType)) {
             return;
         }
-        Object vctObj = claims.get(OpenID4VPConstants.JWTClaims.VCT);
+        Object vctObj = claims.get(VPConstants.JWTClaims.VCT);
         String actualVct = vctObj != null ? vctObj.toString() : null;
         if (!expectedType.equals(actualVct)) {
             throw new VerificationClientException(VerificationErrorCode.INVALID_CREDENTIAL,
@@ -532,23 +533,23 @@ public class SdJwtVerifier implements Verifier {
             builder.algorithm(issuerJwt.getHeader().getAlgorithm().getName());
         }
 
-        if (claims.get(OpenID4VPConstants.JWTClaims.ISS) != null) {
-            builder.issuer(claims.get(OpenID4VPConstants.JWTClaims.ISS).toString());
+        if (claims.get(VPConstants.JWTClaims.ISS) != null) {
+            builder.issuer(claims.get(VPConstants.JWTClaims.ISS).toString());
         }
-        if (claims.get(OpenID4VPConstants.JWTClaims.IAT) instanceof Date) {
-            builder.issuedAt(((Date) claims.get(OpenID4VPConstants.JWTClaims.IAT)).getTime());
+        if (claims.get(VPConstants.JWTClaims.IAT) instanceof Date) {
+            builder.issuedAt(((Date) claims.get(VPConstants.JWTClaims.IAT)).getTime());
         }
-        if (claims.get(OpenID4VPConstants.JWTClaims.EXP) instanceof Date) {
-            builder.expiresAt(((Date) claims.get(OpenID4VPConstants.JWTClaims.EXP)).getTime());
+        if (claims.get(VPConstants.JWTClaims.EXP) instanceof Date) {
+            builder.expiresAt(((Date) claims.get(VPConstants.JWTClaims.EXP)).getTime());
         }
-        if (claims.get(OpenID4VPConstants.JWTClaims.VCT) != null) {
-            builder.credentialType(claims.get(OpenID4VPConstants.JWTClaims.VCT).toString());
+        if (claims.get(VPConstants.JWTClaims.VCT) != null) {
+            builder.credentialType(claims.get(VPConstants.JWTClaims.VCT).toString());
         }
 
-        Object cnfObj = claims.get(OpenID4VPConstants.JWTClaims.CNF);
+        Object cnfObj = claims.get(VPConstants.JWTClaims.CNF);
         if (cnfObj instanceof Map) {
             Map<String, Object> cnf = (Map<String, Object>) cnfObj;
-            Object jwkObj = cnf.get(OpenID4VPConstants.JWTClaims.JWK);
+            Object jwkObj = cnf.get(VPConstants.JWTClaims.JWK);
             if (jwkObj instanceof Map) {
                 try {
                     JWK jwk = JWK.parse((Map<String, Object>) jwkObj);
@@ -576,7 +577,7 @@ public class SdJwtVerifier implements Verifier {
                 if (kbClaims.getAudience() != null && !kbClaims.getAudience().isEmpty()) {
                     builder.kbJwtAudience(kbClaims.getAudience().get(0));
                 }
-                String kbNonce = kbClaims.getStringClaim(OpenID4VPConstants.JWTClaims.NONCE);
+                String kbNonce = kbClaims.getStringClaim(VPConstants.JWTClaims.NONCE);
                 if (StringUtils.isNotBlank(kbNonce)) {
                     builder.nonce(kbNonce);
                 }

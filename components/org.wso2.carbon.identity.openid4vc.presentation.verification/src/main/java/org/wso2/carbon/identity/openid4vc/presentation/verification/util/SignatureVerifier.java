@@ -36,7 +36,7 @@ import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import org.apache.commons.lang3.StringUtils;
 import org.wso2.carbon.base.ServerConfiguration;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -157,7 +157,7 @@ public class SignatureVerifier {
                     new DefaultJOSEObjectTypeVerifier<>(
                             new JOSEObjectType(VerificationConstants.JOSE_TYPE_JWT),
                             JOSEObjectType.JWT,
-                            new JOSEObjectType(OpenID4VPConstants.VCFormats.DC_SD_JWT)
+                            new JOSEObjectType(Constants.VC_SD_JWT_FORMAT)
                     )
             );
 

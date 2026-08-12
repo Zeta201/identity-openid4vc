@@ -30,7 +30,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
@@ -175,7 +175,7 @@ public class X5cSignatureValidator implements CredentialSignatureValidator {
             } else if (leafPublicKey instanceof EdECPublicKey) {
                 EdECPublicKey edPublicKey = (EdECPublicKey) leafPublicKey;
                 byte[] encodedKeyBytes = edPublicKey.getEncoded();
-                boolean isEd448 = OpenID4VPConstants.Algorithms.ED448.equals(edPublicKey.getParams().getName());
+                boolean isEd448 = VPConstants.Algorithms.ED448.equals(edPublicKey.getParams().getName());
                 Curve edCurve = isEd448 ? Curve.Ed448 : Curve.Ed25519;
                 int edKeyByteLength = isEd448 ? VerificationConstants.ED448_PUBLIC_KEY_BYTE_LENGTH
                         : VerificationConstants.ED25519_PUBLIC_KEY_BYTE_LENGTH;

@@ -23,7 +23,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.dao.PresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementErrorCode;
@@ -628,7 +628,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         cred.setEnforceTrustedIssuer(!"0".equals(rs.getString("ENFORCE_TRUSTED_ISSUER")));
         cred.setTrustedCas(decodeCertBlob(rs.getString("TRUSTED_CAS")));
         cred.setKeyResolutionMethod(rs.getString("KEY_RESOLUTION_METHOD") != null ?
-                rs.getString("KEY_RESOLUTION_METHOD") : OpenID4VPConstants.Defaults.KEY_RESOLUTION_METHOD);
+                rs.getString("KEY_RESOLUTION_METHOD") : VPConstants.DEFAULT_KEY_RESOLUTION_METHOD);
         cred.setJwksUri(rs.getString("JWKS_URI"));
         cred.setIssuerPem(rs.getString("ISSUER_PEM"));
         return cred;

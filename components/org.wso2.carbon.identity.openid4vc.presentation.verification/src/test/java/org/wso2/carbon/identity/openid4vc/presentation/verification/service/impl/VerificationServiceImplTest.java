@@ -23,7 +23,8 @@ import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
@@ -47,7 +48,7 @@ public class VerificationServiceImplTest {
 
     private static final int TENANT_ID = 1;
     private static final String DEF_ID = "test-definition-id";
-    private static final String DCQL_FORMAT = OpenID4VPConstants.VCFormats.DC_SD_JWT;
+    private static final String DCQL_FORMAT = Constants.VC_SD_JWT_FORMAT;
     private static final String CRED_ID = "cred_1_1";
 
     @Mock
@@ -284,7 +285,7 @@ public class VerificationServiceImplTest {
 
         // Set up a credential with an iss claim
         Map<String, Object> claims = new HashMap<>();
-        claims.put(OpenID4VPConstants.JWTClaims.ISS, "https://issuer.example.com");
+        claims.put(VPConstants.JWTClaims.ISS, "https://issuer.example.com");
         injectMockVerifier(claims);
 
         // Execute test
@@ -334,7 +335,7 @@ public class VerificationServiceImplTest {
     private void injectMockVerifier(Map<String, Object> returnedClaims) throws Exception {
 
         PresentationMetadata metadata = new PresentationMetadata.Builder()
-                .issuer((String) returnedClaims.get(OpenID4VPConstants.JWTClaims.ISS))
+                .issuer((String) returnedClaims.get(VPConstants.JWTClaims.ISS))
                 .credentialClaims(returnedClaims)
                 .build();
         when(mockVerifier.getFormat()).thenReturn(DCQL_FORMAT);

@@ -28,7 +28,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
@@ -95,7 +95,7 @@ public class SdJwtVerifierTest {
     public void testGetFormatReturnsDcSdJwt() {
 
         // Execute test and verify
-        Assert.assertEquals(sdJwtVerifier.getFormat(), OpenID4VPConstants.VCFormats.DC_SD_JWT,
+        Assert.assertEquals(sdJwtVerifier.getFormat(), Constants.VC_SD_JWT_FORMAT,
                 "getFormat should return the DC_SD_JWT format constant");
     }
 

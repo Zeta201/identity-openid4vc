@@ -39,7 +39,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPC
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.impl.VPConfigServiceImpl;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.impl.VPFlowServiceImpl;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -75,7 +75,7 @@ public class VPServiceComponent {
             idpListenerRegistration = context.getBundleContext().registerService(
                     IdentityProviderMgtListener.class.getName(), new VPIdPManagementListener(), null);
 
-            if (Boolean.parseBoolean(IdentityUtil.getProperty(OpenID4VPConstants.ConfigKeys.FEATURE_ENABLED))) {
+            if (Boolean.parseBoolean(IdentityUtil.getProperty(VPConstants.ConfigKeys.FEATURE_ENABLED))) {
                 VPFlowServiceImpl vpFlowService = new VPFlowServiceImpl();
                 VPDataHolder.setVPFlowService(vpFlowService);
                 flowServiceRegistration = context.getBundleContext().registerService(

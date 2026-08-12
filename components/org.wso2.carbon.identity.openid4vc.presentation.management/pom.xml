@@ -34,8 +34,6 @@
     <description>Presentation Management for OpenID4VP</description>
 
     <dependencies>
-
-        <!-- WSO2 Identity Framework -->
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.core</artifactId>
@@ -54,15 +52,16 @@
             <artifactId>org.wso2.carbon.idp.mgt</artifactId>
             <version>${carbon.identity.framework.version}</version>
         </dependency>
-
-        <!-- Presentation Common -->
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.presentation.common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- WSO2 Carbon Core & Utils -->
+        <dependency>
+            <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+            <artifactId>org.wso2.carbon.identity.openid4vc.issuance.common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.core</artifactId>
@@ -75,8 +74,6 @@
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.user.core</artifactId>
         </dependency>
-
-        <!-- OSGi Services -->
         <dependency>
             <groupId>org.eclipse.platform</groupId>
             <artifactId>org.eclipse.osgi.services</artifactId>
@@ -87,35 +84,24 @@
             <version>${osgi.service.component.annotations.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Servlet API -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>3.1.0</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- JSON Processing -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
-
-        <!-- Apache Commons -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
-
-        <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
-
-        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

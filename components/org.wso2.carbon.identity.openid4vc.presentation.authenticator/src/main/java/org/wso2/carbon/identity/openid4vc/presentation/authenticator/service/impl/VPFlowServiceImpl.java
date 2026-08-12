@@ -56,7 +56,8 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPC
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
+import static org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants.VC_SD_JWT_FORMAT;
 import org.wso2.carbon.identity.openid4vc.presentation.management.cache.PresentationDefinitionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
@@ -183,7 +184,7 @@ public class VPFlowServiceImpl implements VPFlowService {
         String responseUri = baseUrl + Constants.RESPONSE_URI_ENDPOINT;
         VPConfigService.TenantConfig tenantConfig = VPAuthenticatorUtil.loadTenantConfig(tenantDomain);
         String scheme = StringUtils.defaultIfBlank(
-                tenantConfig.getClientIdScheme(), Constants.CLIENT_ID_SCHEME_X509_SAN_DNS);
+                tenantConfig.getClientIdScheme(), VPConstants.DEFAULT_CLIENT_ID_SCHEME);
         String responseMode = StringUtils.defaultIfBlank(
                 tenantConfig.getResponseMode(), Constants.RESPONSE_MODE_DIRECT_POST_JWT);
         String clientId = VPAuthenticatorUtil.resolveClientIdForScheme(scheme, baseUrl, tenantDomain);
@@ -316,7 +317,7 @@ public class VPFlowServiceImpl implements VPFlowService {
         try {
 
             String responseUri = vpRequest.getResponseUri();
-            String scheme = StringUtils.defaultIfBlank(clientIdScheme, Constants.CLIENT_ID_SCHEME_X509_SAN_DNS);
+            String scheme = StringUtils.defaultIfBlank(clientIdScheme, VPConstants.DEFAULT_CLIENT_ID_SCHEME);
             KeyStoreManager ksm = KeyStoreManager.getInstance(tenantId);
             KeyStore ks = IdentityKeyStoreResolver.getInstance().getKeyStore(tenantDomain, InboundProtocol.OAUTH);
             String keyAlias = VPAuthenticatorUtil.resolveSigningKeyAlias(tenantDomain);
@@ -373,44 +374,44 @@ public class VPFlowServiceImpl implements VPFlowService {
             claimsBuilder.issuer(clientId);
 
             claimsBuilder
-                    .audience(OpenID4VPConstants.Protocol.REQUEST_AUDIENCE)
-                    .claim(OpenID4VPConstants.RequestParams.CLIENT_ID, clientId)
-                    .claim(OpenID4VPConstants.JWTClaims.CLIENT_ID_SCHEME, scheme)
-                    .claim(OpenID4VPConstants.RequestParams.RESPONSE_TYPE,
-                            OpenID4VPConstants.Protocol.RESPONSE_TYPE_VP_TOKEN)
-                    .claim(OpenID4VPConstants.RequestParams.RESPONSE_MODE, vpRequest.getResponseMode())
-                    .claim(OpenID4VPConstants.RequestParams.RESPONSE_URI, responseUri)
-                    .claim(OpenID4VPConstants.RequestParams.NONCE, vpRequest.getNonce())
-                    .claim(OpenID4VPConstants.RequestParams.STATE, vpRequest.getRequestId())
+                    .audience(VPConstants.Protocol.REQUEST_AUDIENCE)
+                    .claim(VPConstants.RequestParams.CLIENT_ID, clientId)
+                    .claim(VPConstants.JWTClaims.CLIENT_ID_SCHEME, scheme)
+                    .claim(VPConstants.RequestParams.RESPONSE_TYPE,
+                            VPConstants.Protocol.RESPONSE_TYPE_VP_TOKEN)
+                    .claim(VPConstants.RequestParams.RESPONSE_MODE, vpRequest.getResponseMode())
+                    .claim(VPConstants.RequestParams.RESPONSE_URI, responseUri)
+                    .claim(VPConstants.RequestParams.NONCE, vpRequest.getNonce())
+                    .claim(VPConstants.RequestParams.STATE, vpRequest.getRequestId())
                     .issueTime(new Date())
                     .expirationTime(new Date(vpRequest.getExpiresAt()))
                     .jwtID(UUID.randomUUID().toString());
 
-            claimsBuilder.claim(OpenID4VPConstants.JWTClaims.DCQL_QUERY, buildDcqlQuery(presentationDefinition));
+            claimsBuilder.claim(VPConstants.JWTClaims.DCQL_QUERY, buildDcqlQuery(presentationDefinition));
 
             Map<String, Object> clientMetadata = new HashMap<>();
             clientMetadata.put(Constants.METADATA_CLIENT_NAME, clientId);
             Map<String, Object> vcSdJwt = new HashMap<>();
             vcSdJwt.put(Constants.METADATA_SD_JWT_ALG_VALUES,
-                    Arrays.asList(OpenID4VPConstants.Algorithms.ES256, OpenID4VPConstants.Algorithms.EDDSA,
-                            OpenID4VPConstants.Algorithms.RS256));
+                    Arrays.asList(VPConstants.Algorithms.ES256, VPConstants.Algorithms.EDDSA,
+                            VPConstants.Algorithms.RS256));
             vcSdJwt.put(Constants.METADATA_KB_JWT_ALG_VALUES,
-                    Arrays.asList(OpenID4VPConstants.Algorithms.ES256, OpenID4VPConstants.Algorithms.EDDSA));
+                    Arrays.asList(VPConstants.Algorithms.ES256, VPConstants.Algorithms.EDDSA));
             Map<String, Object> vpFormats = new HashMap<>();
             vpFormats.put(Constants.FORMAT_VC_SD_JWT, vcSdJwt);
-            vpFormats.put(OpenID4VPConstants.VCFormats.DC_SD_JWT, vcSdJwt);
+            vpFormats.put(VC_SD_JWT_FORMAT, vcSdJwt);
             clientMetadata.put(Constants.METADATA_VP_FORMATS, vpFormats);
 
             if (ephemeralPublicKey != null) {
                 List<Object> keysList = new ArrayList<>();
                 keysList.add(ephemeralPublicKey.toJSONObject());
                 Map<String, Object> jwks = new HashMap<>();
-                jwks.put(OpenID4VPConstants.ClientMetadata.KEYS, keysList);
-                clientMetadata.put(OpenID4VPConstants.ClientMetadata.JWKS, jwks);
-                clientMetadata.put(OpenID4VPConstants.ClientMetadata.AUTHORIZATION_ENCRYPTED_RESPONSE_ALG,
-                        OpenID4VPConstants.Algorithms.ECDH_ES);
-                clientMetadata.put(OpenID4VPConstants.ClientMetadata.AUTHORIZATION_ENCRYPTED_RESPONSE_ENC,
-                        OpenID4VPConstants.Algorithms.A256GCM);
+                jwks.put(VPConstants.ClientMetadata.KEYS, keysList);
+                clientMetadata.put(VPConstants.ClientMetadata.JWKS, jwks);
+                clientMetadata.put(VPConstants.ClientMetadata.AUTHORIZATION_ENCRYPTED_RESPONSE_ALG,
+                        VPConstants.Algorithms.ECDH_ES);
+                clientMetadata.put(VPConstants.ClientMetadata.AUTHORIZATION_ENCRYPTED_RESPONSE_ENC,
+                        VPConstants.Algorithms.A256GCM);
             }
 
             claimsBuilder.claim(Constants.CLAIM_CLIENT_METADATA, clientMetadata);
@@ -456,14 +457,14 @@ public class VPFlowServiceImpl implements VPFlowService {
                     continue;
                 }
                 Map<String, Object> dcqlCred = new HashMap<>();
-                dcqlCred.put(OpenID4VPConstants.DCQL.ID, cred.getCredentialId());
-                dcqlCred.put(OpenID4VPConstants.DCQL.FORMAT, cred.getFormat());
+                dcqlCred.put(VPConstants.DCQL.ID, cred.getCredentialId());
+                dcqlCred.put(VPConstants.DCQL.FORMAT, cred.getFormat());
 
                 String credType = cred.getType() != null ? cred.getType() : "";
                 if (!credType.isEmpty()) {
                     Map<String, Object> meta = new HashMap<>();
-                    meta.put(OpenID4VPConstants.DCQL.VCT_VALUES, Collections.singletonList(credType));
-                    dcqlCred.put(OpenID4VPConstants.DCQL.META, meta);
+                    meta.put(VPConstants.DCQL.VCT_VALUES, Collections.singletonList(credType));
+                    dcqlCred.put(VPConstants.DCQL.META, meta);
                 }
 
                 List<Map<String, Object>> claimsList = new ArrayList<>();
@@ -484,11 +485,11 @@ public class VPFlowServiceImpl implements VPFlowService {
                         String claimId = StringUtils.isNotBlank(constraint.getId())
                                 ? constraint.getId()
                                 : String.join("_", path);
-                        claim.put(OpenID4VPConstants.DCQL.ID, claimId);
-                        claim.put(OpenID4VPConstants.DCQL.PATH, path);
+                        claim.put(VPConstants.DCQL.ID, claimId);
+                        claim.put(VPConstants.DCQL.PATH, path);
 
                         if (!CollectionUtils.isEmpty(constraint.getAllowedValues())) {
-                            claim.put(OpenID4VPConstants.DCQL.VALUES, constraint.getAllowedValues());
+                            claim.put(VPConstants.DCQL.VALUES, constraint.getAllowedValues());
                         }
 
                         claimsList.add(claim);
@@ -501,18 +502,18 @@ public class VPFlowServiceImpl implements VPFlowService {
                     }
                 }
                 if (!claimsList.isEmpty()) {
-                    dcqlCred.put(OpenID4VPConstants.DCQL.CLAIMS, claimsList);
+                    dcqlCred.put(VPConstants.DCQL.CLAIMS, claimsList);
                 }
 
                 if (hasOptionalClaims && !mandatoryClaimIds.isEmpty()) {
                     List<String> allClaimIds = new ArrayList<>();
                     for (Map<String, Object> claimMap : claimsList) {
-                        allClaimIds.add((String) claimMap.get(OpenID4VPConstants.DCQL.ID));
+                        allClaimIds.add((String) claimMap.get(VPConstants.DCQL.ID));
                     }
                     List<List<String>> autoSets = new ArrayList<>();
                     autoSets.add(allClaimIds);
                     autoSets.add(mandatoryClaimIds);
-                    dcqlCred.put(OpenID4VPConstants.DCQL.CLAIM_SETS, autoSets);
+                    dcqlCred.put(VPConstants.DCQL.CLAIM_SETS, autoSets);
                 }
 
                 // HAIP §5: include trusted_authorities / aki when trusted CAs are configured.
@@ -524,10 +525,10 @@ public class VPFlowServiceImpl implements VPFlowService {
                     }
                     if (!allAkiValues.isEmpty()) {
                         Map<String, Object> trustedAuthority = new HashMap<>();
-                        trustedAuthority.put(OpenID4VPConstants.DCQL.TRUSTED_AUTHORITY_TYPE,
-                                OpenID4VPConstants.DCQL.TRUSTED_AUTHORITY_TYPE_AKI);
-                        trustedAuthority.put(OpenID4VPConstants.DCQL.TRUSTED_AUTHORITY_VALUES, allAkiValues);
-                        dcqlCred.put(OpenID4VPConstants.DCQL.TRUSTED_AUTHORITIES,
+                        trustedAuthority.put(VPConstants.DCQL.TRUSTED_AUTHORITY_TYPE,
+                                VPConstants.DCQL.TRUSTED_AUTHORITY_TYPE_AKI);
+                        trustedAuthority.put(VPConstants.DCQL.TRUSTED_AUTHORITY_VALUES, allAkiValues);
+                        dcqlCred.put(VPConstants.DCQL.TRUSTED_AUTHORITIES,
                                 Collections.singletonList(trustedAuthority));
                     }
                 }
@@ -537,17 +538,17 @@ public class VPFlowServiceImpl implements VPFlowService {
         }
 
         Map<String, Object> dcql = new HashMap<>();
-        dcql.put(OpenID4VPConstants.DCQL.CREDENTIALS, credentials);
+        dcql.put(VPConstants.DCQL.CREDENTIALS, credentials);
 
         if (!credentials.isEmpty()) {
             List<String> allCredIds = new ArrayList<>();
             for (Map<String, Object> cred : credentials) {
-                allCredIds.add((String) cred.get(OpenID4VPConstants.DCQL.ID));
+                allCredIds.add((String) cred.get(VPConstants.DCQL.ID));
             }
 
             Map<String, Object> credSet = new HashMap<>();
-            credSet.put(OpenID4VPConstants.DCQL.OPTIONS, Collections.singletonList(allCredIds));
-            dcql.put(OpenID4VPConstants.DCQL.CREDENTIAL_SETS, Collections.singletonList(credSet));
+            credSet.put(VPConstants.DCQL.OPTIONS, Collections.singletonList(allCredIds));
+            dcql.put(VPConstants.DCQL.CREDENTIAL_SETS, Collections.singletonList(credSet));
         }
 
         return dcql;
@@ -690,8 +691,8 @@ public class VPFlowServiceImpl implements VPFlowService {
 
         String encodedClientId = URLEncoder.encode(clientId, StandardCharsets.UTF_8);
         String encodedRequestUri = URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
-        return OpenID4VPConstants.Protocol.OPENID4VP_SCHEME + "?" + OpenID4VPConstants.RequestParams.CLIENT_ID
-                + "=" + encodedClientId + "&" + OpenID4VPConstants.RequestParams.REQUEST_URI
+        return VPConstants.Protocol.OPENID4VP_SCHEME + "?" + VPConstants.RequestParams.CLIENT_ID
+                + "=" + encodedClientId + "&" + VPConstants.RequestParams.REQUEST_URI
                 + "=" + encodedRequestUri;
     }
 }

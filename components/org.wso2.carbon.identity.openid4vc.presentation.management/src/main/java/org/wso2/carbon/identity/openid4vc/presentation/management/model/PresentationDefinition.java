@@ -18,7 +18,8 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.management.model;
 
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -167,11 +168,11 @@ public class PresentationDefinition implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private String credentialId;
-        private String format = OpenID4VPConstants.VCFormats.DC_SD_JWT;
+        private String format = Constants.VC_SD_JWT_FORMAT;
         private String type;
         private boolean enforceTrustedIssuer = false;
         private List<String> trustedCas;
-        private String keyResolutionMethod = OpenID4VPConstants.Defaults.KEY_RESOLUTION_METHOD;
+        private String keyResolutionMethod = VPConstants.DEFAULT_KEY_RESOLUTION_METHOD;
         private String jwksUri;
         private String issuerPem;
         private List<ClaimConstraint> claims;

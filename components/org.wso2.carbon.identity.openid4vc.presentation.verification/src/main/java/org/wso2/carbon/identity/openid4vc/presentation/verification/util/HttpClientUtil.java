@@ -22,7 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -108,7 +108,7 @@ public class HttpClientUtil {
             // SSRF Protection: Disable automatic redirects to prevent bypassing IP validation
             connection.setInstanceFollowRedirects(false);
 
-            connection.setRequestMethod(OpenID4VPConstants.HTTP.METHOD_GET);
+            connection.setRequestMethod(VPConstants.HTTP.METHOD_GET);
             connection.setConnectTimeout(HTTP_CONNECT_TIMEOUT);
             connection.setReadTimeout(HTTP_READ_TIMEOUT);
 

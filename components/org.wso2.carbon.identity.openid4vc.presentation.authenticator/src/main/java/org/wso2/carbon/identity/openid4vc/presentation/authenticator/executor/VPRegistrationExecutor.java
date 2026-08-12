@@ -35,7 +35,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 
@@ -119,7 +119,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
     @Override
     public ExecutorResponse execute(FlowExecutionContext context) {
 
-        if (!Boolean.parseBoolean(IdentityUtil.getProperty(OpenID4VPConstants.ConfigKeys.FEATURE_ENABLED))) {
+        if (!Boolean.parseBoolean(IdentityUtil.getProperty(VPConstants.ConfigKeys.FEATURE_ENABLED))) {
             ExecutorResponse response = new ExecutorResponse();
             response.setResult(STATUS_ERROR);
             response.setErrorMessage("OpenID4VP feature is disabled.");

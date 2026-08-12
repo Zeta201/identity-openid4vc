@@ -21,9 +21,13 @@ package org.wso2.carbon.identity.openid4vc.presentation.common.constant;
 /**
  * Constants for OpenID4VP (OpenID for Verifiable Presentations) implementation.
  */
-public class OpenID4VPConstants {
+public class VPConstants {
 
-    private OpenID4VPConstants() {
+    public static final String DEFAULT_CLIENT_ID_SCHEME = "x509_san_dns";
+    public static final String DEFAULT_RESPONSE_MODE = "direct_post";
+    public static final String DEFAULT_KEY_RESOLUTION_METHOD = "X5C";
+
+    private VPConstants() {
 
         // Prevent instantiation
     }
@@ -76,48 +80,6 @@ public class OpenID4VPConstants {
     }
 
     /**
-     * Error codes as defined in OpenID4VP specification.
-     */
-    public static class ErrorCodes {
-        
-        // OAuth 2.0 Error Codes
-        public static final String INVALID_REQUEST = "invalid_request";
-        public static final String UNAUTHORIZED_CLIENT = "unauthorized_client";
-        public static final String ACCESS_DENIED = "access_denied";
-        public static final String SERVER_ERROR = "server_error";
-
-        // OpenID4VP Specific Error Codes
-        public static final String VP_FORMATS_NOT_SUPPORTED = "vp_formats_not_supported";
-
-        // Wallet Error Codes
-        public static final String USER_CANCELLED = "user_cancelled";
-        public static final String CREDENTIAL_NOT_AVAILABLE = "credential_not_available";
-
-        private ErrorCodes() {
-
-        }
-    }
-
-    /**
-     * Verifiable Credential format constants.
-     */
-    public static class VCFormats {
-
-        public static final String JWT_VP = "jwt_vp";
-        public static final String JWT_VP_JSON = "jwt_vp_json";
-        public static final String JWT_VC_JSON = "jwt_vc_json";
-        public static final String LDP_VP = "ldp_vp";
-        public static final String LDP_VC = "ldp_vc";
-        public static final String VC_SD_JWT = "vc+sd-jwt";
-        public static final String DC_SD_JWT = "dc+sd-jwt";
-        public static final String MSO_MDOC = "mso_mdoc";
-
-        private VCFormats() {
-
-        }
-    }
-
-    /**
      * HTTP and API constants.
      */
     public static class HTTP {
@@ -125,7 +87,6 @@ public class OpenID4VPConstants {
         public static final String CONTENT_TYPE_JSON = "application/json";
         public static final String CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
         public static final String CONTENT_TYPE_OAUTH_AUTHZ_REQ = "application/oauth-authz-req+jwt";
-        public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
         public static final String METHOD_GET = "GET";
 
         private HTTP() {
@@ -153,12 +114,6 @@ public class OpenID4VPConstants {
         public static final String VCT = "vct";
         public static final String CLIENT_ID_SCHEME = "client_id_scheme";
         public static final String DCQL_QUERY = "dcql_query";
-        public static final String STATUS = "status";
-        public static final String STATUS_LIST = "status_list";
-        public static final String URI = "uri";
-        public static final String IDX = "idx";
-        public static final String BITS = "bits";
-        public static final String LST = "lst";
 
         private JWTClaims() {
 
@@ -184,22 +139,6 @@ public class OpenID4VPConstants {
     }
 
     /**
-     * API endpoint paths.
-     */
-    public static class Endpoints {
-
-        public static final String VP_RESPONSE = "/response";
-        public static final String REQUEST_URI = "/request-uri";
-        public static final String STATUS = "status";
-        public static final String OPENID4VP_V1_PATH = "openid4vp/v1";
-        public static final String TENANT_PATH_PREFIX = "t/";
-
-        private Endpoints() {
-
-        }
-    }
-
-    /**
      * Configuration property keys.
      */
     public static class ConfigKeys {
@@ -208,19 +147,6 @@ public class OpenID4VPConstants {
         public static final String BASE_URL = "OpenID4VP.BaseUrl";
 
         private ConfigKeys() {
-
-        }
-    }
-
-    /**
-     * JWT VC issuer metadata field name constants.
-     */
-    public static class IssuerMetadata {
-
-        public static final String ISSUER = "issuer";
-        public static final String JWKS_URI = "jwks_uri";
-
-        private IssuerMetadata() {
 
         }
     }
@@ -271,17 +197,4 @@ public class OpenID4VPConstants {
         }
     }
     
-    /**
-     * Default configuration values for OpenID4VP.
-     */
-    public static class Defaults {
-
-        public static final String CLIENT_ID_SCHEME = "x509_san_dns";
-        public static final String RESPONSE_MODE = "direct_post";
-        public static final String KEY_RESOLUTION_METHOD = "X5C";
-
-        private Defaults() {
-
-        }
-    }
 }

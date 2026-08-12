@@ -43,7 +43,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VP
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowInitiationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.OpenID4VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -143,7 +143,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
             AuthenticationContext context)
             throws AuthenticationFailedException {
 
-        if (!Boolean.parseBoolean(IdentityUtil.getProperty(OpenID4VPConstants.ConfigKeys.FEATURE_ENABLED))) {
+        if (!Boolean.parseBoolean(IdentityUtil.getProperty(VPConstants.ConfigKeys.FEATURE_ENABLED))) {
             throw new AuthenticationFailedException(
                     VPAuthenticatorErrorCode.FEATURE_DISABLED.getCode(),
                     VPAuthenticatorErrorCode.FEATURE_DISABLED.getMessage());
@@ -402,7 +402,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
             processAuthenticationResponse(request, response, context);
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
         } else if (STATUS_FAILED.equals(status)) {
-            VPSessionCache.getInstance().remove(context.getContextIdentifier());
+            VPSessionCache.getInstance().remove((String) context.getProperty(CONTEXT_VP_REQUEST_ID));
             context.setRetrying(true);
             throw new AuthenticationFailedException(
                     VPAuthenticatorErrorCode.VERIFICATION_FAILED.getCode(),

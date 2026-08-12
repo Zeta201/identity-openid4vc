@@ -38,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -242,7 +243,7 @@ public class WalletSubmissionServletTest {
         // Set up session and a successful verification result
         VPFlowSession session = new VPFlowSession.Builder()
                 .requestId("req-success")
-                .responseMode("direct_post")
+                .responseMode(VPConstants.DEFAULT_RESPONSE_MODE)
                 .status(VPFlowStatus.ACTIVE)
                 .expiresAt(Long.MAX_VALUE)
                 .build();
