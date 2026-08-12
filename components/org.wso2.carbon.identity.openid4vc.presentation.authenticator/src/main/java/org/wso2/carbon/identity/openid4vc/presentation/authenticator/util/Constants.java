@@ -35,8 +35,8 @@ public class Constants {
     public static final String CLIENT_ID_SCHEME_X509_HASH = "x509_hash";
     public static final String RESPONSE_MODE_DIRECT_POST_JWT = "direct_post.jwt";
 
-    public static final String REQUEST_URI_ENDPOINT = "/oid4vp/v1/vp-request/";
-    public static final String RESPONSE_URI_ENDPOINT = "/oid4vp/v1/response";
+    public static final String REQUEST_URI_ENDPOINT = "/openid4vp/v1/request/";
+    public static final String RESPONSE_URI_ENDPOINT = "/openid4vp/v1/response";
     public static final String RESPONSE_STATUS = "status";
     public static final String RESPONSE_REQUEST_ID = "requestId";
     public static final String RESPONSE_ERROR = "error";
@@ -78,6 +78,7 @@ public class Constants {
     // Registration executor constants
     public static final String EXECUTOR_NAME = "VPRegistrationExecutor";
     public static final String CONTEXT_VP_REQUEST_ID = "vp_request_id";
+    public static final String CONTEXT_VP_POLL_TOKEN = "vp_poll_token";
     public static final String CONTEXT_WALLET_URL = "walletUrl";
 
     private Constants() { }

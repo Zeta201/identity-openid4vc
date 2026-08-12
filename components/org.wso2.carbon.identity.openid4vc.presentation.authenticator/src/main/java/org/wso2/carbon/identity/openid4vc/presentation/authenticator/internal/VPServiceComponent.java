@@ -91,7 +91,6 @@ public class VPServiceComponent {
                         new VPRegistrationExecutor(vpFlowService), null);
             }
 
-            LOG.info("OpenID4VP authenticator component activated.");
         } catch (Throwable e) {
             LOG.error("Error activating OpenID4VP authenticator component.", e);
         }

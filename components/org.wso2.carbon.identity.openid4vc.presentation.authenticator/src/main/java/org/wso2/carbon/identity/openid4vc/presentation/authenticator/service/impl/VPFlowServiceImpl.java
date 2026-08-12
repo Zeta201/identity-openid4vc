@@ -157,6 +157,7 @@ public class VPFlowServiceImpl implements VPFlowService {
         }
 
         String nonce = UUID.randomUUID().toString();
+        String pollToken = UUID.randomUUID().toString();
         long expiresAt = System.currentTimeMillis() + timeoutMs;
 
         int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
@@ -199,6 +200,7 @@ public class VPFlowServiceImpl implements VPFlowService {
 
         VPFlowSession session = new VPFlowSession.Builder()
                 .requestId(requestId)
+                .pollToken(pollToken)
                 .presentationDefinition(presentationDefinition)
                 .tenantDomain(tenantDomain)
                 .tenantId(tenantId)
@@ -217,7 +219,7 @@ public class VPFlowServiceImpl implements VPFlowService {
 
         String walletUrl = buildWalletUrl(clientId, requestUri);
 
-        return new VPFlowInitiationResult(requestId, walletUrl, requestUri, clientId, expiresAt);
+        return new VPFlowInitiationResult(requestId, pollToken, walletUrl, requestUri, clientId, expiresAt);
     }
 
     @Override
@@ -269,6 +271,17 @@ public class VPFlowServiceImpl implements VPFlowService {
     public VPFlowSession getSession(String requestId) {
 
         return VPSessionCache.getInstance().get(requestId);
+    }
+
+    /**
+     * Removes the VP flow session from the distributed cache, releasing any stored PII.
+     *
+     * @param requestId Request ID of the session to remove.
+     */
+    @Override
+    public void removeSession(String requestId) {
+
+        VPSessionCache.getInstance().remove(requestId);
     }
 
     /**

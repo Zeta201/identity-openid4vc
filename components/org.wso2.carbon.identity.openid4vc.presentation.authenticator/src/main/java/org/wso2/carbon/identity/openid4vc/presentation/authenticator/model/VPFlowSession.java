@@ -34,6 +34,7 @@ public class VPFlowSession implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String requestId;
+    private String pollToken;
     private String tenantDomain;
     private int tenantId;
     private VPFlowStatus status;
@@ -56,6 +57,16 @@ public class VPFlowSession implements Serializable {
     public void setRequestId(String requestId) {
 
         this.requestId = requestId;
+    }
+
+    public String getPollToken() {
+
+        return pollToken;
+    }
+
+    public void setPollToken(String pollToken) {
+
+        this.pollToken = pollToken;
     }
 
     public String getTenantDomain() {
@@ -194,6 +205,7 @@ public class VPFlowSession implements Serializable {
     public static class Builder {
 
         private String requestId;
+        private String pollToken;
         private String tenantDomain;
         private int tenantId;
         private VPFlowStatus status;
@@ -209,6 +221,12 @@ public class VPFlowSession implements Serializable {
         public Builder requestId(String requestId) {
 
             this.requestId = requestId;
+            return this;
+        }
+
+        public Builder pollToken(String pollToken) {
+
+            this.pollToken = pollToken;
             return this;
         }
 
@@ -287,6 +305,7 @@ public class VPFlowSession implements Serializable {
 
             VPFlowSession session = new VPFlowSession();
             session.requestId = this.requestId;
+            session.pollToken = this.pollToken;
             session.tenantDomain = this.tenantDomain;
             session.tenantId = this.tenantId;
             session.status = this.status;

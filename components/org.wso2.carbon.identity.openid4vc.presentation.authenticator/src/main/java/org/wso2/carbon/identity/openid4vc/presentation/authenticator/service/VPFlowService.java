@@ -69,4 +69,12 @@ public interface VPFlowService {
      * @return the session for the given request ID, or {@code null} if not found or expired
      */
     VPFlowSession getSession(String requestId);
+
+    /**
+     * Removes a VP flow session from the cache, releasing any stored PII.
+     * Called after a terminal state (VERIFIED or FAILED) has been consumed by the caller.
+     *
+     * @param requestId the transaction ID of the VP session to remove
+     */
+    void removeSession(String requestId);
 }

@@ -27,15 +27,17 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.model;
 public class VPFlowInitiationResult {
 
     private final String requestId;
+    private final String pollToken;
     private final String walletUrl;
     private final String requestUri;
     private final String clientId;
     private final long expiresAt;
 
-    public VPFlowInitiationResult(String requestId, String walletUrl, String requestUri, String clientId,
-            long expiresAt) {
+    public VPFlowInitiationResult(String requestId, String pollToken, String walletUrl, String requestUri,
+            String clientId, long expiresAt) {
 
         this.requestId = requestId;
+        this.pollToken = pollToken;
         this.walletUrl = walletUrl;
         this.requestUri = requestUri;
         this.clientId = clientId;
@@ -45,6 +47,11 @@ public class VPFlowInitiationResult {
     public String getRequestId() {
 
         return requestId;
+    }
+
+    public String getPollToken() {
+
+        return pollToken;
     }
 
     public String getWalletUrl() {
