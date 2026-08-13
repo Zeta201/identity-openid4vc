@@ -102,6 +102,18 @@ public class X5cSignatureValidator implements CredentialSignatureValidator {
 
         if (requestedCredential.isEnforceTrustedIssuer()) {
             validateAgainstTrustedCas(certificateChain, requestedCredential);
+        } else {
+            for (X509Certificate cert : certificateChain) {
+                try {
+                    cert.checkValidity();
+                } catch (java.security.cert.CertificateExpiredException e) {
+                    throw new VerificationClientException(VerificationErrorCode.EXPIRED_CREDENTIAL,
+                            "A certificate in the x5c chain has expired: " + e.getMessage(), e);
+                } catch (java.security.cert.CertificateNotYetValidException e) {
+                    throw new VerificationClientException(VerificationErrorCode.INVALID_CREDENTIAL,
+                            "A certificate in the x5c chain is not yet valid: " + e.getMessage(), e);
+                }
+            }
         }
 
         SignatureVerifier.verifyCredentialSignature(issuerJwt, leafCertToJwksJson(leafCertificate));

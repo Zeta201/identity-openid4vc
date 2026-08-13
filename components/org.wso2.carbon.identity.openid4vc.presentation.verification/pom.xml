@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.openid4vc.issuance.common</artifactId>
-            <version>1.1.7-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
             <artifactId>org.wso2.carbon.identity.sdjwt</artifactId>
-            <version>1.1.7-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.wso2.carbon</groupId>

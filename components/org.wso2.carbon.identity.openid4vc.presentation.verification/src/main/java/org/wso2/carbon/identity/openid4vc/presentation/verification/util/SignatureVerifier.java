@@ -101,6 +101,11 @@ public class SignatureVerifier {
 
         try {
             String signingAlgorithm = SignedJWT.parse(issuerJwt).getHeader().getAlgorithm().getName();
+            if (signingAlgorithm == null || JWSAlgorithm.NONE.getName().equalsIgnoreCase(signingAlgorithm)
+                    || !ALLOWED_ALGORITHMS.contains(signingAlgorithm)) {
+                throw new VerificationClientException(VerificationErrorCode.INVALID_SIGNATURE,
+                        "Unsupported or restricted JWS algorithm: " + signingAlgorithm);
+            }
             if (!validateSignatureUsingInlineJwks(issuerJwt, jwksJson, signingAlgorithm)) {
                 throw new VerificationClientException(VerificationErrorCode.INVALID_SIGNATURE,
                         "Credential signature verification failed.");

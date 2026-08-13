@@ -24,6 +24,8 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -43,19 +45,20 @@ import java.security.PrivateKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Unit tests for {@link SdJwtVerifier}.
  *
- * <p>Tests that require processing beyond SD-JWT parsing (expiry, vct, KB-JWT checks) register a
- * no-op external validator in {@link VerificationServiceComponentHolder} so that signature
- * validation passes without a real cryptographic key or certificate chain.</p>
+ * <p>Tests that require processing beyond SD-JWT parsing (expiry, vct, KB-JWT checks) stub
+ * {@link VerificationServiceComponentHolder} via {@link MockedStatic} so that signature
+ * validation passes without touching the real singleton or requiring a certificate chain.</p>
  */
 public class SdJwtVerifierTest {
 
     private SdJwtVerifier sdJwtVerifier;
     private PrivateKey rsaPrivateKey;
-    private CredentialSignatureValidator noOpValidator;
+    private MockedStatic<VerificationServiceComponentHolder> mockedHolder;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -67,8 +70,8 @@ public class SdJwtVerifierTest {
         KeyPair kp = kpg.generateKeyPair();
         rsaPrivateKey = kp.getPrivate();
 
-        // Register a passthrough validator so validateSignature() does not block further checks.
-        noOpValidator = new CredentialSignatureValidator() {
+        // Stub the component holder so validateSignature() passes without touching the real singleton.
+        CredentialSignatureValidator noOpValidator = new CredentialSignatureValidator() {
 
             @Override
             public String getValidatorType() {
@@ -82,13 +85,22 @@ public class SdJwtVerifierTest {
                 // Intentional no-op: tests using this validator focus on post-signature logic.
             }
         };
-        VerificationServiceComponentHolder.getInstance().addExternalValidator(noOpValidator);
+
+        VerificationServiceComponentHolder mockHolderInstance =
+                Mockito.mock(VerificationServiceComponentHolder.class);
+        Mockito.when(mockHolderInstance.getValidator(CredentialSignatureValidator.TYPE_X5C))
+               .thenReturn(Optional.of(noOpValidator));
+
+        mockedHolder = Mockito.mockStatic(VerificationServiceComponentHolder.class);
+        mockedHolder.when(VerificationServiceComponentHolder::getInstance).thenReturn(mockHolderInstance);
     }
 
     @AfterMethod
     public void tearDown() {
 
-        VerificationServiceComponentHolder.getInstance().removeExternalValidator(noOpValidator);
+        if (mockedHolder != null) {
+            mockedHolder.close();
+        }
     }
 
     @Test(priority = 1, description = "Test that getFormat returns the DC_SD_JWT format identifier")
