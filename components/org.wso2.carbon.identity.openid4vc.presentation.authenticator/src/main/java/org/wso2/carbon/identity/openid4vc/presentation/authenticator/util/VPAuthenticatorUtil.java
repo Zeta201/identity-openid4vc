@@ -346,6 +346,11 @@ public class VPAuthenticatorUtil {
             try {
                 int seconds = Integer.parseInt(timeoutStr.trim());
                 if (seconds > 0) {
+                    if (seconds > Constants.PROP_TIMEOUT_MAX_SECONDS) {
+                        LOG.warn("Configured VP session timeout " + seconds + "s exceeds maximum allowed "
+                                + Constants.PROP_TIMEOUT_MAX_SECONDS + "s; capping at maximum.");
+                        seconds = Constants.PROP_TIMEOUT_MAX_SECONDS;
+                    }
                     return seconds * 1000L;
                 }
             } catch (NumberFormatException e) {
