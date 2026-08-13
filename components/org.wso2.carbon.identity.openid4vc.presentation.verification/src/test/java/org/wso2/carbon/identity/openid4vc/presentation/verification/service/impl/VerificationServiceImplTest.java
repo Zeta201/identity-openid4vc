@@ -67,7 +67,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWithNullTokensReturnsNotVerified() throws Exception {
 
         // Execute test
-        VerificationResult result = service.verify(emptyDefinition(), TENANT_ID, null, null);
+        VerificationResult result = service.verify(emptyDefinition(), TENANT_ID, null, null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -81,7 +81,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWithEmptyTokensReturnsNotVerified() throws Exception {
 
         // Execute test
-        VerificationResult result = service.verify(emptyDefinition(), TENANT_ID, Collections.emptyMap(), null);
+        VerificationResult result = service.verify(emptyDefinition(), TENANT_ID, Collections.emptyMap(), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -95,7 +95,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWithNullDefinitionReturnsNotVerified() throws Exception {
 
         // Execute test
-        VerificationResult result = service.verify(null, TENANT_ID, Map.of(CRED_ID, "token"), null);
+        VerificationResult result = service.verify(null, TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -110,7 +110,7 @@ public class VerificationServiceImplTest {
 
         // Set up a definition requesting CRED_ID but only provide an unknown credential
         VerificationResult result = service.verify(definitionForCredential(CRED_ID), TENANT_ID,
-                Map.of("unknown_cred", "token"), null);
+                Map.of("unknown_cred", "token"), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -134,7 +134,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionWithClaims(constraint),
-                TENANT_ID, Map.of(CRED_ID, "token"), null);
+                TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertTrue(result.isVerified(),
@@ -156,7 +156,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionWithClaims(constraint),
-                TENANT_ID, Map.of(CRED_ID, "token"), null);
+                TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -179,7 +179,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionWithClaims(constraint),
-                TENANT_ID, Map.of(CRED_ID, "token"), null);
+                TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertTrue(result.isVerified(),
@@ -202,7 +202,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionWithClaims(constraint),
-                TENANT_ID, Map.of(CRED_ID, "token"), null);
+                TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertTrue(result.isVerified(),
@@ -225,7 +225,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionWithClaims(constraint),
-                TENANT_ID, Map.of(CRED_ID, "token"), null);
+                TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -245,7 +245,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionForCredential(CRED_ID), TENANT_ID,
-                Map.of(CRED_ID, "token"), null);
+                Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertTrue(result.isVerified(),
@@ -268,7 +268,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionForCredential(CRED_ID), TENANT_ID,
-                Map.of(CRED_ID, "token"), null);
+                Map.of(CRED_ID, "token"), null, null);
 
         // Verify all claims are in the result
         Assert.assertTrue(result.isVerified(),
@@ -290,7 +290,7 @@ public class VerificationServiceImplTest {
 
         // Execute test
         VerificationResult result = service.verify(definitionForCredential(CRED_ID), TENANT_ID,
-                Map.of(CRED_ID, "token"), null);
+                Map.of(CRED_ID, "token"), null, null);
 
         // Verify issuer is present in metadata
         Assert.assertTrue(result.isVerified(),

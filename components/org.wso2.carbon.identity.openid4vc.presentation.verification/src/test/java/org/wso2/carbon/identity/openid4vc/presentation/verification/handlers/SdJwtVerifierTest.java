@@ -117,7 +117,7 @@ public class SdJwtVerifierTest {
 
         // Set up a context with a malformed token
         CredentialVerificationContext ctx = new CredentialVerificationContext(
-                "invalid-sdjwt", new RequestedCredential(), 1, null);
+                "invalid-sdjwt", new RequestedCredential(), 1, null, null);
 
         try {
             // Execute test
@@ -143,7 +143,7 @@ public class SdJwtVerifierTest {
         String sdJwtToken = buildMinimalSdJwt(claims);
 
         CredentialVerificationContext ctx = new CredentialVerificationContext(
-                sdJwtToken, new RequestedCredential(), 1, null);
+                sdJwtToken, new RequestedCredential(), 1, null, null);
 
         try {
             // Execute test
@@ -173,7 +173,7 @@ public class SdJwtVerifierTest {
         rc.setType("https://example.com/credential-type-b");
 
         CredentialVerificationContext ctx = new CredentialVerificationContext(
-                sdJwtToken, rc, 1, null);
+                sdJwtToken, rc, 1, null, null);
 
         try {
             // Execute test
@@ -199,7 +199,7 @@ public class SdJwtVerifierTest {
         String sdJwtToken = buildMinimalSdJwt(claims);
 
         CredentialVerificationContext ctx = new CredentialVerificationContext(
-                sdJwtToken, new RequestedCredential(), 1, "expected-nonce-value");
+                sdJwtToken, new RequestedCredential(), 1, "expected-nonce-value", null);
 
         try {
             // Execute test
@@ -232,7 +232,7 @@ public class SdJwtVerifierTest {
         String sdJwtToken = buildMinimalSdJwt(claims);
 
         CredentialVerificationContext ctx = new CredentialVerificationContext(
-                sdJwtToken, new RequestedCredential(), 1, null);
+                sdJwtToken, new RequestedCredential(), 1, null, null);
 
         try {
             // Execute test
