@@ -247,7 +247,7 @@ public class WalletSubmissionServletTest {
                 .isVerified(true)
                 .build();
         when(mockVerification.verify(
-                Mockito.any(), Mockito.anyInt(), Mockito.any(), Mockito.any()))
+                Mockito.any(), Mockito.anyInt(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(verifiedResult);
 
         try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {

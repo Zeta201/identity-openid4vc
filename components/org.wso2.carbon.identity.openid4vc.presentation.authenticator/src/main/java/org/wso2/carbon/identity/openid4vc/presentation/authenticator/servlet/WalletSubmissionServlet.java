@@ -163,7 +163,8 @@ public class WalletSubmissionServlet extends HttpServlet {
                 VerificationResult verificationResult = VPDataHolder
                         .getVerificationService()
                         .verify(session.getPresentationDefinition(), session.getTenantId(),
-                                submission.getCredentialTokens(), session.getNonce());
+                                submission.getCredentialTokens(), session.getNonce(),
+                                session.getClientId());
 
                 if (!verificationResult.isVerified()) {
                     String errorMsg = verificationResult.getErrors() != null
