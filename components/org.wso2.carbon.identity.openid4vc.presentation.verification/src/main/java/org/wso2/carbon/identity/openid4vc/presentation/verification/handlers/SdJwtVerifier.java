@@ -275,8 +275,6 @@ public class SdJwtVerifier implements Verifier {
                 }
                 claims.put(disclosure.getClaimName(), disclosure.getClaimValue());
             }
-        } catch (VerificationClientException e) {
-            throw e;
         } catch (SDJWTException e) {
             throw new VerificationServerException(VerificationErrorCode.INTERNAL_SERVER_ERROR,
                     "Error verifying SD-JWT disclosures: " + e.getMessage(), e);
