@@ -32,14 +32,18 @@ public interface VerificationService {
     /**
      * Verifies a DCQL VP response against a pre-loaded {@link PresentationDefinition}.
      *
-     * @param definition     the presentation definition used to issue the VP request
-     * @param tenantId       the tenant identifier
-     * @param presentation   the parsed DCQL vp_token — a map of credential query ID to credential token
-     * @param expectedNonce  the nonce sent in the VP request; {@code null} skips nonce validation
+     * @param definition       the presentation definition used to issue the VP request
+     * @param tenantId         the tenant identifier
+     * @param presentation     the parsed DCQL vp_token — a map of credential query ID to credential token
+     * @param expectedNonce    the nonce sent in the VP request; {@code null} skips nonce validation
+     * @param expectedAudience the verifier's {@code client_id} from the Authorization Request; used to
+     *                         validate the {@code aud} claim in the KB-JWT; {@code null} skips audience
+     *                         validation, which is only acceptable when holder binding is not required
      * @return the verification outcome
      * @throws VerificationException if verification fails critically
      */
     VerificationResult verify(PresentationDefinition definition, int tenantId,
-                               Map<String, String> presentation, String expectedNonce)
+                               Map<String, String> presentation, String expectedNonce,
+                               String expectedAudience)
             throws VerificationException;
 }

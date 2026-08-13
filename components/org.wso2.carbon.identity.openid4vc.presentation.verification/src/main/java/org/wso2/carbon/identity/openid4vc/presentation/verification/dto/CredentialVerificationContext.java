@@ -31,14 +31,16 @@ public class CredentialVerificationContext {
     private final RequestedCredential requestedCredential;
     private final int tenantId;
     private final String expectedNonce;
+    private final String expectedAudience;
 
     public CredentialVerificationContext(String credentialToken, RequestedCredential requestedCredential,
-                                         int tenantId, String expectedNonce) {
+                                         int tenantId, String expectedNonce, String expectedAudience) {
 
         this.credentialToken = credentialToken;
         this.requestedCredential = requestedCredential;
         this.tenantId = tenantId;
         this.expectedNonce = expectedNonce;
+        this.expectedAudience = expectedAudience;
     }
 
     public String getCredentialToken() {
@@ -59,5 +61,10 @@ public class CredentialVerificationContext {
     public String getExpectedNonce() {
 
         return expectedNonce;
+    }
+
+    public String getExpectedAudience() {
+
+        return expectedAudience;
     }
 }

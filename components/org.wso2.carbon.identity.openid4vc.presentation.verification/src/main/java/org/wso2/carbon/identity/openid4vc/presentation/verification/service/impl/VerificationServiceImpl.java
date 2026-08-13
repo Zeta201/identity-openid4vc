@@ -67,7 +67,8 @@ public class VerificationServiceImpl implements VerificationService {
 
     @Override
     public VerificationResult verify(PresentationDefinition presentationDefinition, int tenantId,
-                                      Map<String, String> credentialTokens, String expectedNonce)
+                                      Map<String, String> credentialTokens, String expectedNonce,
+                                      String expectedAudience)
             throws VerificationException {
 
         VerificationResult.Builder resultBuilder = new VerificationResult.Builder();
@@ -87,7 +88,8 @@ public class VerificationServiceImpl implements VerificationService {
 
             Verifier verifier = resolveVerifier(requestedCredential.getFormat());
             CredentialVerificationContext verificationContext =
-                    new CredentialVerificationContext(credentialToken, requestedCredential, tenantId, expectedNonce);
+                    new CredentialVerificationContext(credentialToken, requestedCredential, tenantId,
+                            expectedNonce, expectedAudience);
 
             PresentationMetadata metadata = verifier.verify(verificationContext);
 

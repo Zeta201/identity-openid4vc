@@ -152,7 +152,7 @@ public class SdJwtVerifier implements Verifier {
 
         // Step 6: Verify KB-JWT holder binding. Returns the parsed KB-JWT for reuse in metadata
         // so it is not re-parsed a second time.
-        SignedJWT kbJwt = verifyKeyBinding(sdJwt, claimsSet, ctx.getExpectedNonce());
+        SignedJWT kbJwt = verifyKeyBinding(sdJwt, claimsSet, ctx.getExpectedNonce(), ctx.getExpectedAudience());
 
         // Step 7: Enforce the expected vct (credential type) from the presentation definition.
         enforceVctType(ctx.getRequestedCredential(), claims);
@@ -314,7 +314,8 @@ public class SdJwtVerifier implements Verifier {
      * @return the parsed KB-JWT for reuse in metadata extraction, or {@code null} if no KB-JWT is present
      * @throws VerificationException if KB-JWT is required but absent, or any KB-JWT check fails
      */
-    private SignedJWT verifyKeyBinding(SDJWT sdJwt, JWTClaimsSet claimsSet, String expectedNonce)
+    private SignedJWT verifyKeyBinding(SDJWT sdJwt, JWTClaimsSet claimsSet, String expectedNonce,
+                                       String expectedAudience)
             throws VerificationException {
 
         Object cnfRaw = claimsSet.getClaim(SDJWTConstants.CLAIM_CNF);
@@ -412,6 +413,19 @@ public class SdJwtVerifier implements Verifier {
             if (!expectedNonce.equals(kbNonce)) {
                 throw new VerificationClientException(VerificationErrorCode.INVALID_SIGNATURE,
                         "KB-JWT nonce does not match the expected nonce from the VP request.");
+            }
+        }
+
+        // 7. Verify aud — the KB-JWT must be addressed to this verifier.
+        if (StringUtils.isNotBlank(expectedAudience)) {
+            List<String> kbAudience = kbClaims.getAudience();
+            if (kbAudience == null || kbAudience.isEmpty()) {
+                throw new VerificationClientException(VerificationErrorCode.INVALID_SIGNATURE,
+                        "KB-JWT is missing aud claim.");
+            }
+            if (!kbAudience.contains(expectedAudience)) {
+                throw new VerificationClientException(VerificationErrorCode.INVALID_SIGNATURE,
+                        "KB-JWT aud does not match the expected verifier client_id.");
             }
         }
 
