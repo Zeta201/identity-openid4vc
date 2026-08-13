@@ -18,10 +18,11 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.servlet;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 
 /**
  * In-memory {@link ServletOutputStream} for servlet unit tests.
