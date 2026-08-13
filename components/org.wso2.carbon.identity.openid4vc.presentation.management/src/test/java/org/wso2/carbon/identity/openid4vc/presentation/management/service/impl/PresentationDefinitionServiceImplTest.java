@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -423,7 +424,8 @@ public class PresentationDefinitionServiceImplTest {
                     "The returned definition should have the updated name");
             Assert.assertEquals(result.getDefinitionId(), DEFINITION_ID,
                     "The returned definition ID should be unchanged");
-            verify(mockDao).updatePresentationDefinition(any(PresentationDefinition.class));
+            verify(mockDao).updatePresentationDefinitionWithCleanup(
+                    any(PresentationDefinition.class), anyList(), eq(TENANT_ID));
             verify(mockCacheInst).remove(TENANT_DOMAIN, DEFINITION_ID);
         }
     }
