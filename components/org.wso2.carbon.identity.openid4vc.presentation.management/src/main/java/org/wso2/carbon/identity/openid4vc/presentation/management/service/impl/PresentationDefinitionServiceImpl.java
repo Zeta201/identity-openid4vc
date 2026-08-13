@@ -144,14 +144,11 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
                 .tenantId(tenantId)
                 .build();
 
-        presentationDefinitionDAO.updatePresentationDefinition(definitionToUpdate);
+        List<String> staleClaimPaths = computeStalePaths(existing.getRequestedCredentials(), updatedCredentials);
+        presentationDefinitionDAO.updatePresentationDefinitionWithCleanup(
+                definitionToUpdate, staleClaimPaths, tenantId);
         PresentationDefinitionCache.getInstance().remove(
                 IdentityTenantUtil.getTenantDomain(tenantId), definitionId);
-
-        List<String> staleClaimPaths = computeStalePaths(existing.getRequestedCredentials(), updatedCredentials);
-        if (!staleClaimPaths.isEmpty()) {
-            presentationDefinitionDAO.removeStaleIdpClaimMappings(definitionId, staleClaimPaths, tenantId);
-        }
 
         return definitionToUpdate;
     }
@@ -195,6 +192,11 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
     public PresentationDefinitionSearchResult listWithPagination(String after, String before, Integer limit,
             String filter, String sortOrder, int tenantId) throws PresentationManagementException {
 
+        if (sortOrder != null && !sortOrder.equalsIgnoreCase("ASC") && !sortOrder.equalsIgnoreCase("DESC")) {
+            throw new PresentationManagementClientException(
+                    PresentationManagementErrorCode.VALIDATION_ERROR,
+                    "Invalid sortOrder value '" + sortOrder + "'. Must be ASC or DESC.");
+        }
         List<ExpressionNode> expressionNodes =
                 PresentationDefinitionFilterUtil.getExpressionNodes(filter, after, before);
         PresentationDefinitionSearchResult searchResult = new PresentationDefinitionSearchResult();

@@ -245,6 +245,54 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     }
 
     @Override
+    public void updatePresentationDefinitionWithCleanup(PresentationDefinition presentationDefinition,
+            List<String> staleClaimPaths, int tenantId) throws PresentationManagementException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
+            try {
+                try (PreparedStatement ps = connection.prepareStatement(SQL_UPDATE_DEFINITION)) {
+                    ps.setString(1, presentationDefinition.getName());
+                    ps.setString(2, presentationDefinition.getDescription());
+                    ps.setString(3, presentationDefinition.getDefinitionId());
+                    ps.setInt(4, presentationDefinition.getTenantId());
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = connection.prepareStatement(SQL_DELETE_CREDENTIALS)) {
+                    ps.setString(1, presentationDefinition.getDefinitionId());
+                    ps.executeUpdate();
+                }
+                insertCredentials(connection, presentationDefinition.getDefinitionId(),
+                        presentationDefinition.getRequestedCredentials());
+                if (staleClaimPaths != null && !staleClaimPaths.isEmpty()) {
+                    String placeholders = String.join(",",
+                            Collections.nCopies(staleClaimPaths.size(), "?"));
+                    String sql = SQL_DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders
+                            + SQL_DELETE_STALE_IDP_CLAIMS_SUFFIX;
+                    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        int i = 1;
+                        ps.setInt(i++, tenantId);
+                        for (String path : staleClaimPaths) {
+                            ps.setString(i++, path);
+                        }
+                        ps.setString(i++, presentationDefinition.getDefinitionId());
+                        ps.setInt(i, tenantId);
+                        ps.executeUpdate();
+                    }
+                }
+                IdentityDatabaseUtil.commitTransaction(connection);
+            } catch (SQLException e) {
+                IdentityDatabaseUtil.rollbackTransaction(connection);
+                throw e;
+            }
+        } catch (SQLException e) {
+            throw new PresentationManagementServerException(
+                    PresentationManagementErrorCode.DATABASE_ERROR,
+                    "Error updating presentation definition with cleanup: " +
+                            presentationDefinition.getDefinitionId(), e);
+        }
+    }
+
+    @Override
     public void deletePresentationDefinition(String definitionId, int tenantId)
             throws PresentationManagementException {
 
@@ -484,17 +532,19 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     private String buildListSql(String databaseName, Integer tenantId, String filterQuery,
             String sortOrder, Integer limit) {
 
+        // Map to a literal to prevent any SQL injection via the sort direction.
+        String safeSortOrder = "DESC".equalsIgnoreCase(sortOrder) ? "DESC" : "ASC";
         if (databaseName.contains(Constants.MICROSOFT)) {
             return String.format(Constants.GET_PD_LIST_MSSQL, limit)
                     + filterQuery
-                    + String.format(Constants.GET_PD_LIST_TAIL_MSSQL, tenantId, sortOrder);
+                    + String.format(Constants.GET_PD_LIST_TAIL_MSSQL, tenantId, safeSortOrder);
         } else if (databaseName.contains(Constants.ORACLE)) {
             return Constants.GET_PD_LIST + filterQuery
                     + String.format(Constants.GET_PD_LIST_TAIL_ORACLE,
-                        tenantId, sortOrder, limit);
+                        tenantId, safeSortOrder, limit);
         }
         return Constants.GET_PD_LIST + filterQuery
-                + String.format(Constants.GET_PD_LIST_TAIL, tenantId, sortOrder, limit);
+                + String.format(Constants.GET_PD_LIST_TAIL, tenantId, safeSortOrder, limit);
     }
 
     /**

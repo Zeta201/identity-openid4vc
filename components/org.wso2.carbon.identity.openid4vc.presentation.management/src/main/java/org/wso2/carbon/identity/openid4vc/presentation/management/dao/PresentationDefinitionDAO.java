@@ -153,6 +153,19 @@ public interface PresentationDefinitionDAO {
             throws PresentationManagementException;
 
     /**
+     * Updates the presentation definition and removes stale IDP claim mappings in a single transaction,
+     * so the two writes succeed or fail together.
+     *
+     * @param presentationDefinition the updated presentation definition
+     * @param staleClaimPaths        claim paths that no longer exist in the updated definition and whose
+     *                               {@code IDP_CLAIM} rows must be deleted; may be empty
+     * @param tenantId               the tenant ID scoping the write
+     * @throws PresentationManagementException if a database error occurs
+     */
+    void updatePresentationDefinitionWithCleanup(PresentationDefinition presentationDefinition,
+            List<String> staleClaimPaths, int tenantId) throws PresentationManagementException;
+
+    /**
      * Counts the presentation definitions matching the given filter for the tenant,
      * excluding any cursor expression nodes.
      *

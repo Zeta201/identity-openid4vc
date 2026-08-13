@@ -136,17 +136,24 @@ public class PresentationDefinitionFilterUtil {
      * @return the combined filter string with the cursor condition appended, or the original filter
      *         if neither cursor is provided
      */
-    private static String getPaginatedFilter(String filter, String after, String before) {
+    private static String getPaginatedFilter(String filter, String after, String before)
+            throws PresentationManagementClientException {
 
         String paginatedFilter = StringUtils.isNotBlank(filter) ? filter : StringUtils.EMPTY;
-        if (StringUtils.isNotBlank(before)) {
-            String decodedCursor = new String(Base64.getDecoder().decode(before), StandardCharsets.UTF_8);
-            paginatedFilter += (StringUtils.isNotBlank(paginatedFilter) ? " and " : "")
-                    + Constants.BEFORE_LT + decodedCursor;
-        } else if (StringUtils.isNotBlank(after)) {
-            String decodedCursor = new String(Base64.getDecoder().decode(after), StandardCharsets.UTF_8);
-            paginatedFilter += (StringUtils.isNotBlank(paginatedFilter) ? " and " : "")
-                    + Constants.AFTER_GT + decodedCursor;
+        try {
+            if (StringUtils.isNotBlank(before)) {
+                String decodedCursor = new String(Base64.getDecoder().decode(before), StandardCharsets.UTF_8);
+                paginatedFilter += (StringUtils.isNotBlank(paginatedFilter) ? " and " : "")
+                        + Constants.BEFORE_LT + decodedCursor;
+            } else if (StringUtils.isNotBlank(after)) {
+                String decodedCursor = new String(Base64.getDecoder().decode(after), StandardCharsets.UTF_8);
+                paginatedFilter += (StringUtils.isNotBlank(paginatedFilter) ? " and " : "")
+                        + Constants.AFTER_GT + decodedCursor;
+            }
+        } catch (IllegalArgumentException e) {
+            throw new PresentationManagementClientException(
+                    PresentationManagementErrorCode.INVALID_FILTER,
+                    "Invalid pagination cursor: value is not valid base64.", e);
         }
         return paginatedFilter;
     }
