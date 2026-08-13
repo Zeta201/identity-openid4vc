@@ -88,9 +88,7 @@ public class SdJwtVerifier implements Verifier {
     private static final Log LOG = LogFactory.getLog(SdJwtVerifier.class);
 
     private static final String KB_JWT_TYPE = "kb+jwt";
-    private static final String CNF_JWK_CLAIM = "jwk";
     private static final String KB_JWT_SD_HASH_CLAIM = "sd_hash";
-    private static final String KB_JWT_NONCE_CLAIM = "nonce";
     private static final long KB_JWT_IAT_TOLERANCE_MS = 5 * 60 * 1000L;
 
     /** JWT/SD-JWT protocol-level fields excluded from the subject-attribute claims map. */
@@ -296,7 +294,7 @@ public class SdJwtVerifier implements Verifier {
         if (StringUtils.isBlank(expectedType)) {
             return;
         }
-        Object vctObj = claims.get(VPConstants.JWTClaims.VCT);
+        Object vctObj = claims.get(SDJWTConstants.CLAIM_VCT);
         String actualVct = vctObj != null ? vctObj.toString() : null;
         if (!expectedType.equals(actualVct)) {
             throw new VerificationClientException(VerificationErrorCode.INVALID_CREDENTIAL,
@@ -401,7 +399,7 @@ public class SdJwtVerifier implements Verifier {
         if (StringUtils.isNotBlank(expectedNonce)) {
             String kbNonce;
             try {
-                kbNonce = kbClaims.getStringClaim(KB_JWT_NONCE_CLAIM);
+                kbNonce = kbClaims.getStringClaim(VPConstants.JWTClaims.NONCE);
             } catch (ParseException e) {
                 throw new VerificationClientException(VerificationErrorCode.PARSE_ERROR,
                         "Failed to read nonce from KB-JWT: " + e.getMessage(), e);
@@ -485,7 +483,7 @@ public class SdJwtVerifier implements Verifier {
     @SuppressWarnings("unchecked")
     private PublicKey resolveHolderPublicKey(Map<String, Object> cnf) throws VerificationException {
 
-        Object jwkObj = cnf.get(CNF_JWK_CLAIM);
+        Object jwkObj = cnf.get(VPConstants.JWTClaims.JWK);
         if (!(jwkObj instanceof Map)) {
             throw new VerificationClientException(VerificationErrorCode.INVALID_CREDENTIAL,
                     "Unsupported cnf format: only cnf.jwk is currently supported.");
@@ -554,11 +552,11 @@ public class SdJwtVerifier implements Verifier {
         if (claims.get(VPConstants.JWTClaims.EXP) instanceof Date) {
             builder.expiresAt(((Date) claims.get(VPConstants.JWTClaims.EXP)).getTime());
         }
-        if (claims.get(VPConstants.JWTClaims.VCT) != null) {
-            builder.credentialType(claims.get(VPConstants.JWTClaims.VCT).toString());
+        if (claims.get(SDJWTConstants.CLAIM_VCT) != null) {
+            builder.credentialType(claims.get(SDJWTConstants.CLAIM_VCT).toString());
         }
 
-        Object cnfObj = claims.get(VPConstants.JWTClaims.CNF);
+        Object cnfObj = claims.get(SDJWTConstants.CLAIM_CNF);
         if (cnfObj instanceof Map) {
             Map<String, Object> cnf = (Map<String, Object>) cnfObj;
             Object jwkObj = cnf.get(VPConstants.JWTClaims.JWK);
