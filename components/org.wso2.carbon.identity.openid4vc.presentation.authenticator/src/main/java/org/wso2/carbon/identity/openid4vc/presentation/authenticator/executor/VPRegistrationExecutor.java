@@ -54,26 +54,9 @@ import static org.wso2.carbon.identity.flow.execution.engine.Constants.USERNAME_
 
 /**
  * Flow executor for wallet-based self-registration via OpenID4VP.
- *
- * <p>Plugs into the flow orchestration framework as an {@link AuthenticationExecutor}
- * registered under the name {@code VPRegistrationExecutor}.
- * The executor references a "Digital Wallet" IdP connection configured in WSO2 IS,
- * which supplies all authenticator properties (presentationDefinitionId, clientIdScheme,
- * responseMode) and the IdP claim mappings used to translate credential
- * claims to local WSO2 claim URIs.</p>
- *
- * <p><b>Two-phase flow:</b>
- * <ol>
- *   <li><b>Initiation</b>: no {@code vp_requestId} in context → calls
- *       {@link VPFlowService#initiate} → returns
- *       {@code STATUS_EXTERNAL_REDIRECTION} with {@code walletUrl} and {@code vp_requestId}
- *       in {@code additionalInfo}.</li>
- *   <li><b>Completion</b>: {@code vp_requestId} present in context → fetches the session →
- *       if {@code VERIFIED}, maps claims and returns {@code STATUS_COMPLETE};
- *       if {@code ACTIVE}, re-issues the redirection; if {@code FAILED}, returns
- *       {@code STATUS_USER_ERROR}.</li>
- * </ol>
- * </p>
+ * Initiation returns {@code STATUS_EXTERNAL_REDIRECTION} with the wallet deep-link;
+ * completion polls the VP session and returns {@code STATUS_COMPLETE}, re-issues the
+ * redirection when still {@code ACTIVE}, or returns {@code STATUS_USER_ERROR} on failure.
  */
 public class VPRegistrationExecutor extends AuthenticationExecutor {
 
