@@ -38,12 +38,9 @@ import java.sql.SQLException;
 
 /**
  * JDBC-backed persistence store for {@link VPFlowSession} objects.
- *
- * <p>Writes to the dedicated {@code IDN_VP_SESSION_STORE} table so VP sessions are
- * visible across all cluster nodes.
+ * Reads and writes to the {@code IDN_VP_SESSION_STORE} table and is consulted by
  * {@link org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache}
- * consults this store on a local-cache miss, giving each pod an eventual-consistency
- * view of every active VP flow regardless of which pod initiated it.</p>
+ * on a cache miss.
  */
 public class VPSessionStore {
 
@@ -89,28 +86,28 @@ public class VPSessionStore {
      */
     public void put(String requestId, VPFlowSession session) {
 
-        byte[] data;
+        byte[] encryptedBytes;
         try {
-            byte[] serialized = serialize(session);
-            String encrypted = CryptoUtil.getDefaultCryptoUtil().encryptAndBase64Encode(serialized);
-            data = encrypted.getBytes(StandardCharsets.UTF_8);
+            byte[] serializedSession = serialize(session);
+            String encryptedBase64 = CryptoUtil.getDefaultCryptoUtil().encryptAndBase64Encode(serializedSession);
+            encryptedBytes = encryptedBase64.getBytes(StandardCharsets.UTF_8);
         } catch (IOException | CryptoException e) {
             LOG.error("Failed to serialize/encrypt VP session for requestId: " + requestId, e);
             return;
         }
 
-        Connection conn = null;
+        Connection connection = null;
         try {
-            conn = IdentityDatabaseUtil.getSessionDBConnection(true);
-            if (!update(conn, requestId, data, session.getExpiresAt())) {
-                insert(conn, requestId, data, session.getExpiresAt(), session.getPollToken());
+            connection = IdentityDatabaseUtil.getSessionDBConnection(true);
+            if (!update(connection, requestId, encryptedBytes, session.getExpiresAt())) {
+                insert(connection, requestId, encryptedBytes, session.getExpiresAt(), session.getPollToken());
             }
-            IdentityDatabaseUtil.commitTransaction(conn);
+            IdentityDatabaseUtil.commitTransaction(connection);
         } catch (SQLException e) {
-            IdentityDatabaseUtil.rollbackTransaction(conn);
+            IdentityDatabaseUtil.rollbackTransaction(connection);
             LOG.error("Failed to persist VP session for requestId: " + requestId, e);
         } finally {
-            IdentityDatabaseUtil.closeConnection(conn);
+            IdentityDatabaseUtil.closeConnection(connection);
         }
     }
 
@@ -123,33 +120,33 @@ public class VPSessionStore {
      */
     public VPFlowSession get(String requestId) {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try {
-            conn = IdentityDatabaseUtil.getSessionDBConnection(false);
-            ps = conn.prepareStatement(SQL_SELECT);
-            ps.setString(1, requestId);
-            rs = ps.executeQuery();
-            if (!rs.next()) {
+            connection = IdentityDatabaseUtil.getSessionDBConnection(false);
+            statement = connection.prepareStatement(SQL_SELECT);
+            statement.setString(1, requestId);
+            resultSet = statement.executeQuery();
+            if (!resultSet.next()) {
                 return null;
             }
-            long expiresAt = rs.getLong(2);
+            long expiresAt = resultSet.getLong(2);
             if (System.currentTimeMillis() > expiresAt) {
                 // Expired — clean up and treat as not found.
-                IdentityDatabaseUtil.closeAllConnections(conn, null, ps);
-                conn = null;
+                IdentityDatabaseUtil.closeAllConnections(connection, null, statement);
+                connection = null;
                 remove(requestId);
                 return null;
             }
-            String encrypted = new String(rs.getBytes(1), StandardCharsets.UTF_8);
-            byte[] data = CryptoUtil.getDefaultCryptoUtil().base64DecodeAndDecrypt(encrypted);
-            return deserialize(data);
+            String encryptedBase64 = new String(resultSet.getBytes(1), StandardCharsets.UTF_8);
+            byte[] serializedSession = CryptoUtil.getDefaultCryptoUtil().base64DecodeAndDecrypt(encryptedBase64);
+            return deserialize(serializedSession);
         } catch (SQLException | IOException | ClassNotFoundException | CryptoException e) {
             LOG.error("Failed to retrieve VP session for requestId: " + requestId, e);
             return null;
         } finally {
-            IdentityDatabaseUtil.closeAllConnections(conn, rs, ps);
+            IdentityDatabaseUtil.closeAllConnections(connection, resultSet, statement);
         }
     }
 
@@ -160,19 +157,19 @@ public class VPSessionStore {
      */
     public void remove(String requestId) {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        Connection connection = null;
+        PreparedStatement statement = null;
         try {
-            conn = IdentityDatabaseUtil.getSessionDBConnection(true);
-            ps = conn.prepareStatement(SQL_DELETE);
-            ps.setString(1, requestId);
-            ps.executeUpdate();
-            IdentityDatabaseUtil.commitTransaction(conn);
+            connection = IdentityDatabaseUtil.getSessionDBConnection(true);
+            statement = connection.prepareStatement(SQL_DELETE);
+            statement.setString(1, requestId);
+            statement.executeUpdate();
+            IdentityDatabaseUtil.commitTransaction(connection);
         } catch (SQLException e) {
-            IdentityDatabaseUtil.rollbackTransaction(conn);
+            IdentityDatabaseUtil.rollbackTransaction(connection);
             LOG.error("Failed to remove VP session for requestId: " + requestId, e);
         } finally {
-            IdentityDatabaseUtil.closeAllConnections(conn, null, ps);
+            IdentityDatabaseUtil.closeAllConnections(connection, null, statement);
         }
     }
 
@@ -181,46 +178,46 @@ public class VPSessionStore {
      */
     public void removeExpired() {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
+        Connection connection = null;
+        PreparedStatement statement = null;
         try {
-            conn = IdentityDatabaseUtil.getSessionDBConnection(true);
-            ps = conn.prepareStatement(SQL_DELETE_EXPIRED);
-            ps.setLong(1, System.currentTimeMillis());
-            int deleted = ps.executeUpdate();
-            IdentityDatabaseUtil.commitTransaction(conn);
+            connection = IdentityDatabaseUtil.getSessionDBConnection(true);
+            statement = connection.prepareStatement(SQL_DELETE_EXPIRED);
+            statement.setLong(1, System.currentTimeMillis());
+            int deleted = statement.executeUpdate();
+            IdentityDatabaseUtil.commitTransaction(connection);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Removed " + deleted + " expired VP sessions from " + TABLE + ".");
             }
         } catch (SQLException e) {
-            IdentityDatabaseUtil.rollbackTransaction(conn);
+            IdentityDatabaseUtil.rollbackTransaction(connection);
             LOG.error("Failed to remove expired VP sessions.", e);
         } finally {
-            IdentityDatabaseUtil.closeAllConnections(conn, null, ps);
+            IdentityDatabaseUtil.closeAllConnections(connection, null, statement);
         }
     }
 
-    private boolean update(Connection conn, String requestId, byte[] data, long expiresAt)
+    private boolean update(Connection connection, String requestId, byte[] encryptedBytes, long expiresAt)
             throws SQLException {
 
-        try (PreparedStatement ps = conn.prepareStatement(SQL_UPDATE)) {
-            ps.setBytes(1, data);
-            ps.setLong(2, expiresAt);
-            ps.setString(3, requestId);
-            return ps.executeUpdate() > 0;
+        try (PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
+            statement.setBytes(1, encryptedBytes);
+            statement.setLong(2, expiresAt);
+            statement.setString(3, requestId);
+            return statement.executeUpdate() > 0;
         }
     }
 
-    private void insert(Connection conn, String requestId, byte[] data, long expiresAt, String pollToken)
-            throws SQLException {
+    private void insert(Connection connection, String requestId, byte[] encryptedBytes, 
+        long expiresAt, String pollToken) throws SQLException {
 
-        try (PreparedStatement ps = conn.prepareStatement(SQL_INSERT)) {
-            ps.setString(1, requestId);
-            ps.setBytes(2, data);
-            ps.setLong(3, System.currentTimeMillis());
-            ps.setLong(4, expiresAt);
-            ps.setString(5, pollToken);
-            ps.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement(SQL_INSERT)) {
+            statement.setString(1, requestId);
+            statement.setBytes(2, encryptedBytes);
+            statement.setLong(3, System.currentTimeMillis());
+            statement.setLong(4, expiresAt);
+            statement.setString(5, pollToken);
+            statement.executeUpdate();
         }
     }
 
@@ -233,20 +230,20 @@ public class VPSessionStore {
      */
     public String getRequestIdByPollToken(String pollToken) {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         try {
-            conn = IdentityDatabaseUtil.getSessionDBConnection(false);
-            ps = conn.prepareStatement(SQL_SELECT_BY_POLL_TOKEN);
-            ps.setString(1, pollToken);
-            rs = ps.executeQuery();
-            return rs.next() ? rs.getString(1) : null;
+            connection = IdentityDatabaseUtil.getSessionDBConnection(false);
+            statement = connection.prepareStatement(SQL_SELECT_BY_POLL_TOKEN);
+            statement.setString(1, pollToken);
+            resultSet = statement.executeQuery();
+            return resultSet.next() ? resultSet.getString(1) : null;
         } catch (SQLException e) {
             LOG.error("Failed to look up VP session by pollToken.", e);
             return null;
         } finally {
-            IdentityDatabaseUtil.closeAllConnections(conn, rs, ps);
+            IdentityDatabaseUtil.closeAllConnections(connection, resultSet, statement);
         }
     }
 
@@ -259,10 +256,10 @@ public class VPSessionStore {
         }
     }
 
-    private static VPFlowSession deserialize(byte[] data)
+    private static VPFlowSession deserialize(byte[] serializedSession)
             throws IOException, ClassNotFoundException {
 
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedSession);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
             return (VPFlowSession) ois.readObject();
         }

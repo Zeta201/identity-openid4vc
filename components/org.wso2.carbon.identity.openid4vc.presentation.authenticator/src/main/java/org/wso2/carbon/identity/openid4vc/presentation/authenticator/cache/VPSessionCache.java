@@ -25,20 +25,9 @@ import org.wso2.carbon.utils.CarbonUtils;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
 /**
- * Two-tier cache for VP flow sessions.
- *
- * <p><b>Tier 1 — in-process (JCache/Hazelcast):</b> {@link BaseCache} provides a fast
- * node-local store. In Hazelcast-enabled clusters this is already distributed; in
- * single-node or non-Hazelcast deployments it is purely in-memory.</p>
- *
- * <p><b>Tier 2 — database ({@code IDN_VP_SESSION_STORE}):</b> {@link VPSessionStore}
- * persists every session to the IS session database. On a local-cache miss (i.e. the
- * request landed on a different pod than the one that created the session), the DB is
- * queried and the result is back-filled into the local cache for subsequent reads.</p>
- *
- * <p>This design serves all three VP flows — wallet authentication, self-registration
- * (VP executor), and standalone credential verification — from the same consistent
- * store without relying on the IS authentication-context cache.</p>
+ * Cache for VP flow sessions, backed by {@link BaseCache} with database fallback via
+ * {@link VPSessionStore}. On a cache miss the session is loaded from the database and
+ * back-filled into the cache for subsequent reads.
  */
 public class VPSessionCache extends BaseCache<VPSessionCacheKey, VPSessionCacheEntry> {
 
@@ -95,10 +84,9 @@ public class VPSessionCache extends BaseCache<VPSessionCacheKey, VPSessionCacheE
         VPFlowSession session = (entry != null) ? entry.getSession() : null;
 
         if (session == null) {
-            // Local-cache miss — query DB (request came to a different pod).
+            // Local-cache miss
             session = VPSessionStore.getInstance().get(requestId);
             if (session != null) {
-                // Back-fill local cache so subsequent reads on this pod are fast.
                 addToCache(new VPSessionCacheKey(requestId), new VPSessionCacheEntry(session),
                         MultitenantConstants.SUPER_TENANT_ID);
             }
