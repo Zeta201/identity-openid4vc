@@ -28,10 +28,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.store.VPSessionStore;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -242,19 +238,4 @@ public class VPFlowStatusServletTest {
         }
     }
 
-    private static class InMemoryServletOutputStream extends ServletOutputStream {
-
-        private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        @Override
-        public void write(int b) {
-
-            baos.write(b);
-        }
-
-        public String getContent() {
-
-            return baos.toString(StandardCharsets.UTF_8);
-        }
-    }
 }

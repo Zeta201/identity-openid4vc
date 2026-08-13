@@ -37,8 +37,6 @@ import org.wso2.carbon.core.util.KeyStoreManager;
 import org.wso2.carbon.core.util.KeyStoreUtil;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
-import org.wso2.carbon.identity.core.IdentityKeyStoreResolver;
-import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.InboundProtocol;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
@@ -132,7 +130,8 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
 
         int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
         KeyStoreManager keyStoreManager = KeyStoreManager.getInstance(tenantId);
-        KeyStore keyStore = IdentityKeyStoreResolver.getInstance().getKeyStore(tenantDomain, InboundProtocol.OAUTH);
+        String keyStoreName = resolveKeyStoreName(tenantDomain);
+        KeyStore keyStore = keyStoreManager.getKeyStore(keyStoreName);
         String alias = KeyStoreUtil.getTenantECKeyAlias(tenantDomain);
 
         if (keyStore.containsAlias(alias) && keyStore.isKeyEntry(alias)) {
@@ -152,7 +151,6 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
 
         X509Certificate cert = buildSelfSignedCert(keyPair, tenantDomain);
 
-        String keyStoreName = resolveKeyStoreName(tenantDomain);
         char[] keyPassword = keyStoreManager.getPrivateKeyPassword(keyStoreName);
         try {
             keyStore.setKeyEntry(alias, keyPair.getPrivate(), keyPassword, new Certificate[]{cert});

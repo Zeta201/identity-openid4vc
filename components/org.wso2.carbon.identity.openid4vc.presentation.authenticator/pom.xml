@@ -176,12 +176,6 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            <version>4.5.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
             <artifactId>mockito-testng</artifactId>
             <scope>test</scope>
         </dependency>
@@ -246,13 +240,14 @@
                             accessors-smart,
                             asm
                         </Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
                         <DynamicImport-Package>*</DynamicImport-Package>
                         <_dsannotations-options>version;minimum=1.2.0</_dsannotations-options>
                         <_dsannotations>*</_dsannotations>
                         <_removeheaders>Require-Capability</_removeheaders>
                         <Provide-Capability>
                             osgi.service;objectClass:List&lt;String&gt;="org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator",
-                            osgi.service;objectClass:List&lt;String&gt;="org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.OpenID4VPConfigService",
+                            osgi.service;objectClass:List&lt;String&gt;="org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService",
                             osgi.service;objectClass:List&lt;String&gt;="org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService",
                             osgi.service;objectClass:List&lt;String&gt;="org.wso2.carbon.identity.flow.execution.engine.graph.Executor"
                         </Provide-Capability>

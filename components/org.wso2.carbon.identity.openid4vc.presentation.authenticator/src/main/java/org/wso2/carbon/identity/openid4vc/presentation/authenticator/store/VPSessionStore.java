@@ -20,6 +20,8 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.store;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.core.util.CryptoException;
+import org.wso2.carbon.core.util.CryptoUtil;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 
@@ -28,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -88,9 +91,11 @@ public class VPSessionStore {
 
         byte[] data;
         try {
-            data = serialize(session);
-        } catch (IOException e) {
-            LOG.error("Failed to serialize VP session for requestId: " + requestId, e);
+            byte[] serialized = serialize(session);
+            String encrypted = CryptoUtil.getDefaultCryptoUtil().encryptAndBase64Encode(serialized);
+            data = encrypted.getBytes(StandardCharsets.UTF_8);
+        } catch (IOException | CryptoException e) {
+            LOG.error("Failed to serialize/encrypt VP session for requestId: " + requestId, e);
             return;
         }
 
@@ -137,9 +142,10 @@ public class VPSessionStore {
                 remove(requestId);
                 return null;
             }
-            byte[] data = rs.getBytes(1);
+            String encrypted = new String(rs.getBytes(1), StandardCharsets.UTF_8);
+            byte[] data = CryptoUtil.getDefaultCryptoUtil().base64DecodeAndDecrypt(encrypted);
             return deserialize(data);
-        } catch (SQLException | IOException | ClassNotFoundException e) {
+        } catch (SQLException | IOException | ClassNotFoundException | CryptoException e) {
             LOG.error("Failed to retrieve VP session for requestId: " + requestId, e);
             return null;
         } finally {

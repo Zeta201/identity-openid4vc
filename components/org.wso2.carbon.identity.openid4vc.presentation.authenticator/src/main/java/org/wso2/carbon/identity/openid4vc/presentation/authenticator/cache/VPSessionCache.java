@@ -77,7 +77,7 @@ public class VPSessionCache extends BaseCache<VPSessionCacheKey, VPSessionCacheE
 
     /**
      * Retrieves a VP session, checking the local cache first and falling back
-     * to the database on a miss (cross-pod scenario).
+     * to the database on a miss.
      * Returns {@code null} if the session is not found or has expired.
      *
      * @param requestId the VP session identifier

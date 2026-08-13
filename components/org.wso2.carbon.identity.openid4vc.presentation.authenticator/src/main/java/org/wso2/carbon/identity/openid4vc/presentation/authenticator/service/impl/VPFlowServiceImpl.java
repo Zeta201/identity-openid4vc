@@ -31,7 +31,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.JWTClaimsSet;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -352,6 +352,10 @@ public class VPFlowServiceImpl implements VPFlowService {
             Certificate[] certChain = ks.getCertificateChain(keyAlias);
             X509Certificate cert = (X509Certificate) (certChain != null && certChain.length > 0
                     ? certChain[0] : ks.getCertificate(keyAlias));
+            if (cert == null) {
+                throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
+                        "No certificate found in tenant keystore for alias '" + keyAlias + "'.");
+            }
 
             String certThumbprint = VPAuthenticatorUtil.computeCertHash(cert);
             final String clientId = vpRequest.getClientId();

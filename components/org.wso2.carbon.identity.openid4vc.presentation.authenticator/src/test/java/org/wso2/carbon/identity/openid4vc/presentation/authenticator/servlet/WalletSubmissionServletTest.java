@@ -33,10 +33,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstan
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -284,18 +280,4 @@ public class WalletSubmissionServletTest {
         when(request.getParameter("error_description")).thenReturn(null);
     }
 
-    private static class InMemoryServletOutputStream extends ServletOutputStream {
-
-        private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        @Override
-        public void write(int b) {
-
-            baos.write(b);
-        }
-
-        public String getContent() {
-            return baos.toString(StandardCharsets.UTF_8);
-        }
-    }
 }
