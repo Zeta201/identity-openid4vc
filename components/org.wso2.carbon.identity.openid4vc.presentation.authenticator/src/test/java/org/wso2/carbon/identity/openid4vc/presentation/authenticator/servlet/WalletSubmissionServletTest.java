@@ -160,13 +160,19 @@ public class WalletSubmissionServletTest {
         when(request.getParameter("vp_token")).thenReturn(null);
         when(request.getParameter("state")).thenReturn("req-123");
 
-        // Execute test
-        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
+        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
+            VPSessionCache mockCache = mock(VPSessionCache.class);
+            mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
+            when(mockCache.get("req-123")).thenReturn(null);
 
-        // Verify
-        verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        Assert.assertTrue(responseOutput.getContent().contains("Missing vp_token"),
-                "Response body should contain 'Missing vp_token'");
+            // Execute test
+            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
+
+            // Verify
+            verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            Assert.assertTrue(responseOutput.getContent().contains("Missing vp_token"),
+                    "Response body should contain 'Missing vp_token'");
+        }
     }
 
     @Test(priority = 6, description = "Test doPost returns 400 when no session is found for the given state")

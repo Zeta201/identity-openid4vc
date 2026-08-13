@@ -37,13 +37,11 @@ class InMemoryServletOutputStream extends ServletOutputStream {
         baos.write(b);
     }
 
-    @Override
     public boolean isReady() {
 
         return true;
     }
 
-    @Override
     public void setWriteListener(WriteListener writeListener) {
 
     }
