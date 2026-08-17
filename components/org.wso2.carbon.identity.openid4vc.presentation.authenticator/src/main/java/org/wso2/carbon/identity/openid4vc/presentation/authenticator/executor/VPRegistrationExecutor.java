@@ -269,7 +269,10 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
                     + "' was not found in the verified credential.");
         }
 
-        localClaims.put(USERNAME_CLAIM_URI, subjectIdentifier);
+        // Resolve without namespacing for the local username.
+        String usernameValue = VPAuthenticatorUtil.resolveSubjectIdentifier(
+                credentialClaims, subjectClaimName, null);
+        localClaims.put(USERNAME_CLAIM_URI, StringUtils.isNotBlank(usernameValue) ? usernameValue : subjectIdentifier);
 
         if (context.getExternalIdPConfig() != null) {
             context.getFlowUser().addFederatedAssociation(

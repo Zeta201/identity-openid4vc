@@ -255,7 +255,7 @@ public class VPAuthenticatorUtil {
 
     /**
      * Extracts a stable string identifier from the {@code cnf} (confirmation) claim.
-     * Tries, in order: {@code cnf.kid}, {@code cnf.jkt}, {@code cnf.jwk.kid}.
+     * Uses {@code cnf.jkt} (JWK thumbprint — unique, '/'-safe) or {@code cnf} as a plain string.
      * Returns {@code null} if no usable identifier is found.
      */
     private static String resolveSubjectFromCnf(Map<String, Object> verifiedClaims) {
@@ -267,25 +267,10 @@ public class VPAuthenticatorUtil {
         if (cnfRaw instanceof Map) {
             Map<?, ?> cnf = (Map<?, ?>) cnfRaw;
 
-            // cnf.kid
-            String kid = stringValue(cnf.get(VPConstants.JWTClaims.KID));
-            if (kid != null) {
-                return kid;
-            }
-
-            // cnf.jkt (JWK thumbprint)
+            // cnf.jkt (JWK thumbprint) — SHA-256 of the key
             String jkt = stringValue(cnf.get(VPConstants.JWTClaims.JKT));
             if (jkt != null) {
                 return jkt;
-            }
-
-            // cnf.jwk.kid
-            Object jwkRaw = cnf.get(VPConstants.JWTClaims.JWK);
-            if (jwkRaw instanceof Map) {
-                String jwkKid = stringValue(((Map<?, ?>) jwkRaw).get(VPConstants.JWTClaims.KID));
-                if (jwkKid != null) {
-                    return jwkKid;
-                }
             }
         } else {
             // cnf as a plain string (e.g. a DID)
