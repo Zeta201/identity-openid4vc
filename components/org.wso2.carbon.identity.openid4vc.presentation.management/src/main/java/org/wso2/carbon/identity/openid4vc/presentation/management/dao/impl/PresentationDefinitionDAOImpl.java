@@ -36,6 +36,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.management.model.Presenta
 import org.wso2.carbon.identity.openid4vc.presentation.management.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.util.PresentationDefinitionFilterQueryBuilder;
 import org.wso2.carbon.identity.openid4vc.presentation.management.util.PresentationDefinitionFilterUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.management.util.SQLQueries;
 
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -65,77 +66,6 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     private static final Pattern PEM_PATTERN = Pattern.compile(
             "-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----");
 
-    private static final String SQL_INSERT_DEFINITION =
-            "INSERT INTO IDN_PRESENTATION_DEFINITION (DEFINITION_ID, NAME, DESCRIPTION, TENANT_ID) " +
-            "VALUES (?, ?, ?, ?)";
-
-    private static final String SQL_INSERT_CREDENTIAL =
-            "INSERT INTO IDN_PD_CREDENTIAL " +
-            "(DEFINITION_ID, CREDENTIAL_ID, CREDENTIAL_TYPE, CREDENTIAL_FORMAT, CLAIMS, " +
-            "ENFORCE_TRUSTED_ISSUER, TRUSTED_CAS, KEY_RESOLUTION_METHOD, JWKS_URI, ISSUER_PEM) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    private static final String SQL_SELECT_DEFINITION_BY_ID =
-            "SELECT pd.DEFINITION_ID, pd.NAME, pd.DESCRIPTION, pd.TENANT_ID, " +
-            "c.CREDENTIAL_ID, c.CREDENTIAL_TYPE, c.CREDENTIAL_FORMAT, c.CLAIMS, " +
-            "c.ENFORCE_TRUSTED_ISSUER, c.TRUSTED_CAS, " +
-            "c.KEY_RESOLUTION_METHOD, c.JWKS_URI, c.ISSUER_PEM " +
-            "FROM IDN_PRESENTATION_DEFINITION pd " +
-            "LEFT JOIN IDN_PD_CREDENTIAL c ON pd.DEFINITION_ID = c.DEFINITION_ID " +
-            "WHERE pd.DEFINITION_ID = ? AND pd.TENANT_ID = ?";
-
-    private static final String SQL_SELECT_ALL_DEFINITIONS =
-            "SELECT pd.DEFINITION_ID, pd.NAME, pd.DESCRIPTION, pd.TENANT_ID, " +
-            "c.CREDENTIAL_ID, c.CREDENTIAL_TYPE, c.CREDENTIAL_FORMAT, c.CLAIMS, " +
-            "c.ENFORCE_TRUSTED_ISSUER, c.TRUSTED_CAS, " +
-            "c.KEY_RESOLUTION_METHOD, c.JWKS_URI, c.ISSUER_PEM " +
-            "FROM IDN_PRESENTATION_DEFINITION pd " +
-            "LEFT JOIN IDN_PD_CREDENTIAL c ON pd.DEFINITION_ID = c.DEFINITION_ID " +
-            "WHERE pd.TENANT_ID = ?";
-
-    private static final String SQL_SELECT_DEFINITION_BY_NAME =
-            "SELECT pd.DEFINITION_ID, pd.NAME, pd.DESCRIPTION, pd.TENANT_ID, " +
-            "c.CREDENTIAL_ID, c.CREDENTIAL_TYPE, c.CREDENTIAL_FORMAT, c.CLAIMS, " +
-            "c.ENFORCE_TRUSTED_ISSUER, c.TRUSTED_CAS, " +
-            "c.KEY_RESOLUTION_METHOD, c.JWKS_URI, c.ISSUER_PEM " +
-            "FROM IDN_PRESENTATION_DEFINITION pd " +
-            "LEFT JOIN IDN_PD_CREDENTIAL c ON pd.DEFINITION_ID = c.DEFINITION_ID " +
-            "WHERE pd.NAME = ? AND pd.TENANT_ID = ?";
-
-    private static final String SQL_UPDATE_DEFINITION =
-            "UPDATE IDN_PRESENTATION_DEFINITION SET NAME = ?, DESCRIPTION = ? " +
-            "WHERE DEFINITION_ID = ? AND TENANT_ID = ?";
-
-    private static final String SQL_DELETE_CREDENTIALS =
-            "DELETE FROM IDN_PD_CREDENTIAL WHERE DEFINITION_ID = ?";
-
-    private static final String SQL_DELETE_DEFINITION =
-            "DELETE FROM IDN_PRESENTATION_DEFINITION WHERE DEFINITION_ID = ? AND TENANT_ID = ?";
-
-    private static final String SQL_EXISTS_DEFINITION =
-            "SELECT 1 FROM IDN_PRESENTATION_DEFINITION WHERE DEFINITION_ID = ? AND TENANT_ID = ?";
-
-    private static final String SQL_COUNT_CONNECTIONS_USING_DEFINITION =
-            "SELECT COUNT(*) FROM IDP_AUTHENTICATOR_PROPERTY " +
-            "WHERE PROPERTY_KEY = 'presentationDefinitionId' AND PROPERTY_VALUE = ? AND TENANT_ID = ?";
-
-    private static final String SQL_DELETE_STALE_IDP_CLAIMS_PREFIX =
-            "DELETE FROM IDP_CLAIM WHERE TENANT_ID = ? AND CLAIM IN (";
-
-    private static final String SQL_DELETE_STALE_IDP_CLAIMS_SUFFIX =
-            ") AND IDP_ID IN (" +
-            "SELECT auth.IDP_ID FROM IDP_AUTHENTICATOR_PROPERTY prop " +
-            "JOIN IDP_AUTHENTICATOR auth ON prop.AUTHENTICATOR_ID = auth.ID " +
-            "WHERE prop.PROPERTY_KEY = 'presentationDefinitionId' " +
-            "AND prop.PROPERTY_VALUE = ? AND prop.TENANT_ID = ?)";
-
-    private static final String SQL_GET_CONNECTED_CONNECTIONS =
-            "SELECT idp.UUID AS connection_id, COALESCE(idp.DISPLAY_NAME, idp.NAME) AS connection_name " +
-            "FROM IDP_AUTHENTICATOR_PROPERTY prop " +
-            "JOIN IDP_AUTHENTICATOR auth ON prop.AUTHENTICATOR_ID = auth.ID " +
-            "JOIN IDP ON auth.IDP_ID = IDP.ID " +
-            "WHERE prop.PROPERTY_KEY = 'presentationDefinitionId' " +
-            "AND prop.PROPERTY_VALUE = ? AND prop.TENANT_ID = ?";
 
     @Override
     public void createPresentationDefinition(PresentationDefinition presentationDefinition)
@@ -143,7 +73,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try {
-                try (PreparedStatement ps = connection.prepareStatement(SQL_INSERT_DEFINITION)) {
+                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.INSERT_DEFINITION)) {
                     ps.setString(1, presentationDefinition.getDefinitionId());
                     ps.setString(2, presentationDefinition.getName());
                     ps.setString(3, presentationDefinition.getDescription());
@@ -179,7 +109,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             throws PresentationManagementException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
-            try (PreparedStatement ps = connection.prepareStatement(SQL_SELECT_DEFINITION_BY_ID)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQLQueries.SELECT_DEFINITION_BY_ID)) {
                 ps.setString(1, definitionId);
                 ps.setInt(2, tenantId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -198,7 +128,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             throws PresentationManagementException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
-            try (PreparedStatement ps = connection.prepareStatement(SQL_SELECT_ALL_DEFINITIONS)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQLQueries.SELECT_ALL_DEFINITIONS)) {
                 ps.setInt(1, tenantId);
                 try (ResultSet rs = ps.executeQuery()) {
                     return buildDefinitionList(rs);
@@ -217,14 +147,14 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try {
-                try (PreparedStatement ps = connection.prepareStatement(SQL_UPDATE_DEFINITION)) {
+                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.UPDATE_DEFINITION)) {
                     ps.setString(1, presentationDefinition.getName());
                     ps.setString(2, presentationDefinition.getDescription());
                     ps.setString(3, presentationDefinition.getDefinitionId());
                     ps.setInt(4, presentationDefinition.getTenantId());
                     ps.executeUpdate();
                 }
-                try (PreparedStatement ps = connection.prepareStatement(SQL_DELETE_CREDENTIALS)) {
+                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.DELETE_CREDENTIALS)) {
                     ps.setString(1, presentationDefinition.getDefinitionId());
                     ps.executeUpdate();
                 }
@@ -250,14 +180,14 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try {
-                try (PreparedStatement ps = connection.prepareStatement(SQL_UPDATE_DEFINITION)) {
+                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.UPDATE_DEFINITION)) {
                     ps.setString(1, presentationDefinition.getName());
                     ps.setString(2, presentationDefinition.getDescription());
                     ps.setString(3, presentationDefinition.getDefinitionId());
                     ps.setInt(4, presentationDefinition.getTenantId());
                     ps.executeUpdate();
                 }
-                try (PreparedStatement ps = connection.prepareStatement(SQL_DELETE_CREDENTIALS)) {
+                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.DELETE_CREDENTIALS)) {
                     ps.setString(1, presentationDefinition.getDefinitionId());
                     ps.executeUpdate();
                 }
@@ -266,8 +196,8 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                 if (staleClaimPaths != null && !staleClaimPaths.isEmpty()) {
                     String placeholders = String.join(",",
                             Collections.nCopies(staleClaimPaths.size(), "?"));
-                    String sql = SQL_DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders
-                            + SQL_DELETE_STALE_IDP_CLAIMS_SUFFIX;
+                    String sql = SQLQueries.DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders
+                            + SQLQueries.DELETE_STALE_IDP_CLAIMS_SUFFIX;
                     try (PreparedStatement ps = connection.prepareStatement(sql)) {
                         int i = 1;
                         ps.setInt(i++, tenantId);
@@ -298,7 +228,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try {
-                try (PreparedStatement ps = connection.prepareStatement(SQL_DELETE_DEFINITION)) {
+                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.DELETE_DEFINITION)) {
                     ps.setString(1, definitionId);
                     ps.setInt(2, tenantId);
                     ps.executeUpdate();
@@ -320,7 +250,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             throws PresentationManagementException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
-            try (PreparedStatement ps = connection.prepareStatement(SQL_EXISTS_DEFINITION)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQLQueries.EXISTS_DEFINITION)) {
                 ps.setString(1, definitionId);
                 ps.setInt(2, tenantId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -428,7 +358,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             throws PresentationManagementException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
-             PreparedStatement ps = connection.prepareStatement(SQL_COUNT_CONNECTIONS_USING_DEFINITION)) {
+             PreparedStatement ps = connection.prepareStatement(SQLQueries.COUNT_CONNECTIONS_USING_DEFINITION)) {
             ps.setString(1, definitionId);
             ps.setInt(2, tenantId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -447,7 +377,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
         List<ConnectedConnectionInfo> connections = new ArrayList<>();
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
-             PreparedStatement ps = connection.prepareStatement(SQL_GET_CONNECTED_CONNECTIONS)) {
+             PreparedStatement ps = connection.prepareStatement(SQLQueries.GET_CONNECTED_CONNECTIONS)) {
             ps.setString(1, definitionId);
             ps.setInt(2, tenantId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -473,7 +403,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             return;
         }
         String placeholders = String.join(",", Collections.nCopies(staleClaimPaths.size(), "?"));
-        String sql = SQL_DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders + SQL_DELETE_STALE_IDP_CLAIMS_SUFFIX;
+        String sql = SQLQueries.DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders + SQLQueries.DELETE_STALE_IDP_CLAIMS_SUFFIX;
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -502,7 +432,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             throws PresentationManagementException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
-            try (PreparedStatement ps = connection.prepareStatement(SQL_SELECT_DEFINITION_BY_NAME)) {
+            try (PreparedStatement ps = connection.prepareStatement(SQLQueries.SELECT_DEFINITION_BY_NAME)) {
                 ps.setString(1, name);
                 ps.setInt(2, tenantId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -562,7 +492,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         if (credentials == null || credentials.isEmpty()) {
             return;
         }
-        try (PreparedStatement ps = connection.prepareStatement(SQL_INSERT_CREDENTIAL)) {
+        try (PreparedStatement ps = connection.prepareStatement(SQLQueries.INSERT_CREDENTIAL)) {
             for (RequestedCredential cred : credentials) {
                 ps.setString(1, definitionId);
                 ps.setString(2, cred.getCredentialId());
