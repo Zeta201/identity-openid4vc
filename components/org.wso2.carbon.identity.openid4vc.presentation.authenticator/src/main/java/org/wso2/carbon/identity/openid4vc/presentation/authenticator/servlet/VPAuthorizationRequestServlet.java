@@ -22,8 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
 import org.owasp.encoder.Encode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorClientException;
@@ -76,8 +74,6 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
-    private static final Log LOG = LogFactory.getLog(VPAuthorizationRequestServlet.class);
 
     private static final Gson gson = new GsonBuilder()
             .setPrettyPrinting()

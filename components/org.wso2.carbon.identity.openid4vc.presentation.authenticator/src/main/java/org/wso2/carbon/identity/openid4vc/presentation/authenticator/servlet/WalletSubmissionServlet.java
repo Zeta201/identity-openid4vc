@@ -185,11 +185,11 @@ public class WalletSubmissionServlet extends HttpServlet {
 
             } catch (VerificationException e) {
                 session.setStatus(VPFlowStatus.FAILED);
-                session.setFailureReason("VP verification failed: " + e.getMessage());
+                String errorMsg = e.getErrorCode().getCode() + ": " + e.getMessage();
+                session.setFailureReason(errorMsg);
                 VPSessionCache.getInstance().put(requestId, session);
                 sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-                        new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
-                                "VP verification failed: " + e.getMessage()));
+                        new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST, errorMsg));
                 return;
             }
 
