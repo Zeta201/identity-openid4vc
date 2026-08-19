@@ -66,7 +66,6 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
     private static final String AMR_VALUE = Constants.CONTEXT_AMR_OPENID4VP;
 
     static final String VP_REQUEST_ID = Constants.CONTEXT_VP_REQUEST_ID;
-    static final String VP_POLL_TOKEN = Constants.CONTEXT_VP_POLL_TOKEN;
     static final String WALLET_URL = Constants.CONTEXT_WALLET_URL;
 
     private final VPFlowService vpFlowService;
@@ -174,7 +173,6 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         Map<String, String> additionalInfo = new HashMap<>();
         additionalInfo.put(REDIRECT_URL, flowResult.getWalletUrl());
         additionalInfo.put(VP_REQUEST_ID, flowResult.getRequestId());
-        additionalInfo.put(VP_POLL_TOKEN, flowResult.getPollToken());
 
         ExecutorResponse response = new ExecutorResponse();
         response.setResult(STATUS_EXTERNAL_REDIRECTION);

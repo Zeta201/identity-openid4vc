@@ -49,17 +49,14 @@ public class VPSessionStore {
     private static final String TABLE = "IDN_VP_SESSION_STORE";
 
     private static final String SQL_INSERT =
-            "INSERT INTO IDN_VP_SESSION_STORE (SESSION_ID, SESSION_DATA, CREATED_AT, EXPIRES_AT, POLL_TOKEN) " +
-            "VALUES (?, ?, ?, ?, ?)";
+            "INSERT INTO IDN_VP_SESSION_STORE (SESSION_ID, SESSION_DATA, CREATED_AT, EXPIRES_AT) " +
+            "VALUES (?, ?, ?, ?)";
 
     private static final String SQL_UPDATE =
             "UPDATE IDN_VP_SESSION_STORE SET SESSION_DATA = ?, EXPIRES_AT = ? WHERE SESSION_ID = ?";
 
     private static final String SQL_SELECT =
             "SELECT SESSION_DATA, EXPIRES_AT FROM IDN_VP_SESSION_STORE WHERE SESSION_ID = ?";
-
-    private static final String SQL_SELECT_BY_POLL_TOKEN =
-            "SELECT SESSION_ID FROM IDN_VP_SESSION_STORE WHERE POLL_TOKEN = ?";
 
     private static final String SQL_DELETE =
             "DELETE FROM IDN_VP_SESSION_STORE WHERE SESSION_ID = ?";
@@ -100,7 +97,7 @@ public class VPSessionStore {
         try {
             connection = IdentityDatabaseUtil.getSessionDBConnection(true);
             if (!update(connection, requestId, encryptedBytes, session.getExpiresAt())) {
-                insert(connection, requestId, encryptedBytes, session.getExpiresAt(), session.getPollToken());
+                insert(connection, requestId, encryptedBytes, session.getExpiresAt());
             }
             IdentityDatabaseUtil.commitTransaction(connection);
         } catch (SQLException e) {
@@ -208,42 +205,15 @@ public class VPSessionStore {
         }
     }
 
-    private void insert(Connection connection, String requestId, byte[] encryptedBytes, 
-        long expiresAt, String pollToken) throws SQLException {
+    private void insert(Connection connection, String requestId, byte[] encryptedBytes,
+            long expiresAt) throws SQLException {
 
         try (PreparedStatement statement = connection.prepareStatement(SQL_INSERT)) {
             statement.setString(1, requestId);
             statement.setBytes(2, encryptedBytes);
             statement.setLong(3, System.currentTimeMillis());
             statement.setLong(4, expiresAt);
-            statement.setString(5, pollToken);
             statement.executeUpdate();
-        }
-    }
-
-    /**
-     * Looks up the VP session request ID associated with the given poll token.
-     * Returns {@code null} if no session matches or the token has been removed.
-     *
-     * @param pollToken the browser-only poll token issued at session initiation
-     * @return the corresponding request ID, or {@code null}
-     */
-    public String getRequestIdByPollToken(String pollToken) {
-
-        Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-        try {
-            connection = IdentityDatabaseUtil.getSessionDBConnection(false);
-            statement = connection.prepareStatement(SQL_SELECT_BY_POLL_TOKEN);
-            statement.setString(1, pollToken);
-            resultSet = statement.executeQuery();
-            return resultSet.next() ? resultSet.getString(1) : null;
-        } catch (SQLException e) {
-            LOG.error("Failed to look up VP session by pollToken.", e);
-            return null;
-        } finally {
-            IdentityDatabaseUtil.closeAllConnections(connection, resultSet, statement);
         }
     }
 

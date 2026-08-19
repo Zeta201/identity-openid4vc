@@ -99,7 +99,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
     private static final String WALLET_LOGIN_PAGE = "/authenticationendpoint/wallet_login.jsp";
     private static final String PARAM_SESSION_DATA_KEY = "sessionDataKey";
-    private static final String PARAM_POLL_TOKEN = "pollToken";
+    private static final String PARAM_REQUEST_ID = "requestId";
     private static final String PARAM_WALLET_URL = "walletUrl";
     private static final String PARAM_TENANT_DOMAIN = "tenantDomain";
     private static final String PARAM_ORG_ID = "orgId";
@@ -324,8 +324,8 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
         return new StringBuilder(WALLET_LOGIN_PAGE)
                 .append('?').append(PARAM_SESSION_DATA_KEY).append('=')
                         .append(encode(sessionDataKey))
-                .append('&').append(PARAM_POLL_TOKEN).append('=')
-                        .append(encode(initiationResult.getPollToken()))
+                .append('&').append(PARAM_REQUEST_ID).append('=')
+                        .append(encode(initiationResult.getRequestId()))
                 .append('&').append(PARAM_WALLET_URL).append('=')
                         .append(encode(StringUtils.defaultString(initiationResult.getWalletUrl())))
                 .append('&').append(PARAM_TENANT_DOMAIN).append('=')

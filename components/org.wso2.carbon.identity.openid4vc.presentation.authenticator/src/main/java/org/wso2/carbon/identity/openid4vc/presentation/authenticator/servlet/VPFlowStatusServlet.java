@@ -27,7 +27,6 @@ import org.owasp.encoder.Encode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.store.VPSessionStore;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import java.io.IOException;
@@ -49,14 +48,9 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
 /**
  * VP flow status endpoint used by the browser to poll for the result of a VP request.
  *
- * <p>Endpoint: {@code GET /openid4vp/v1/status?pollToken={token}}</p>
+ * <p>Endpoint: {@code GET /openid4vp/v1/status?requestId={id}}</p>
  *
- * <p>A {@code pollToken} is a short-lived, browser-only UUID generated at flow initiation and
- * never embedded in the QR code or wallet URL. Only the browser tab that initiated the flow
- * possesses the token, so QR observers cannot infer session state.</p>
- *
- * <p>The servlet resolves the {@code pollToken} to its corresponding {@code requestId} via
- * {@link VPSessionStore}, then reads session state from
+ * <p>Reads session state from
  * {@link org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache},
  * which is DB-backed and visible across all cluster nodes.</p>
  */
@@ -74,7 +68,7 @@ public class VPFlowStatusServlet extends HttpServlet {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static final String PARAM_POLL_TOKEN = "pollToken";
+    private static final String PARAM_REQUEST_ID = "requestId";
     private static final String FIELD_MESSAGE = "message";
     private static final String FIELD_ERROR = "error";
     private static final String FIELD_ERROR_DESCRIPTION = "error_description";
@@ -86,16 +80,10 @@ public class VPFlowStatusServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String pollToken = StringUtils.trimToNull(request.getParameter(PARAM_POLL_TOKEN));
-        if (StringUtils.isBlank(pollToken)) {
+        String requestId = StringUtils.trimToNull(request.getParameter(PARAM_REQUEST_ID));
+        if (StringUtils.isBlank(requestId)) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    ERROR_INVALID_REQUEST, "Missing pollToken parameter.");
-            return;
-        }
-
-        String requestId = VPSessionStore.getInstance().getRequestIdByPollToken(pollToken);
-        if (requestId == null) {
-            sendStatus(response, null, VPFlowStatus.NOT_FOUND.name(), null);
+                    ERROR_INVALID_REQUEST, "Missing requestId parameter.");
             return;
         }
 

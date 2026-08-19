@@ -26,7 +26,6 @@ import org.testng.annotations.Test;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.store.VPSessionStore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,7 +36,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Test class for {@link VPFlowStatusServlet}.
- * Verifies pollToken-based session status polling.
+ * Verifies requestId-based session status polling.
  */
 public class VPFlowStatusServletTest {
 
@@ -57,22 +56,22 @@ public class VPFlowStatusServletTest {
         when(response.getOutputStream()).thenReturn(responseOutput);
     }
 
-    @Test(priority = 1, description = "Test doGet returns 400 when pollToken parameter is absent")
-    public void testDoGetMissingPollToken() throws Exception {
+    @Test(priority = 1, description = "Test doGet returns 400 when requestId parameter is absent")
+    public void testDoGetMissingRequestId() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn(null);
+        when(request.getParameter("requestId")).thenReturn(null);
 
         servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
         verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        Assert.assertTrue(responseOutput.getContent().contains("pollToken"),
-                "Response body should reference the missing pollToken parameter");
+        Assert.assertTrue(responseOutput.getContent().contains("requestId"),
+                "Response body should reference the missing requestId parameter");
     }
 
-    @Test(priority = 2, description = "Test doGet returns 400 when pollToken parameter is blank")
-    public void testDoGetBlankPollToken() throws Exception {
+    @Test(priority = 2, description = "Test doGet returns 400 when requestId parameter is blank")
+    public void testDoGetBlankRequestId() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn("   ");
+        when(request.getParameter("requestId")).thenReturn("   ");
 
         servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
@@ -81,60 +80,30 @@ public class VPFlowStatusServletTest {
                 "Response body should contain error code invalid_request");
     }
 
-    @Test(priority = 3, description = "Test doGet returns 200 NOT_FOUND when pollToken is not in the store")
-    public void testDoGetPollTokenNotInStore() throws Exception {
+    @Test(priority = 3, description = "Test doGet returns 200 NOT_FOUND when requestId is not in the cache")
+    public void testDoGetRequestIdNotInCache() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn("unknown-poll-token");
+        when(request.getParameter("requestId")).thenReturn("unknown-request-id");
 
-        try (MockedStatic<VPSessionStore> mockedStore = Mockito.mockStatic(VPSessionStore.class)) {
-            VPSessionStore mockStore = mock(VPSessionStore.class);
-            mockedStore.when(VPSessionStore::getInstance).thenReturn(mockStore);
-            when(mockStore.getRequestIdByPollToken("unknown-poll-token")).thenReturn(null);
-
-            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-            verify(response).setStatus(HttpServletResponse.SC_OK);
-            Assert.assertTrue(responseOutput.getContent().contains("NOT_FOUND"),
-                    "Response body should contain NOT_FOUND status when pollToken resolves to no session");
-        }
-    }
-
-    @Test(priority = 4, description = "Test doGet returns 200 NOT_FOUND when session is absent from cache")
-    public void testDoGetSessionNotInCache() throws Exception {
-
-        when(request.getParameter("pollToken")).thenReturn("valid-poll-token");
-
-        try (MockedStatic<VPSessionStore> mockedStore = Mockito.mockStatic(VPSessionStore.class);
-             MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-
-            VPSessionStore mockStore = mock(VPSessionStore.class);
-            mockedStore.when(VPSessionStore::getInstance).thenReturn(mockStore);
-            when(mockStore.getRequestIdByPollToken("valid-poll-token")).thenReturn("req-cache-miss");
-
+        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
             VPSessionCache mockCache = mock(VPSessionCache.class);
             mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
-            when(mockCache.get("req-cache-miss")).thenReturn(null);
+            when(mockCache.get("unknown-request-id")).thenReturn(null);
 
             servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
             verify(response).setStatus(HttpServletResponse.SC_OK);
             Assert.assertTrue(responseOutput.getContent().contains("NOT_FOUND"),
-                    "Response body should contain NOT_FOUND status when session is not in the cache");
+                    "Response body should contain NOT_FOUND status when requestId resolves to no session");
         }
     }
 
-    @Test(priority = 5, description = "Test doGet returns 200 ACTIVE for an active session")
+    @Test(priority = 4, description = "Test doGet returns 200 ACTIVE for an active session")
     public void testDoGetActiveSession() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn("active-poll-token");
+        when(request.getParameter("requestId")).thenReturn("req-active");
 
-        try (MockedStatic<VPSessionStore> mockedStore = Mockito.mockStatic(VPSessionStore.class);
-             MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-
-            VPSessionStore mockStore = mock(VPSessionStore.class);
-            mockedStore.when(VPSessionStore::getInstance).thenReturn(mockStore);
-            when(mockStore.getRequestIdByPollToken("active-poll-token")).thenReturn("req-active");
-
+        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
             VPSessionCache mockCache = mock(VPSessionCache.class);
             mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
             VPFlowSession session = new VPFlowSession.Builder()
@@ -151,18 +120,12 @@ public class VPFlowStatusServletTest {
         }
     }
 
-    @Test(priority = 6, description = "Test doGet returns 200 VERIFIED for a verified session")
+    @Test(priority = 5, description = "Test doGet returns 200 VERIFIED for a verified session")
     public void testDoGetVerifiedSession() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn("verified-poll-token");
+        when(request.getParameter("requestId")).thenReturn("req-verified");
 
-        try (MockedStatic<VPSessionStore> mockedStore = Mockito.mockStatic(VPSessionStore.class);
-             MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-
-            VPSessionStore mockStore = mock(VPSessionStore.class);
-            mockedStore.when(VPSessionStore::getInstance).thenReturn(mockStore);
-            when(mockStore.getRequestIdByPollToken("verified-poll-token")).thenReturn("req-verified");
-
+        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
             VPSessionCache mockCache = mock(VPSessionCache.class);
             mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
             VPFlowSession session = new VPFlowSession.Builder()
@@ -179,18 +142,12 @@ public class VPFlowStatusServletTest {
         }
     }
 
-    @Test(priority = 7, description = "Test doGet returns 200 FAILED with failure reason for a failed session")
+    @Test(priority = 6, description = "Test doGet returns 200 FAILED with failure reason for a failed session")
     public void testDoGetFailedSession() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn("failed-poll-token");
+        when(request.getParameter("requestId")).thenReturn("req-failed");
 
-        try (MockedStatic<VPSessionStore> mockedStore = Mockito.mockStatic(VPSessionStore.class);
-             MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-
-            VPSessionStore mockStore = mock(VPSessionStore.class);
-            mockedStore.when(VPSessionStore::getInstance).thenReturn(mockStore);
-            when(mockStore.getRequestIdByPollToken("failed-poll-token")).thenReturn("req-failed");
-
+        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
             VPSessionCache mockCache = mock(VPSessionCache.class);
             mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
             VPFlowSession session = new VPFlowSession.Builder()
@@ -211,18 +168,12 @@ public class VPFlowStatusServletTest {
         }
     }
 
-    @Test(priority = 8, description = "Test doGet returns 200 with requestId in the response body")
+    @Test(priority = 7, description = "Test doGet returns 200 with requestId in the response body")
     public void testDoGetResponseContainsRequestId() throws Exception {
 
-        when(request.getParameter("pollToken")).thenReturn("id-check-token");
+        when(request.getParameter("requestId")).thenReturn("req-id-check");
 
-        try (MockedStatic<VPSessionStore> mockedStore = Mockito.mockStatic(VPSessionStore.class);
-             MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-
-            VPSessionStore mockStore = mock(VPSessionStore.class);
-            mockedStore.when(VPSessionStore::getInstance).thenReturn(mockStore);
-            when(mockStore.getRequestIdByPollToken("id-check-token")).thenReturn("req-id-check");
-
+        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
             VPSessionCache mockCache = mock(VPSessionCache.class);
             mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
             VPFlowSession session = new VPFlowSession.Builder()
@@ -234,7 +185,7 @@ public class VPFlowStatusServletTest {
             servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
             Assert.assertTrue(responseOutput.getContent().contains("req-id-check"),
-                    "Response body should contain the resolved requestId");
+                    "Response body should contain the requestId");
         }
     }
 

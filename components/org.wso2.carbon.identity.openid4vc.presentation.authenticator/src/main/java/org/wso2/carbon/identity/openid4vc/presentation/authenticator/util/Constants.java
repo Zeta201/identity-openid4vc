@@ -78,7 +78,6 @@ public class Constants {
     // Registration executor constants
     public static final String EXECUTOR_NAME = "VPRegistrationExecutor";
     public static final String CONTEXT_VP_REQUEST_ID = "vp_request_id";
-    public static final String CONTEXT_VP_POLL_TOKEN = "vp_poll_token";
     public static final String CONTEXT_WALLET_URL = "walletUrl";
 
     private Constants() { }
