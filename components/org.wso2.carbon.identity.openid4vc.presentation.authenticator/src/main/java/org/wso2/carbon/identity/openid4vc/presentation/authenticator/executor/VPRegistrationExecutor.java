@@ -117,8 +117,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         } catch (VPAuthenticatorException e) {
             LOG.error("VP registration executor failed for tenant: "
                     + context.getTenantDomain().replace("\r", "").replace("\n", ""), e);
-            // Best-effort: mark session FAILED so the browser polling loop stops.
-            // VP_REQUEST_ID is present when this is a second-phase call (wallet already responded).
+
             VPAuthenticatorUtil.markSessionFailed((String) context.getProperty(VP_REQUEST_ID),
                     "VP registration failed: " + e.getMessage());
             ExecutorResponse response = new ExecutorResponse();
