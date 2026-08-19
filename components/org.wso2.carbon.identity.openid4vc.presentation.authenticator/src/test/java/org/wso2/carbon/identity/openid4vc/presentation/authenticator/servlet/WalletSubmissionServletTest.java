@@ -29,7 +29,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VP
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
-import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
 
@@ -245,7 +245,7 @@ public class WalletSubmissionServletTest {
         // Set up session and a successful verification result
         VPFlowSession session = new VPFlowSession.Builder()
                 .requestId("req-success")
-                .responseMode(VPConstants.DEFAULT_RESPONSE_MODE)
+                .responseMode(Constants.RESPONSE_MODE_DIRECT_POST)
                 .status(VPFlowStatus.ACTIVE)
                 .expiresAt(Long.MAX_VALUE)
                 .build();
