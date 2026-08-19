@@ -19,7 +19,6 @@
 package org.wso2.carbon.identity.openid4vc.presentation.management.dao.impl;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
@@ -256,12 +255,12 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
                             PresentationDefinition definition = new PresentationDefinition.Builder()
-                                    .definitionId(rs.getString("DEFINITION_ID"))
-                                    .name(rs.getString("NAME"))
-                                    .description(rs.getString("DESCRIPTION"))
+                                    .definitionId(rs.getString(Constants.COL_DEFINITION_ID))
+                                    .name(rs.getString(Constants.COL_NAME))
+                                    .description(rs.getString(Constants.COL_DESCRIPTION))
                                     .tenantId(tenantId)
                                     .build();
-                            definition.setCursorKey(rs.getInt("CURSOR_KEY"));
+                            definition.setCursorKey(rs.getInt(Constants.COL_CURSOR_KEY));
                             results.add(definition);
                         }
                     }
@@ -351,8 +350,8 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     connections.add(new ConnectedConnectionInfo(
-                            rs.getString("connection_id"),
-                            rs.getString("connection_name")));
+                            rs.getString(Constants.COL_CONNECTION_ID),
+                            rs.getString(Constants.COL_CONNECTION_NAME)));
                 }
             }
         } catch (SQLException e) {
@@ -430,7 +429,8 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             String sortOrder, Integer limit) {
 
         // Map to a literal to prevent any SQL injection via the sort direction.
-        String safeSortOrder = "DESC".equalsIgnoreCase(sortOrder) ? "DESC" : "ASC";
+        String safeSortOrder = Constants.DESC_SORT_ORDER.equalsIgnoreCase(sortOrder)
+                ? Constants.DESC_SORT_ORDER : Constants.ASC_SORT_ORDER;
         if (databaseName.contains(Constants.MICROSOFT)) {
             return String.format(Constants.GET_PD_LIST_MSSQL, limit)
                     + filterQuery
@@ -466,7 +466,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                 ps.setString(3, cred.getType());
                 ps.setString(4, cred.getFormat());
                 ps.setString(5, serializeClaimConstraints(cred.getClaims()));
-                ps.setString(6, cred.isEnforceTrustedIssuer() ? "1" : "0");
+                ps.setString(6, cred.isEnforceTrustedIssuer() ? Constants.FLAG_TRUE : Constants.FLAG_FALSE);
                 ps.setString(7, encodeCertBlob(cred.getTrustedCas()));
                 ps.setString(8, cred.getKeyResolutionMethod());
                 ps.setString(9, cred.getJwksUri());
@@ -496,12 +496,12 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
         while (rs.next()) {
             if (definitionId == null) {
-                definitionId = rs.getString("DEFINITION_ID");
-                name = rs.getString("NAME");
-                description = rs.getString("DESCRIPTION");
-                tenantId = rs.getInt("TENANT_ID");
+                definitionId = rs.getString(Constants.COL_DEFINITION_ID);
+                name = rs.getString(Constants.COL_NAME);
+                description = rs.getString(Constants.COL_DESCRIPTION);
+                tenantId = rs.getInt(Constants.COL_TENANT_ID);
             }
-            String credentialId = rs.getString("CREDENTIAL_ID");
+            String credentialId = rs.getString(Constants.COL_CREDENTIAL_ID);
             if (credentialId != null) {
                 credentials.add(mapCredentialRow(rs));
             }
@@ -533,16 +533,16 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         Map<String, List<RequestedCredential>> credentialsMap = new LinkedHashMap<>();
 
         while (rs.next()) {
-            String definitionId = rs.getString("DEFINITION_ID");
+            String definitionId = rs.getString(Constants.COL_DEFINITION_ID);
             if (!builders.containsKey(definitionId)) {
                 builders.put(definitionId, new PresentationDefinition.Builder()
                         .definitionId(definitionId)
-                        .name(rs.getString("NAME"))
-                        .description(rs.getString("DESCRIPTION"))
-                        .tenantId(rs.getInt("TENANT_ID")));
+                        .name(rs.getString(Constants.COL_NAME))
+                        .description(rs.getString(Constants.COL_DESCRIPTION))
+                        .tenantId(rs.getInt(Constants.COL_TENANT_ID)));
                 credentialsMap.put(definitionId, new ArrayList<>());
             }
-            String credentialId = rs.getString("CREDENTIAL_ID");
+            String credentialId = rs.getString(Constants.COL_CREDENTIAL_ID);
             if (credentialId != null) {
                 credentialsMap.get(definitionId).add(mapCredentialRow(rs));
             }
@@ -638,40 +638,5 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             certs.add(matcher.group().trim());
         }
         return certs;
-    }
-
-    /**
-     * Deserialises a claim-constraints JSON string back into a list of {@link ClaimConstraint} objects.
-     * Falls back to legacy comma-separated path parsing when the value is not a JSON array.
-     *
-     * @param claimsStr the JSON or CSV claim-constraints string stored in the database; may be null or blank
-     * @return the deserialised list of {@link ClaimConstraint} objects, or an empty list if the input is
-     *         null or blank
-     */
-    private List<ClaimConstraint> deserializeClaimConstraints(String claimsStr) {
-
-        if (claimsStr == null || claimsStr.trim().isEmpty()) {
-            return new ArrayList<>();
-        }
-        String claimsJson = claimsStr.trim();
-        if (claimsJson.startsWith("[")) {
-            try {
-                List<ClaimConstraint> result = GSON.fromJson(claimsJson, CLAIM_CONSTRAINT_LIST_TYPE);
-                return result != null ? result : new ArrayList<>();
-            } catch (JsonSyntaxException e) {
-                // Fall through to legacy CSV parsing.
-            }
-        }
-        List<ClaimConstraint> result = new ArrayList<>();
-        for (String claimToken : claimsJson.split(",")) {
-            String claimPath = claimToken.trim();
-            if (!claimPath.isEmpty()) {
-                ClaimConstraint claimConstraint = new ClaimConstraint();
-                claimConstraint.setPath(Collections.singletonList(claimPath));
-                claimConstraint.setMandatory(true);
-                result.add(claimConstraint);
-            }
-        }
-        return result;
     }
 }

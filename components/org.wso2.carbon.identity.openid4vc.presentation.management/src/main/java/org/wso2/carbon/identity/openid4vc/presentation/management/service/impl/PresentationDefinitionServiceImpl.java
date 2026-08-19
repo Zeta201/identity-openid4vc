@@ -33,6 +33,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.management.model.Presenta
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinitionSearchResult;
 import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
+import org.wso2.carbon.identity.openid4vc.presentation.management.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.management.util.PresentationDefinitionFilterUtil;
 
 import java.util.ArrayList;
@@ -192,7 +193,8 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
     public PresentationDefinitionSearchResult listWithPagination(String after, String before, Integer limit,
             String filter, String sortOrder, int tenantId) throws PresentationManagementException {
 
-        if (sortOrder != null && !sortOrder.equalsIgnoreCase("ASC") && !sortOrder.equalsIgnoreCase("DESC")) {
+        if (sortOrder != null && !sortOrder.equalsIgnoreCase(Constants.ASC_SORT_ORDER)
+                && !sortOrder.equalsIgnoreCase(Constants.DESC_SORT_ORDER)) {
             throw new PresentationManagementClientException(
                     PresentationManagementErrorCode.VALIDATION_ERROR,
                     "Invalid sortOrder value '" + sortOrder + "'. Must be ASC or DESC.");
@@ -306,7 +308,7 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
                         "A credential ID is required for each requested credential. "
                                 + "Use alphanumeric characters, underscores, or hyphens only.");
             }
-            if (!credentialId.matches("^[A-Za-z0-9_-]+$")) {
+            if (!credentialId.matches(Constants.CREDENTIAL_ID_PATTERN)) {
                 throw new PresentationManagementClientException(
                         PresentationManagementErrorCode.VALIDATION_ERROR,
                         "Credential ID '" + credentialId + "' is invalid. "
