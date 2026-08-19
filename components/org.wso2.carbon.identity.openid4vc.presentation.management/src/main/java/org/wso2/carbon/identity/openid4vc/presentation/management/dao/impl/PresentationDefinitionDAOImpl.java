@@ -559,7 +559,6 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
     /**
      * Maps the credential columns of the current result set row to a {@link RequestedCredential}.
-     * Falls back to the default key resolution method when the column is null.
      *
      * @param rs the result set positioned at the row to map
      * @return a {@link RequestedCredential} populated from the current row
