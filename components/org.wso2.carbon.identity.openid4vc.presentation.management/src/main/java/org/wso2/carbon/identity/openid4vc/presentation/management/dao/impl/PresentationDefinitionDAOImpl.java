@@ -86,7 +86,8 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
             } catch (SQLException e) {
                 IdentityDatabaseUtil.rollbackTransaction(connection);
-                if (e.getSQLState() != null && e.getSQLState().startsWith("23")) {
+                if (e.getSQLState() != null &&
+                        e.getSQLState().startsWith(Constants.SQL_STATE_CONSTRAINT_VIOLATION_PREFIX)) {
                     throw new PresentationManagementClientException(
                             PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS,
                             "Presentation definition with name '" +
@@ -370,7 +371,8 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             return;
         }
         String placeholders = String.join(",", Collections.nCopies(staleClaimPaths.size(), "?"));
-        String sql = SQLQueries.DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders + SQLQueries.DELETE_STALE_IDP_CLAIMS_SUFFIX;
+        String sql = SQLQueries.DELETE_STALE_IDP_CLAIMS_PREFIX + placeholders
+                + SQLQueries.DELETE_STALE_IDP_CLAIMS_SUFFIX;
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -566,16 +568,18 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     private RequestedCredential mapCredentialRow(ResultSet rs) throws SQLException {
 
         RequestedCredential cred = new RequestedCredential();
-        cred.setCredentialId(rs.getString("CREDENTIAL_ID"));
-        cred.setType(rs.getString("CREDENTIAL_TYPE"));
-        cred.setFormat(rs.getString("CREDENTIAL_FORMAT"));
-        cred.setClaims(deserializeClaimConstraints(rs.getString("CLAIMS")));
-        cred.setEnforceTrustedIssuer(!"0".equals(rs.getString("ENFORCE_TRUSTED_ISSUER")));
-        cred.setTrustedCas(decodeCertBlob(rs.getString("TRUSTED_CAS")));
-        cred.setKeyResolutionMethod(rs.getString("KEY_RESOLUTION_METHOD") != null ?
-                rs.getString("KEY_RESOLUTION_METHOD") : VPConstants.DEFAULT_KEY_RESOLUTION_METHOD);
-        cred.setJwksUri(rs.getString("JWKS_URI"));
-        cred.setIssuerPem(rs.getString("ISSUER_PEM"));
+        cred.setCredentialId(rs.getString(Constants.COL_CREDENTIAL_ID));
+        cred.setType(rs.getString(Constants.COL_CREDENTIAL_TYPE));
+        cred.setFormat(rs.getString(Constants.COL_CREDENTIAL_FORMAT));
+        List<ClaimConstraint> claims = GSON.fromJson(rs.getString(Constants.COL_CLAIMS), CLAIM_CONSTRAINT_LIST_TYPE);
+        cred.setClaims(claims != null ? claims : new ArrayList<>());
+        cred.setEnforceTrustedIssuer(!Constants.FLAG_FALSE.equals(rs.getString(Constants.COL_ENFORCE_TRUSTED_ISSUER)));
+        cred.setTrustedCas(decodeCertBlob(rs.getString(Constants.COL_TRUSTED_CAS)));
+        String keyResolutionMethod = rs.getString(Constants.COL_KEY_RESOLUTION_METHOD);
+        cred.setKeyResolutionMethod(
+                keyResolutionMethod != null ? keyResolutionMethod : VPConstants.DEFAULT_KEY_RESOLUTION_METHOD);
+        cred.setJwksUri(rs.getString(Constants.COL_JWKS_URI));
+        cred.setIssuerPem(rs.getString(Constants.COL_ISSUER_PEM));
         return cred;
     }
 
