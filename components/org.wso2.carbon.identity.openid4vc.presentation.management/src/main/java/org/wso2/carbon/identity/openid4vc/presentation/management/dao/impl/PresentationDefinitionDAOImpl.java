@@ -142,40 +142,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     }
 
     @Override
-    public void updatePresentationDefinition(PresentationDefinition presentationDefinition)
-            throws PresentationManagementException {
-
-        try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
-            try {
-                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.UPDATE_DEFINITION)) {
-                    ps.setString(1, presentationDefinition.getName());
-                    ps.setString(2, presentationDefinition.getDescription());
-                    ps.setString(3, presentationDefinition.getDefinitionId());
-                    ps.setInt(4, presentationDefinition.getTenantId());
-                    ps.executeUpdate();
-                }
-                try (PreparedStatement ps = connection.prepareStatement(SQLQueries.DELETE_CREDENTIALS)) {
-                    ps.setString(1, presentationDefinition.getDefinitionId());
-                    ps.executeUpdate();
-                }
-                insertCredentials(connection, presentationDefinition.getDefinitionId(),
-                        presentationDefinition.getRequestedCredentials());
-                IdentityDatabaseUtil.commitTransaction(connection);
-
-            } catch (SQLException e) {
-                IdentityDatabaseUtil.rollbackTransaction(connection);
-                throw e;
-            }
-        } catch (SQLException e) {
-            throw new PresentationManagementServerException(
-                    PresentationManagementErrorCode.DATABASE_ERROR,
-                    "Error updating presentation definition: " +
-                            presentationDefinition.getDefinitionId(), e);
-        }
-    }
-
-    @Override
-    public void updatePresentationDefinitionWithCleanup(PresentationDefinition presentationDefinition,
+    public void updatePresentationDefinition(PresentationDefinition presentationDefinition,
             List<String> staleClaimPaths, int tenantId) throws PresentationManagementException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
@@ -445,8 +412,6 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                     "Error retrieving presentation definition by name: " + name, e);
         }
     }
-
-    // ---- Private helpers ----
 
     /**
      * Builds the paginated list SQL statement for the given database type, applying

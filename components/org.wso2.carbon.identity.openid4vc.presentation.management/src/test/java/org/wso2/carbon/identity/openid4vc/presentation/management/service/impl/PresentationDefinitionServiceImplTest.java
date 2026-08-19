@@ -29,11 +29,8 @@ import org.wso2.carbon.identity.openid4vc.presentation.management.dao.Presentati
 import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.management.exception.PresentationManagementErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.ClaimConstraint;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
-import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService.InputDescriptorClaimsDTO;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -424,7 +421,7 @@ public class PresentationDefinitionServiceImplTest {
                     "The returned definition should have the updated name");
             Assert.assertEquals(result.getDefinitionId(), DEFINITION_ID,
                     "The returned definition ID should be unchanged");
-            verify(mockDao).updatePresentationDefinitionWithCleanup(
+            verify(mockDao).updatePresentationDefinition(
                     any(PresentationDefinition.class), anyList(), eq(TENANT_ID));
             verify(mockCacheInst).remove(TENANT_DOMAIN, DEFINITION_ID);
         }
@@ -528,95 +525,6 @@ public class PresentationDefinitionServiceImplTest {
             verify(mockDao).deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
             verify(mockCacheInst).remove(TENANT_DOMAIN, DEFINITION_ID);
         }
-    }
-
-    @Test(priority = 22,
-        description = "Test getClaimsFromPresentationDefinition returns empty list when there are no credentials")
-    public void testGetClaimsWithNoCredentialsReturnsEmptyList() throws Exception {
-
-        // Set up a definition with no requested credentials
-        PresentationDefinition def = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
-                .name(DEFINITION_NAME)
-                .requestedCredentials(null)
-                .build();
-        when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(def);
-
-        // Execute test
-        List<InputDescriptorClaimsDTO> result =
-                service.getClaimsFromPresentationDefinition(DEFINITION_ID, TENANT_ID);
-
-        // Verify
-        Assert.assertTrue(result.isEmpty(),
-                "Expected empty list when the definition has no requested credentials");
-    }
-
-    @Test(priority = 23,
-        description = "Test that getClaimsFromPresentationDefinition maps multi-element claim paths using dot notation")
-    public void testGetClaimsMapsClaimsWithDotJoinedPaths() throws Exception {
-
-        // Set up a credential with a nested claim path
-        ClaimConstraint constraint = new ClaimConstraint();
-        constraint.setPath(Arrays.asList("address", "street_address"));
-
-        RequestedCredential cred = new RequestedCredential();
-        cred.setType("https://example.com/DriverLicense");
-        cred.setClaims(Collections.singletonList(constraint));
-
-        PresentationDefinition def = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
-                .name(DEFINITION_NAME)
-                .requestedCredentials(Collections.singletonList(cred))
-                .build();
-        when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(def);
-
-        // Execute test
-        List<InputDescriptorClaimsDTO> result =
-                service.getClaimsFromPresentationDefinition(DEFINITION_ID, TENANT_ID);
-
-        // Verify claim is mapped with the correct descriptor ID and JSON path
-        Assert.assertEquals(result.size(), 1,
-                "Expected exactly 1 InputDescriptorClaimsDTO");
-        Assert.assertEquals(result.get(0).getInputDescriptorId(), "https://example.com/DriverLicense",
-                "Input descriptor ID should match the credential type");
-        Assert.assertEquals(result.get(0).getClaims().size(), 1,
-                "Expected exactly 1 claim");
-        Assert.assertEquals(result.get(0).getClaims().get(0).getClaimName(), "street_address",
-                "Claim name should be the last element of the path");
-        Assert.assertEquals(result.get(0).getClaims().get(0).getJsonPath(), "$.address.street_address",
-                "Claim path should be the full dot-joined JSON path");
-    }
-
-    @Test(priority = 24,
-        description = "Test getClaimsFromPresentationDefinition uses 'unknown' as descriptor ID when type is null")
-    public void testGetClaimsWithNoCredentialTypeUsesUnknownDescriptorId() throws Exception {
-
-        // Set up a credential with no type
-        ClaimConstraint constraint = new ClaimConstraint();
-        constraint.setPath(Collections.singletonList("given_name"));
-
-        RequestedCredential cred = new RequestedCredential();
-        cred.setType(null);
-        cred.setClaims(Collections.singletonList(constraint));
-
-        PresentationDefinition def = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
-                .name(DEFINITION_NAME)
-                .requestedCredentials(Collections.singletonList(cred))
-                .build();
-        when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(def);
-
-        // Execute test
-        List<InputDescriptorClaimsDTO> result =
-                service.getClaimsFromPresentationDefinition(DEFINITION_ID, TENANT_ID);
-
-        // Verify fallback descriptor ID and correct path
-        Assert.assertEquals(result.size(), 1,
-                "Expected exactly 1 InputDescriptorClaimsDTO");
-        Assert.assertEquals(result.get(0).getInputDescriptorId(), "unknown",
-                "Input descriptor ID should be 'unknown' when the credential type is null");
-        Assert.assertEquals(result.get(0).getClaims().get(0).getJsonPath(), "$.given_name",
-                "Claim path should be the correctly prefixed JSON path");
     }
 
     private PresentationDefinition buildDefinition(String id, String name) {

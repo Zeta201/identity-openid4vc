@@ -145,7 +145,7 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
                 .build();
 
         List<String> staleClaimPaths = computeStalePaths(existing.getRequestedCredentials(), updatedCredentials);
-        presentationDefinitionDAO.updatePresentationDefinitionWithCleanup(
+        presentationDefinitionDAO.updatePresentationDefinition(
                 definitionToUpdate, staleClaimPaths, tenantId);
         PresentationDefinitionCache.getInstance().remove(
                 IdentityTenantUtil.getTenantDomain(tenantId), definitionId);
@@ -211,43 +211,6 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
 
         getPresentationDefinitionById(definitionId, tenantId);
         return presentationDefinitionDAO.getConnectedConnections(definitionId, tenantId);
-    }
-
-    @Override
-    public List<InputDescriptorClaimsDTO> getClaimsFromPresentationDefinition(
-            String definitionId, int tenantId) throws PresentationManagementException {
-
-        PresentationDefinition definition = getPresentationDefinitionById(definitionId, tenantId);
-        List<InputDescriptorClaimsDTO> inputDescriptorClaimsList = new ArrayList<>();
-
-        List<RequestedCredential> requestedCredentials = definition.getRequestedCredentials();
-        if (requestedCredentials == null) {
-            return inputDescriptorClaimsList;
-        }
-
-        for (RequestedCredential credential : requestedCredentials) {
-            InputDescriptorClaimsDTO inputDescriptorClaimsDto = new InputDescriptorClaimsDTO();
-            inputDescriptorClaimsDto.setInputDescriptorId(
-                    credential.getType() != null ? credential.getType() : "unknown");
-
-            List<ClaimDTO> claimDtoList = new ArrayList<>();
-            if (credential.getClaims() != null) {
-                for (ClaimConstraint constraint : credential.getClaims()) {
-                    if (constraint == null || constraint.getPath() == null || constraint.getPath().isEmpty()) {
-                        continue;
-                    }
-                    ClaimDTO claimDto = new ClaimDTO();
-                    List<String> claimPathComponents = constraint.getPath();
-                    claimDto.setClaimName(claimPathComponents.get(claimPathComponents.size() - 1));
-                    claimDto.setJsonPath("$." + String.join(".", claimPathComponents));
-                    claimDtoList.add(claimDto);
-                }
-            }
-            inputDescriptorClaimsDto.setClaims(claimDtoList);
-            inputDescriptorClaimsList.add(inputDescriptorClaimsDto);
-        }
-
-        return inputDescriptorClaimsList;
     }
 
     /**

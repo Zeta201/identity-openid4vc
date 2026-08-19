@@ -62,15 +62,6 @@ public interface PresentationDefinitionDAO {
             throws PresentationManagementException;
 
     /**
-     * Updates the name, description, and credential list of an existing presentation definition.
-     *
-     * @param presentationDefinition the updated presentation definition
-     * @throws PresentationManagementException if a database error occurs
-     */
-    void updatePresentationDefinition(PresentationDefinition presentationDefinition)
-            throws PresentationManagementException;
-
-    /**
      * Deletes a presentation definition and its associated credentials.
      *
      * @param definitionId the unique identifier of the presentation definition to delete
@@ -162,7 +153,7 @@ public interface PresentationDefinitionDAO {
      * @param tenantId               the tenant ID scoping the write
      * @throws PresentationManagementException if a database error occurs
      */
-    void updatePresentationDefinitionWithCleanup(PresentationDefinition presentationDefinition,
+    void updatePresentationDefinition(PresentationDefinition presentationDefinition,
             List<String> staleClaimPaths, int tenantId) throws PresentationManagementException;
 
     /**

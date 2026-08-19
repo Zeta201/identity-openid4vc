@@ -23,7 +23,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.management.model.Connecte
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinitionSearchResult;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -140,74 +139,4 @@ public interface PresentationDefinitionService {
     List<ConnectedConnectionInfo> getConnectedConnections(String definitionId, int tenantId)
             throws PresentationManagementException;
 
-    /**
-     * Returns the claims defined in a presentation definition, grouped by credential type
-     * (input descriptor).
-     *
-     * @param definitionId the unique identifier of the presentation definition
-     * @param tenantId     the tenant ID scoping the lookup
-     * @return a list of {@link InputDescriptorClaimsDTO} objects, one per requested credential,
-     *         each containing the credential type and its claim leaf names and JSON paths
-     * @throws PresentationManagementException if the definition is not found or a database error occurs
-     */
-    List<InputDescriptorClaimsDTO> getClaimsFromPresentationDefinition(String definitionId, int tenantId)
-            throws PresentationManagementException;
-
-    /**
-     * Groups the claims belonging to a single input descriptor (requested credential type).
-     */
-    class InputDescriptorClaimsDTO {
-
-        private String inputDescriptorId;
-        private List<ClaimDTO> claims;
-
-        public String getInputDescriptorId() {
-
-            return inputDescriptorId;
-        }
-
-        public void setInputDescriptorId(String inputDescriptorId) {
-
-            this.inputDescriptorId = inputDescriptorId;
-        }
-
-        public List<ClaimDTO> getClaims() {
-
-            return claims != null ? new ArrayList<>(claims) : null;
-        }
-
-        public void setClaims(List<ClaimDTO> claims) {
-
-            this.claims = claims != null ? new ArrayList<>(claims) : null;
-        }
-    }
-
-    /**
-     * Carries the leaf name and full JSON path of a single claim from a presentation definition.
-     */
-    class ClaimDTO {
-
-        private String claimName;
-        private String jsonPath;
-
-        public String getClaimName() {
-
-            return claimName;
-        }
-
-        public void setClaimName(String claimName) {
-
-            this.claimName = claimName;
-        }
-
-        public String getJsonPath() {
-
-            return jsonPath;
-        }
-
-        public void setJsonPath(String jsonPath) {
-
-            this.jsonPath = jsonPath;
-        }
-    }
 }
