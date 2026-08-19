@@ -104,7 +104,7 @@ public class VerificationServiceImpl implements VerificationService {
 
         } catch (VerificationClientException e) {
             return resultBuilder.isVerified(false)
-                                .addError(e.getMessage())
+                                .addError(e.getErrorCode().getCode() + ": " + e.getMessage())
                                 .statusMessage(VerificationConstants.STATUS_VERIFICATION_FAILED)
                                 .build();
         }
