@@ -18,9 +18,9 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.verification.service;
 
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.util.Map;
 

@@ -202,11 +202,6 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
             try {
                 try (PreparedStatement ps = connection.prepareStatement(
-                        PresentationDefinitionSQLConstants.DELETE_CREDENTIALS)) {
-                    ps.setString(1, definitionId);
-                    ps.executeUpdate();
-                }
-                try (PreparedStatement ps = connection.prepareStatement(
                         PresentationDefinitionSQLConstants.DELETE_DEFINITION)) {
                     ps.setString(1, definitionId);
                     ps.setInt(2, tenantId);

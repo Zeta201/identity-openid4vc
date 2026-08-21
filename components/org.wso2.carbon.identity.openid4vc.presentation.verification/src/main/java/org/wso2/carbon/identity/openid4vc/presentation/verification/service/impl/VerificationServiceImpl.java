@@ -23,9 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.ClaimConstraint;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
@@ -36,6 +33,9 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.SdJ
 import org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.Verifier;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationConstants;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.ClaimConstraint;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 import java.util.Collections;
 import java.util.List;
@@ -103,8 +103,11 @@ public class VerificationServiceImpl implements VerificationService {
                     .build();
 
         } catch (VerificationClientException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Credential verification failed [" + e.getErrorCode().getCode() + "]: " + e.getMessage());
+            }
             return resultBuilder.isVerified(false)
-                                .addError(e.getErrorCode().getCode() + ": " + e.getMessage())
+                                .addError(e.getMessage())
                                 .statusMessage(VerificationConstants.STATUS_VERIFICATION_FAILED)
                                 .build();
         }

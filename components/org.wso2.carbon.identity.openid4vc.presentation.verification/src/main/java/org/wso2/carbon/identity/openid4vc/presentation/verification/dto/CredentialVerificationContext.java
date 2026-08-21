@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.verification.dto;
 
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 /**
  * Carries everything a format-specific 

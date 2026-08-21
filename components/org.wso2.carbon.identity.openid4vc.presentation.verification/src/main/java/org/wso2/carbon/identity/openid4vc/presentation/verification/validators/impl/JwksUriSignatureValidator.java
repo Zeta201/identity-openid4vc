@@ -19,7 +19,6 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.validators.impl;
 
 import org.apache.commons.lang3.StringUtils;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -27,6 +26,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.Ve
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.HttpClientUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.SignatureVerifier;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.validators.CredentialSignatureValidator;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 /**
  * Resolves the issuer's public key from a JWKS endpoint URI configured on the credential.

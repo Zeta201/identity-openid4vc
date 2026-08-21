@@ -21,10 +21,10 @@ package org.wso2.carbon.identity.openid4vc.presentation.verification.validators.
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 /**
  * Unit tests for {@link JwksUriSignatureValidator}.

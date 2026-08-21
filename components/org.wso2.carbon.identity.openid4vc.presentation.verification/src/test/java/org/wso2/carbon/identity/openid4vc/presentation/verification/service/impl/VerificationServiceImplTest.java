@@ -25,11 +25,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.Verifier;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationConstants;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;

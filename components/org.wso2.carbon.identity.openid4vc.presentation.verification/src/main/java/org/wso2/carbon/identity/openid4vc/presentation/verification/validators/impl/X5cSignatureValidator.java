@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -39,6 +38,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.Ve
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.SignatureVerifier;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.validators.CredentialSignatureValidator;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;

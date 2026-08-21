@@ -18,8 +18,8 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.verification.validators;
 
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 /**
  * Extension point for credential signature validation.

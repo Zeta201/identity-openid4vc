@@ -31,13 +31,13 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.internal.VerificationServiceComponentHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.validators.CredentialSignatureValidator;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
