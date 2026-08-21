@@ -22,7 +22,7 @@ import org.wso2.carbon.identity.core.cache.BaseCache;
 import org.wso2.carbon.utils.CarbonUtils;
 
 /**
- * Cache for presentation definitions keyed by the user-facing identifier slug.
+ * Cache for presentation definitions keyed by the identifier.
  */
 public class PresentationDefinitionCacheByIdentifier
         extends BaseCache<PresentationDefinitionIdentifierCacheKey, PresentationDefinitionCacheEntry> {

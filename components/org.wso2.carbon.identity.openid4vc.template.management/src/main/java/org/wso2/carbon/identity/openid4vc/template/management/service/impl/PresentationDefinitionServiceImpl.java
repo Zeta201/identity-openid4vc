@@ -26,7 +26,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.dao.impl.Presentat
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementClientException;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
-import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedConnectionInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.ClaimConstraint;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
@@ -204,11 +204,11 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
     }
 
     @Override
-    public List<ConnectedConnectionInfo> getConnectedConnections(String definitionId, int tenantId)
+    public List<ConnectedIdpInfo> getConnectedIdps(String definitionId, int tenantId)
             throws PresentationManagementException {
 
         getPresentationDefinitionById(definitionId, tenantId);
-        return presentationDefinitionDAO.getConnectedConnections(definitionId, tenantId);
+        return presentationDefinitionDAO.getConnectedIdps(definitionId, tenantId);
     }
 
     /**

@@ -29,7 +29,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.exception.Presenta
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementServerException;
-import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedConnectionInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.ClaimConstraint;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
@@ -349,10 +349,10 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     }
 
     @Override
-    public List<ConnectedConnectionInfo> getConnectedConnections(String definitionId, int tenantId)
+    public List<ConnectedIdpInfo> getConnectedIdps(String definitionId, int tenantId)
             throws PresentationManagementException {
 
-        List<ConnectedConnectionInfo> connections = new ArrayList<>();
+        List<ConnectedIdpInfo> idps = new ArrayList<>();
         String connsSql = PresentationDefinitionSQLConstants.GET_CONNECTED_CONNECTIONS;
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
              PreparedStatement ps = connection.prepareStatement(connsSql)) {
@@ -360,7 +360,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             ps.setInt(2, tenantId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    connections.add(new ConnectedConnectionInfo(
+                    idps.add(new ConnectedIdpInfo(
                             rs.getString(Constants.COL_CONNECTION_ID),
                             rs.getString(Constants.COL_CONNECTION_NAME)));
                 }
@@ -370,7 +370,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                     PresentationManagementErrorCode.DATABASE_ERROR,
                     "Error fetching connections using presentation definition: " + definitionId, e);
         }
-        return connections;
+        return idps;
     }
 
     @Override

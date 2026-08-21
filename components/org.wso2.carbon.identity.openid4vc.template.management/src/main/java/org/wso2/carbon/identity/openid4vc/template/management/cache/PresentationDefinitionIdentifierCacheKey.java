@@ -21,7 +21,7 @@ package org.wso2.carbon.identity.openid4vc.template.management.cache;
 import org.wso2.carbon.identity.core.cache.CacheKey;
 
 /**
- * Cache key for {@link PresentationDefinitionCacheByIdentifier}, keyed by the user-facing identifier slug.
+ * Cache key for {@link PresentationDefinitionCacheByIdentifier}, keyed by the identifier.
  */
 public class PresentationDefinitionIdentifierCacheKey extends CacheKey {
 

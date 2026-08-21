@@ -232,9 +232,9 @@ public class PresentationDefinitionDAOTest {
     }
 
     @Test(priority = 18)
-    public void testGetConnectedConnectionsReturnsEmptyWhenNoneLinked() throws Exception {
+    public void testGetConnectedIdpsReturnsEmptyWhenNoneLinked() throws Exception {
 
-        Assert.assertTrue(dao.getConnectedConnections(definitionId, TENANT_ID).isEmpty());
+        Assert.assertTrue(dao.getConnectedIdps(definitionId, TENANT_ID).isEmpty());
     }
 
     @Test(priority = 19)

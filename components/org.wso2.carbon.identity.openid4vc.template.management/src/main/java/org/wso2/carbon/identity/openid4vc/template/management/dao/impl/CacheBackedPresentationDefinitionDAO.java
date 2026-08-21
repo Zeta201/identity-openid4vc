@@ -28,7 +28,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.cache.Presentation
 import org.wso2.carbon.identity.openid4vc.template.management.cache.PresentationDefinitionIdentifierCacheKey;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.PresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
-import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedConnectionInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.util.List;
@@ -196,10 +196,10 @@ public class CacheBackedPresentationDefinitionDAO implements PresentationDefinit
     }
 
     @Override
-    public List<ConnectedConnectionInfo> getConnectedConnections(String definitionId, int tenantId)
+    public List<ConnectedIdpInfo> getConnectedIdps(String definitionId, int tenantId)
             throws PresentationManagementException {
 
-        return presentationDefinitionDAO.getConnectedConnections(definitionId, tenantId);
+        return presentationDefinitionDAO.getConnectedIdps(definitionId, tenantId);
     }
 
     @Override

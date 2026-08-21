@@ -19,36 +19,36 @@
 package org.wso2.carbon.identity.openid4vc.template.management.model;
 
 /**
- * Domain model for a connection (IDP) that references a presentation definition.
+ * Domain model for an IDP that references a presentation definition.
  */
-public class ConnectedConnectionInfo {
+public class ConnectedIdpInfo {
 
-    private String connectionId;
-    private String connectionName;
+    private String idpId;
+    private String idpName;
 
-    public ConnectedConnectionInfo(String connectionId, String connectionName) {
+    public ConnectedIdpInfo(String idpId, String idpName) {
 
-        this.connectionId = connectionId;
-        this.connectionName = connectionName;
+        this.idpId = idpId;
+        this.idpName = idpName;
     }
 
-    public String getConnectionId() {
+    public String getIdpId() {
 
-        return connectionId;
+        return idpId;
     }
 
-    public void setConnectionId(String connectionId) {
+    public void setIdpId(String idpId) {
 
-        this.connectionId = connectionId;
+        this.idpId = idpId;
     }
 
-    public String getConnectionName() {
+    public String getIdpName() {
 
-        return connectionName;
+        return idpName;
     }
 
-    public void setConnectionName(String connectionName) {
+    public void setIdpName(String idpName) {
 
-        this.connectionName = connectionName;
+        this.idpName = idpName;
     }
 }

@@ -20,7 +20,7 @@ package org.wso2.carbon.identity.openid4vc.template.management.dao;
 
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
-import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedConnectionInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.util.List;
@@ -134,10 +134,10 @@ public interface PresentationDefinitionDAO {
      *
      * @param definitionId the unique identifier of the presentation definition
      * @param tenantId     the tenant ID scoping the query
-     * @return a list of {@link ConnectedConnectionInfo} objects containing the connection UUID and display name
+     * @return a list of {@link ConnectedIdpInfo} objects containing the IDP UUID and display name
      * @throws PresentationManagementException if a database error occurs
      */
-    List<ConnectedConnectionInfo> getConnectedConnections(String definitionId, int tenantId)
+    List<ConnectedIdpInfo> getConnectedIdps(String definitionId, int tenantId)
             throws PresentationManagementException;
 
     /**
