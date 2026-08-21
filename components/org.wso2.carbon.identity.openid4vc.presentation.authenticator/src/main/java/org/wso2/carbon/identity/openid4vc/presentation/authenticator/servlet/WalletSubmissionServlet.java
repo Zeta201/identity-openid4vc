@@ -119,6 +119,8 @@ public class WalletSubmissionServlet extends HttpServlet {
 
         try {
             if (request.getContentLength() > MAX_BODY_BYTES) {
+                LOG.warn("Wallet submission rejected: Content-Length=" + request.getContentLength()
+                        + " bytes exceeds limit of " + MAX_BODY_BYTES + " bytes.");
                 response.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
                         "Request body exceeds maximum allowed size.");
                 return;
@@ -244,6 +246,8 @@ public class WalletSubmissionServlet extends HttpServlet {
         // JSON body (application/json) or unknown content type.
         byte[] rawBody = request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);
         if (rawBody.length > MAX_BODY_BYTES) {
+            LOG.warn("Wallet submission rejected: body stream read exceeded limit of "
+                    + MAX_BODY_BYTES + " bytes (no Content-Length header was present).");
             throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
                     "Request body exceeds maximum allowed size.");
         }

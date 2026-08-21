@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
  */
 public class VPAuthenticatorUtilTest {
 
-    private static final long DEFAULT_TIMEOUT_MS = 300_000L;
+    private static final long DEFAULT_TIMEOUT_MS = 120_000L;
 
     /**
      * Self-signed EC P-256 certificate (no SAN extension) for cert-parsing tests.
@@ -323,15 +323,16 @@ public class VPAuthenticatorUtilTest {
                 "Null properties map should fall back to the default timeout");
     }
 
-    @Test(priority = 21, description = "Test resolveTimeoutMs correctly converts a large valid timeout to milliseconds")
+    @Test(priority = 21, description = "Test resolveTimeoutMs caps a large timeout at the configured maximum")
     public void testResolveTimeoutMsWithLargeValue() {
 
-        // Set up properties with 1-hour timeout
+        // Set up properties with 1-hour timeout (exceeds max of 180s)
         Map<String, String> props = new HashMap<>();
         props.put(Constants.PROP_TIMEOUT_SECONDS, "3600");
 
-        // Execute test and verify
-        Assert.assertEquals(VPAuthenticatorUtil.resolveTimeoutMs(props), 3_600_000L,
-                "1-hour timeout of 3600 seconds should be converted to 3600000 milliseconds");
+        // Execute test and verify — value is capped at PROP_TIMEOUT_MAX_SECONDS
+        Assert.assertEquals(VPAuthenticatorUtil.resolveTimeoutMs(props),
+                Constants.PROP_TIMEOUT_MAX_SECONDS * 1000L,
+                "Timeout exceeding the maximum should be capped at " + Constants.PROP_TIMEOUT_MAX_SECONDS + "s");
     }
 }
