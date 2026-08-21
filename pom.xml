@@ -50,7 +50,6 @@
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.offer</module>
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.endpoint</module>
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.common</module>
-        <module>components/org.wso2.carbon.identity.openid4vc.presentation.management</module>
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.verification</module>
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.authenticator</module>
         <module>features/org.wso2.carbon.identity.openid4vc.template.management.server.feature</module>
@@ -122,11 +121,6 @@
             <dependency>
                 <groupId>org.wso2.carbon.identity.openid4vc</groupId>
                 <artifactId>org.wso2.carbon.identity.openid4vc.issuance.credential</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.wso2.carbon.identity.openid4vc</groupId>
-                <artifactId>org.wso2.carbon.identity.openid4vc.presentation.management</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -331,6 +325,7 @@
                         <threshold>Low</threshold>
                         <failOnError>true</failOnError>
                         <maxHeap>1024</maxHeap>
+                        <excludeFilterFile>${mavan.spotbugsplugin.exclude.file}</excludeFilterFile>
                         <plugins>
                             <plugin>
                                 <groupId>com.h3xstream.findsecbugs</groupId>
@@ -470,6 +465,7 @@
         <maven.checkstyleplugin.version>3.1.0</maven.checkstyleplugin.version>
         <spotbugs-maven-plugin.version>4.9.8.2</spotbugs-maven-plugin.version>
         <findsecbugs-plugin.version>1.10.1</findsecbugs-plugin.version>
+        <mavan.spotbugsplugin.exclude.file>spotbugs-exclude-filter.xml</mavan.spotbugsplugin.exclude.file>
         <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
 
         <com.google.code.gson.version>2.9.0</com.google.code.gson.version>
