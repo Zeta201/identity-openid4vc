@@ -67,7 +67,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_CONTENT_TYPE_CHARSET_UTF_8;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_CODE;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_DESCRIPTION;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_HEADER_VALUE_NOSNIFF;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS;
@@ -169,13 +168,13 @@ public class WalletSubmissionServlet extends HttpServlet {
                 if (!verificationResult.isVerified()) {
                     String errorMsg = verificationResult.getErrors() != null
                             && !verificationResult.getErrors().isEmpty()
-                            ? "Verification failed: " + String.join(", ", verificationResult.getErrors())
+                            ? String.join(", ", verificationResult.getErrors())
                             : "VP verification failed.";
                     session.setStatus(VPFlowStatus.FAILED);
                     session.setFailureReason(errorMsg);
                     VPSessionCache.getInstance().put(requestId, session);
                     sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-                            new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST, errorMsg));
+                            new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VERIFICATION_FAILED, errorMsg));
                     return;
                 }
 
@@ -184,12 +183,15 @@ public class WalletSubmissionServlet extends HttpServlet {
                 VPSessionCache.getInstance().put(requestId, session);
 
             } catch (VerificationException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("VP verification exception [" + e.getErrorCode().getCode() + "]: " + e.getMessage());
+                }
                 session.setStatus(VPFlowStatus.FAILED);
-                String errorMsg = e.getErrorCode().getCode() + ": " + e.getMessage();
-                session.setFailureReason(errorMsg);
+                session.setFailureReason(e.getMessage());
                 VPSessionCache.getInstance().put(requestId, session);
                 sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-                        new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST, errorMsg));
+                        new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VERIFICATION_FAILED,
+                                e.getMessage()));
                 return;
             }
 
@@ -480,7 +482,6 @@ public class WalletSubmissionServlet extends HttpServlet {
         JsonObject errorObj = new JsonObject();
         errorObj.addProperty(RESPONSE_ERROR, sanitize(exception.getErrorType()));
         errorObj.addProperty(RESPONSE_ERROR_DESCRIPTION, sanitize(exception.getMessage()));
-        errorObj.addProperty(RESPONSE_ERROR_CODE, exception.getCode());
 
         byte[] payload = GSON.toJson(errorObj).getBytes(StandardCharsets.UTF_8);
         response.getOutputStream().write(payload);

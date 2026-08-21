@@ -24,8 +24,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
+import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
 import org.wso2.carbon.user.core.service.RealmService;
 
 /**

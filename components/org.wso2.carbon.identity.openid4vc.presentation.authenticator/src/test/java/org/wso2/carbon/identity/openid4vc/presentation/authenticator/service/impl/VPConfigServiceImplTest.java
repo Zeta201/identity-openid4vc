@@ -23,12 +23,9 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.OpenID4VPTenantConfigCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
@@ -46,9 +43,6 @@ import static org.mockito.Mockito.when;
  */
 public class VPConfigServiceImplTest {
 
-    private MockedStatic<OpenID4VPTenantConfigCache> mockedConfigCache;
-    private OpenID4VPTenantConfigCache mockConfigCacheInstance;
-
     @Mock
     private RegistryService registryService;
     @Mock
@@ -57,22 +51,6 @@ public class VPConfigServiceImplTest {
     private Resource resource;
 
     private VPConfigServiceImpl configService;
-
-    @BeforeClass
-    public void setUpClass() {
-
-        mockConfigCacheInstance = Mockito.mock(OpenID4VPTenantConfigCache.class);
-        mockedConfigCache = Mockito.mockStatic(OpenID4VPTenantConfigCache.class);
-        mockedConfigCache.when(OpenID4VPTenantConfigCache::getInstance).thenReturn(mockConfigCacheInstance);
-    }
-
-    @AfterClass
-    public void tearDownClass() {
-
-        if (mockedConfigCache != null) {
-            mockedConfigCache.close();
-        }
-    }
 
     @BeforeMethod
     public void setUp() {

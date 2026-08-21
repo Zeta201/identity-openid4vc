@@ -21,8 +21,8 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
-import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
+import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
 

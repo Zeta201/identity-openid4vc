@@ -41,7 +41,6 @@ public class Constants {
     public static final String RESPONSE_REQUEST_ID = "requestId";
     public static final String RESPONSE_ERROR = "error";
     public static final String RESPONSE_ERROR_DESCRIPTION = "error_description";
-    public static final String RESPONSE_ERROR_CODE = "error_code";
     public static final String RESPONSE_STATUS_SUCCESS = "success";
     public static final String RESPONSE_MESSAGE = "message";
     public static final String RESPONSE_CONTENT_TYPE_CHARSET_UTF_8 = ";charset=UTF-8";

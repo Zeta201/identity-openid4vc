@@ -40,8 +40,8 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPF
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.impl.VPConfigServiceImpl;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.impl.VPFlowServiceImpl;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
-import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
+import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.idp.mgt.listener.IdentityProviderMgtListener;
 import org.wso2.carbon.user.core.service.RealmService;

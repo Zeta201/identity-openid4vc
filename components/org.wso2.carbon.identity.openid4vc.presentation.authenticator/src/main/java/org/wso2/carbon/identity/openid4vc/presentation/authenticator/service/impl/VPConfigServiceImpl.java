@@ -21,7 +21,6 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.im
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.OpenID4VPTenantConfigCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
@@ -47,16 +46,10 @@ public class VPConfigServiceImpl implements VPConfigService {
     @Override
     public VPConfigService.TenantConfig getConfig(String tenantDomain) throws VPAuthenticatorException {
 
-        VPConfigService.TenantConfig cached = OpenID4VPTenantConfigCache.getInstance().get(tenantDomain);
-        if (cached != null) {
-            return cached;
-        }
-
         VPConfigService.TenantConfig config = new VPConfigService.TenantConfig();
         try {
             Registry registry = getGovernanceRegistry(tenantDomain);
             if (!registry.resourceExists(REGISTRY_PATH)) {
-                OpenID4VPTenantConfigCache.getInstance().put(tenantDomain, config);
                 return config;
             }
             Resource resource = registry.get(REGISTRY_PATH);
@@ -66,7 +59,6 @@ public class VPConfigServiceImpl implements VPConfigService {
             throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.CONFIG_RETRIEVAL_ERROR,
                     "Failed to retrieve VP config for tenant: " + tenantDomain, e);
         }
-        OpenID4VPTenantConfigCache.getInstance().put(tenantDomain, config);
         return config;
     }
 
@@ -94,7 +86,6 @@ public class VPConfigServiceImpl implements VPConfigService {
             throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.CONFIG_UPDATE_ERROR,
                     "Failed to persist VP config for tenant: " + tenantDomain, e);
         }
-        OpenID4VPTenantConfigCache.getInstance().remove(tenantDomain);
     }
 
     @Override

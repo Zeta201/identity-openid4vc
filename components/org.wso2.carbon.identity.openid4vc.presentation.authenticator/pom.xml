@@ -41,7 +41,7 @@
         </dependency>
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
-            <artifactId>org.wso2.carbon.identity.openid4vc.presentation.management</artifactId>
+            <artifactId>org.wso2.carbon.identity.openid4vc.template.management</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -222,7 +222,7 @@
                         </Private-Package>
                         <Import-Package>
                             org.wso2.carbon.identity.openid4vc.presentation.common.*;version="${identity.oid4vc.pkg.version}",
-                            org.wso2.carbon.identity.openid4vc.presentation.management.*;version="${identity.oid4vc.pkg.version}",
+                            org.wso2.carbon.identity.openid4vc.template.management.*;version="${identity.oid4vc.pkg.version}",
                             org.wso2.carbon.identity.openid4vc.presentation.verification.*;version="${identity.oid4vc.pkg.version}",
                             org.wso2.carbon.identity.flow.execution.engine;version="${identity.framework.package.import.version.range}",
                             org.wso2.carbon.identity.flow.execution.engine.exception;version="${identity.framework.package.import.version.range}",

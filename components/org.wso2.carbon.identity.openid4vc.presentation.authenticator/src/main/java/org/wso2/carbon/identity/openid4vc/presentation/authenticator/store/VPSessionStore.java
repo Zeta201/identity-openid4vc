@@ -49,8 +49,8 @@ public class VPSessionStore {
     private static final String TABLE = "IDN_VP_SESSION_STORE";
 
     private static final String SQL_INSERT =
-            "INSERT INTO IDN_VP_SESSION_STORE (SESSION_ID, SESSION_DATA, CREATED_AT, EXPIRES_AT) " +
-            "VALUES (?, ?, ?, ?)";
+            "INSERT INTO IDN_VP_SESSION_STORE (SESSION_ID, TENANT_ID, SESSION_DATA, CREATED_AT, EXPIRES_AT) " +
+            "VALUES (?, ?, ?, ?, ?)";
 
     private static final String SQL_UPDATE =
             "UPDATE IDN_VP_SESSION_STORE SET SESSION_DATA = ?, EXPIRES_AT = ? WHERE SESSION_ID = ?";
@@ -63,6 +63,9 @@ public class VPSessionStore {
 
     private static final String SQL_DELETE_EXPIRED =
             "DELETE FROM IDN_VP_SESSION_STORE WHERE EXPIRES_AT < ?";
+
+    private static final String SQL_DELETE_BY_TENANT =
+            "DELETE FROM IDN_VP_SESSION_STORE WHERE TENANT_ID = ?";
 
     private static final VPSessionStore INSTANCE = new VPSessionStore();
 
@@ -97,7 +100,7 @@ public class VPSessionStore {
         try {
             connection = IdentityDatabaseUtil.getSessionDBConnection(true);
             if (!update(connection, requestId, encryptedBytes, session.getExpiresAt())) {
-                insert(connection, requestId, encryptedBytes, session.getExpiresAt());
+                insert(connection, requestId, session.getTenantId(), encryptedBytes, session.getExpiresAt());
             }
             IdentityDatabaseUtil.commitTransaction(connection);
         } catch (SQLException e) {
@@ -194,6 +197,33 @@ public class VPSessionStore {
         }
     }
 
+    /**
+     * Deletes all VP sessions for the given tenant. Intended for tenant offboarding and GDPR erasure.
+     *
+     * @param tenantId the numeric tenant identifier
+     */
+    public void removeByTenant(int tenantId) {
+
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = IdentityDatabaseUtil.getSessionDBConnection(true);
+            statement = connection.prepareStatement(SQL_DELETE_BY_TENANT);
+            statement.setInt(1, tenantId);
+            int deleted = statement.executeUpdate();
+            IdentityDatabaseUtil.commitTransaction(connection);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removed " + deleted + " VP sessions for tenantId: " + tenantId
+                        + " from " + TABLE + ".");
+            }
+        } catch (SQLException e) {
+            IdentityDatabaseUtil.rollbackTransaction(connection);
+            LOG.error("Failed to remove VP sessions for tenantId: " + tenantId, e);
+        } finally {
+            IdentityDatabaseUtil.closeAllConnections(connection, null, statement);
+        }
+    }
+
     private boolean update(Connection connection, String requestId, byte[] encryptedBytes, long expiresAt)
             throws SQLException {
 
@@ -205,14 +235,15 @@ public class VPSessionStore {
         }
     }
 
-    private void insert(Connection connection, String requestId, byte[] encryptedBytes,
+    private void insert(Connection connection, String requestId, int tenantId, byte[] encryptedBytes,
             long expiresAt) throws SQLException {
 
         try (PreparedStatement statement = connection.prepareStatement(SQL_INSERT)) {
             statement.setString(1, requestId);
-            statement.setBytes(2, encryptedBytes);
-            statement.setLong(3, System.currentTimeMillis());
-            statement.setLong(4, expiresAt);
+            statement.setInt(2, tenantId);
+            statement.setBytes(3, encryptedBytes);
+            statement.setLong(4, System.currentTimeMillis());
+            statement.setLong(5, expiresAt);
             statement.executeUpdate();
         }
     }

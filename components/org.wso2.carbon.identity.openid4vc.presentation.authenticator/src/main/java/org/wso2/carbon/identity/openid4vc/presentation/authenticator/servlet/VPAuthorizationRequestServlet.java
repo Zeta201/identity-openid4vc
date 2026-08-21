@@ -46,7 +46,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_CONTENT_TYPE_CHARSET_UTF_8;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_CODE;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_DESCRIPTION;
 
 /**
@@ -221,12 +220,12 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
     }
 
     /**
-     * Writes a JSON error body containing the error type, description, and error code,
+     * Writes a JSON error body containing the error type and description,
      * then sends it with the given HTTP status code.
      *
      * @param response   the HTTP response to write to
      * @param statusCode the HTTP status code to set
-     * @param exception  the exception whose error type, message, and code populate the response body
+     * @param exception  the exception whose error type and message populate the response body
      * @throws IOException if writing to the response output stream fails
      */
     private void sendErrorResponse(HttpServletResponse response, int statusCode,
@@ -236,7 +235,6 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
         JsonObject errorObj = new JsonObject();
         errorObj.addProperty(RESPONSE_ERROR, exception.getErrorType());
         errorObj.addProperty(RESPONSE_ERROR_DESCRIPTION, Encode.forJava(exception.getMessage()));
-        errorObj.addProperty(RESPONSE_ERROR_CODE, exception.getCode());
         sendJsonResponse(response, statusCode, errorObj);
     }
 }

@@ -57,9 +57,8 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPF
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
-import org.wso2.carbon.identity.openid4vc.presentation.management.cache.PresentationDefinitionCache;
-import org.wso2.carbon.identity.openid4vc.presentation.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.presentation.management.service.PresentationDefinitionService;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
+import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
 import java.net.URLEncoder;
@@ -163,21 +162,17 @@ public class VPFlowServiceImpl implements VPFlowService {
 
         int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
 
-        PresentationDefinition presentationDefinition =
-                PresentationDefinitionCache.getInstance().get(tenantDomain, presentationDefinitionId);
+        PresentationDefinition presentationDefinition;
+        try {
+            presentationDefinition = getPresentationDefinitionService()
+                    .getPresentationDefinitionById(presentationDefinitionId, tenantId);
+        } catch (Exception e) {
+            throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
+                    "Failed to load presentation definition: " + presentationDefinitionId, e);
+        }
         if (presentationDefinition == null) {
-            try {
-                presentationDefinition = getPresentationDefinitionService()
-                        .getPresentationDefinitionById(presentationDefinitionId, tenantId);
-            } catch (Exception e) {
-                throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
-                        "Failed to load presentation definition: " + presentationDefinitionId, e);
-            }
-            if (presentationDefinition == null) {
-                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
-                        "Presentation definition not found: " + presentationDefinitionId);
-            }
-            PresentationDefinitionCache.getInstance().put(tenantDomain, presentationDefinition);
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "Presentation definition not found: " + presentationDefinitionId);
         }
 
         String baseUrl = VPAuthenticatorUtil.resolveBaseUrl();
