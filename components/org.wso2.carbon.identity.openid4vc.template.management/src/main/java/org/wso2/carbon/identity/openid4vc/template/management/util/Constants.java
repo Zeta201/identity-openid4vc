@@ -54,10 +54,6 @@ public class Constants {
     public static final String COL_CONNECTION_ID = "connection_id";
     public static final String COL_CONNECTION_NAME = "connection_name";
 
-    // Boolean flag values stored in VARCHAR columns.
-    public static final String FLAG_TRUE = "1";
-    public static final String FLAG_FALSE = "0";
-
     // SQL state prefix for unique/duplicate key constraint violations.
     public static final String SQL_STATE_CONSTRAINT_VIOLATION_PREFIX = "23";
 

@@ -498,7 +498,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                 ps.setString(3, cred.getType());
                 ps.setString(4, cred.getFormat());
                 ps.setString(5, serializeClaimConstraints(cred.getClaims()));
-                ps.setString(6, cred.isEnforceTrustedIssuer() ? Constants.FLAG_TRUE : Constants.FLAG_FALSE);
+                ps.setBoolean(6, cred.isEnforceTrustedIssuer());
                 ps.setString(7, encodeCertBlob(cred.getTrustedCas()));
                 ps.setString(8, cred.getKeyResolutionMethod());
                 ps.setString(9, cred.getJwksUri());
@@ -608,7 +608,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         cred.setFormat(rs.getString(Constants.COL_CREDENTIAL_FORMAT));
         List<ClaimConstraint> claims = GSON.fromJson(rs.getString(Constants.COL_CLAIMS), CLAIM_CONSTRAINT_LIST_TYPE);
         cred.setClaims(claims != null ? claims : new ArrayList<>());
-        cred.setEnforceTrustedIssuer(!Constants.FLAG_FALSE.equals(rs.getString(Constants.COL_ENFORCE_TRUSTED_ISSUER)));
+        cred.setEnforceTrustedIssuer(rs.getBoolean(Constants.COL_ENFORCE_TRUSTED_ISSUER));
         cred.setTrustedCas(decodeCertBlob(rs.getString(Constants.COL_TRUSTED_CAS)));
         String keyResolutionMethod = rs.getString(Constants.COL_KEY_RESOLUTION_METHOD);
         cred.setKeyResolutionMethod(

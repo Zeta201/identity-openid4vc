@@ -69,8 +69,8 @@ public class Constants {
             "ID of the presentation definition to use for VP requests";
     public static final String PROP_TIMEOUT_SECONDS_DISPLAY = "Timeout (seconds)";
     public static final String PROP_TIMEOUT_SECONDS_DESC = "Timeout for VP requests in seconds";
-    public static final String PROP_TIMEOUT_DEFAULT_VALUE = "300";
-    public static final int PROP_TIMEOUT_MAX_SECONDS = 3600;
+    public static final String PROP_TIMEOUT_DEFAULT_VALUE = "120";
+    public static final int PROP_TIMEOUT_MAX_SECONDS = 180;
 
     // Internal context property keys
     public static final String CONTEXT_AMR_OPENID4VP = "openid4vp";
