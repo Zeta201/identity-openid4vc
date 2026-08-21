@@ -22,7 +22,11 @@
     <test name="vc-config-mgt-tests" preserve-order="true" parallel="false">
         <classes>
             <class name="org.wso2.carbon.identity.openid4vc.template.management.dao.VCTemplateMgtDAOTest"/>
+            <class name="org.wso2.carbon.identity.openid4vc.template.management.dao.PresentationDefinitionDAOTest"/>
             <class name="org.wso2.carbon.identity.openid4vc.template.management.VCTemplateManagerImplTest"/>
+            <class name="org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementExceptionTest"/>
+            <class name="org.wso2.carbon.identity.openid4vc.template.management.service.impl.PresentationDefinitionServiceImplTest"/>
+            <class name="org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionFilterUtilTest"/>
         </classes>
     </test>
 </suite>
