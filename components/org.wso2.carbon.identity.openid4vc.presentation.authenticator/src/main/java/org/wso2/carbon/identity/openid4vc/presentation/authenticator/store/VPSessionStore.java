@@ -18,6 +18,10 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.store;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.core.util.CryptoException;
@@ -25,11 +29,6 @@ import org.wso2.carbon.core.util.CryptoUtil;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -38,9 +37,9 @@ import java.sql.SQLException;
 
 /**
  * JDBC-backed persistence store for {@link VPFlowSession} objects.
- * Reads and writes to the {@code IDN_VP_SESSION_STORE} table and is consulted by
- * {@link org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache}
- * on a cache miss.
+ * Sessions are serialized as JSON. Only the cryptographic secret fields —
+ * {@code nonce} and {@code ephemeralPrivateKeyJwk} — are encrypted before storage;
+ * the remaining non-sensitive fields are stored as plain JSON.
  */
 public class VPSessionStore {
 
@@ -67,6 +66,12 @@ public class VPSessionStore {
     private static final String SQL_DELETE_BY_TENANT =
             "DELETE FROM IDN_VP_SESSION_STORE WHERE TENANT_ID = ?";
 
+    private static final String FIELD_NONCE = "nonce";
+    private static final String FIELD_EPHEMERAL_KEY = "ephemeralPrivateKeyJwk";
+    private static final String ENC_SUFFIX = "_enc";
+
+    private static final Gson GSON = new Gson();
+
     private static final VPSessionStore INSTANCE = new VPSessionStore();
 
     private VPSessionStore() {
@@ -86,21 +91,19 @@ public class VPSessionStore {
      */
     public void put(String requestId, VPFlowSession session) {
 
-        byte[] encryptedBytes;
+        byte[] storedBytes;
         try {
-            byte[] serializedSession = serialize(session);
-            String encryptedBase64 = CryptoUtil.getDefaultCryptoUtil().encryptAndBase64Encode(serializedSession);
-            encryptedBytes = encryptedBase64.getBytes(StandardCharsets.UTF_8);
-        } catch (IOException | CryptoException e) {
-            LOG.error("Failed to serialize/encrypt VP session for requestId: " + requestId, e);
+            storedBytes = toStoredBytes(session);
+        } catch (CryptoException e) {
+            LOG.error("Failed to encrypt VP session secrets for requestId: " + requestId, e);
             return;
         }
 
         Connection connection = null;
         try {
             connection = IdentityDatabaseUtil.getSessionDBConnection(true);
-            if (!update(connection, requestId, encryptedBytes, session.getExpiresAt())) {
-                insert(connection, requestId, session.getTenantId(), encryptedBytes, session.getExpiresAt());
+            if (!update(connection, requestId, storedBytes, session.getExpiresAt())) {
+                insert(connection, requestId, session.getTenantId(), storedBytes, session.getExpiresAt());
             }
             IdentityDatabaseUtil.commitTransaction(connection);
         } catch (SQLException e) {
@@ -139,10 +142,8 @@ public class VPSessionStore {
                 remove(requestId);
                 return null;
             }
-            String encryptedBase64 = new String(resultSet.getBytes(1), StandardCharsets.UTF_8);
-            byte[] serializedSession = CryptoUtil.getDefaultCryptoUtil().base64DecodeAndDecrypt(encryptedBase64);
-            return deserialize(serializedSession);
-        } catch (SQLException | IOException | ClassNotFoundException | CryptoException e) {
+            return fromStoredBytes(resultSet.getBytes(1));
+        } catch (SQLException | CryptoException e) {
             LOG.error("Failed to retrieve VP session for requestId: " + requestId, e);
             return null;
         } finally {
@@ -224,45 +225,78 @@ public class VPSessionStore {
         }
     }
 
-    private boolean update(Connection connection, String requestId, byte[] encryptedBytes, long expiresAt)
+    private boolean update(Connection connection, String requestId, byte[] storedBytes, long expiresAt)
             throws SQLException {
 
         try (PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
-            statement.setBytes(1, encryptedBytes);
+            statement.setBytes(1, storedBytes);
             statement.setLong(2, expiresAt);
             statement.setString(3, requestId);
             return statement.executeUpdate() > 0;
         }
     }
 
-    private void insert(Connection connection, String requestId, int tenantId, byte[] encryptedBytes,
+    private void insert(Connection connection, String requestId, int tenantId, byte[] storedBytes,
             long expiresAt) throws SQLException {
 
         try (PreparedStatement statement = connection.prepareStatement(SQL_INSERT)) {
             statement.setString(1, requestId);
             statement.setInt(2, tenantId);
-            statement.setBytes(3, encryptedBytes);
+            statement.setBytes(3, storedBytes);
             statement.setLong(4, System.currentTimeMillis());
             statement.setLong(5, expiresAt);
             statement.executeUpdate();
         }
     }
 
-    private static byte[] serialize(VPFlowSession session) throws IOException {
+    /**
+     * Serializes a {@link VPFlowSession} to JSON, encrypting only the secret fields
+     * ({@code nonce} and {@code ephemeralPrivateKeyJwk}) before storage.
+     */
+    private static byte[] toStoredBytes(VPFlowSession session) throws CryptoException {
 
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-            oos.writeObject(session);
-            return bos.toByteArray();
+        JsonObject json = GSON.toJsonTree(session).getAsJsonObject();
+
+        String nonce = session.getNonce();
+        if (nonce != null) {
+            json.remove(FIELD_NONCE);
+            json.addProperty(FIELD_NONCE + ENC_SUFFIX,
+                    CryptoUtil.getDefaultCryptoUtil()
+                            .encryptAndBase64Encode(nonce.getBytes(StandardCharsets.UTF_8)));
         }
+
+        String ephemeralKey = session.getEphemeralPrivateKeyJwk();
+        if (ephemeralKey != null) {
+            json.remove(FIELD_EPHEMERAL_KEY);
+            json.addProperty(FIELD_EPHEMERAL_KEY + ENC_SUFFIX,
+                    CryptoUtil.getDefaultCryptoUtil()
+                            .encryptAndBase64Encode(ephemeralKey.getBytes(StandardCharsets.UTF_8)));
+        }
+
+        return GSON.toJson(json).getBytes(StandardCharsets.UTF_8);
     }
 
-    private static VPFlowSession deserialize(byte[] serializedSession)
-            throws IOException, ClassNotFoundException {
+    /**
+     * Deserializes a {@link VPFlowSession} from stored JSON bytes, decrypting the secret fields.
+     */
+    private static VPFlowSession fromStoredBytes(byte[] storedBytes) throws CryptoException {
 
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedSession);
-             ObjectInputStream ois = new ObjectInputStream(bis)) {
-            return (VPFlowSession) ois.readObject();
+        JsonObject json = GSON.fromJson(new String(storedBytes, StandardCharsets.UTF_8), JsonObject.class);
+
+        JsonElement nonceEnc = json.remove(FIELD_NONCE + ENC_SUFFIX);
+        if (nonceEnc != null) {
+            byte[] decrypted = CryptoUtil.getDefaultCryptoUtil()
+                    .base64DecodeAndDecrypt(nonceEnc.getAsString());
+            json.addProperty(FIELD_NONCE, new String(decrypted, StandardCharsets.UTF_8));
         }
+
+        JsonElement ephemeralKeyEnc = json.remove(FIELD_EPHEMERAL_KEY + ENC_SUFFIX);
+        if (ephemeralKeyEnc != null) {
+            byte[] decrypted = CryptoUtil.getDefaultCryptoUtil()
+                    .base64DecodeAndDecrypt(ephemeralKeyEnc.getAsString());
+            json.addProperty(FIELD_EPHEMERAL_KEY, new String(decrypted, StandardCharsets.UTF_8));
+        }
+
+        return GSON.fromJson(json, VPFlowSession.class);
     }
 }
