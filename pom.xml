@@ -27,7 +27,7 @@
 
     <groupId>org.wso2.carbon.identity.openid4vc</groupId>
     <artifactId>identity-openid4vc</artifactId>
-    <version>1.1.7-SNAPSHOT</version>
+    <version>1.1.7</version>
     <packaging>pom</packaging>
     <url>http://wso2.org</url>
 
@@ -38,7 +38,7 @@
         <url>https://github.com/wso2-extensions/identity-openid4vc.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/identity-openid4vc.git</developerConnection>
         <connection>scm:git:https://github.com/wso2-extensions/identity-openid4vc.git</connection>
-        <tag>HEAD</tag>
+        <tag>v1.1.7</tag>
     </scm>
 
     <modules>
