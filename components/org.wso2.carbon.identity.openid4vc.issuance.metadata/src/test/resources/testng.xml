@@ -3,6 +3,7 @@
     <test name="metadata-tests" preserve-order="true">
         <classes>
             <class name="org.wso2.carbon.identity.openid4vc.issuance.metadata.DefaultCredentialIssuerMetadataProcessorTest"/>
+            <class name="org.wso2.carbon.identity.openid4vc.issuance.metadata.internal.MetadataWellKnownServletTest"/>
         </classes>
     </test>
 </suite>

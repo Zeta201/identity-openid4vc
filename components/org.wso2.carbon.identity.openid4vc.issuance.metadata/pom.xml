@@ -36,6 +36,10 @@
             <artifactId>gson</artifactId>
         </dependency>
         <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.core</artifactId>
         </dependency>
@@ -78,6 +82,8 @@
                             org.wso2.carbon.identity.openid4vc.issuance.metadata.internal,
                         </Private-Package>
                         <Import-Package>
+                            javax.servlet,
+                            javax.servlet.http,
                             org.osgi.framework; version="${osgi.framework.imp.pkg.version.range}",
                             org.osgi.service.component; version="${osgi.service.component.imp.pkg.version.range}",
                             org.wso2.carbon.identity.base; version="${carbon.identity.framework.imp.pkg.version.range}",
