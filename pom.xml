@@ -51,6 +51,7 @@
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.offer</module>
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.endpoint</module>
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.verification</module>
+        <module>components/org.wso2.carbon.identity.openid4vc.presentation.authenticator</module>
         <module>features/org.wso2.carbon.identity.openid4vc.template.management.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.issuance.common.server.feature</module>
         <module>features/org.wso2.carbon.identity.sdjwt.server.feature</module>
