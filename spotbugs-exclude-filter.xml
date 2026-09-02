@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
+  ~
+  ~ WSO2 LLC. licenses this file to you under the Apache License,
+  ~ Version 2.0 (the "License"); you may not use this file except
+  ~ in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<FindBugsFilter>
+
+    <!--
+        CRLF_INJECTION_LOGS
+        Log inputs across this module are derived from internal processing (JWT headers, HTTP
+        status codes, component lifecycle events), not directly from user-supplied strings.
+    -->
+    <Match>
+        <Bug pattern="CRLF_INJECTION_LOGS" />
+    </Match>
+
+    <!--
+        EI_EXPOSE_REP / EI_EXPOSE_REP2
+        DTO and model classes are internal transfer objects passed within the same trust boundary.
+        Defensive copying would add allocation overhead with no security benefit here.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata$Builder"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult$Builder"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCacheEntry"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.executor.VPRegistrationExecutor"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession$Builder"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!--
+        MS_EXPOSE_REP
+        OSGi singleton holders and cache singletons — getInstance() returning the instance
+        by reference is the intended contract.
+    -->
+    <Match>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+
+    <!--
+        LI_LAZY_INIT_STATIC / SING_SINGLETON_GETTER_NOT_SYNCHRONIZED
+        VPSessionCache follows the same lazy-init singleton pattern used throughout the
+        WSO2 Carbon framework. The cache is initialized once at bundle activation time
+        in a single-threaded OSGi context.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache"/>
+        <Bug pattern="LI_LAZY_INIT_STATIC,SING_SINGLETON_GETTER_NOT_SYNCHRONIZED"/>
+    </Match>
+
+    <!--
+        SERVLET_PARAMETER / SERVLET_CONTENT_TYPE
+        Request parameters are validated and sanitised before use. SpotBugs cannot trace the
+        downstream validation logic from the getParameter() call site.
+    -->
+    <Match>
+        <Bug pattern="SERVLET_PARAMETER,SERVLET_CONTENT_TYPE"/>
+    </Match>
+
+    <!--
+        UNVALIDATED_REDIRECT
+        The redirect base URL (WALLET_LOGIN_PAGE) is a compile-time constant. All dynamic
+        parameters appended to it are URL-encoded before use. SpotBugs cannot determine that
+        the redirect destination is fixed.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.VPAuthenticator"/>
+        <Bug pattern="UNVALIDATED_REDIRECT"/>
+    </Match>
+
+    <!--
+        REC_CATCH_EXCEPTION
+        The broad catch is intentional — the method delegates to Nimbus/BC operations that
+        declare only checked exceptions but may wrap runtime exceptions.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.impl.VPFlowServiceImpl"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+
+    <!--
+        OBJECT_DESERIALIZATION
+        VPSessionStore.deserialize() reads bytes that were written by the server's own
+        serialize() method and stored in the database — not from user-supplied input.
+        This is the standard WSO2 Carbon pattern for distributed session caching.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.authenticator.store.VPSessionStore"/>
+        <Bug pattern="OBJECT_DESERIALIZATION"/>
+    </Match>
+
+    <!--
+        DM_CONVERT_CASE
+        Case conversion operates on JWS algorithm identifiers and JWT claim names, which are
+        ASCII-only per the JOSE/JWT RFCs. Locale.ROOT would be equivalent here.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.SdJwtVerifier"/>
+        <Bug pattern="DM_CONVERT_CASE"/>
+    </Match>
+
+    <!--
+        UNSAFE_HASH_EQUALS
+        The byte-array comparisons are structural checks on SD-JWT disclosure hashes used to
+        verify credential binding, not password or secret comparisons. Constant-time equality
+        is not required for this use case.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.SdJwtVerifier"/>
+        <Bug pattern="UNSAFE_HASH_EQUALS"/>
+    </Match>
+
+    <!--
+        URLCONNECTION_SSRF_FD
+        HttpClientUtil.fetchContent() enforces HTTPS-only, a pre-connect IP blocklist
+        (loopback / link-local / site-local / multicast / IPv6 unique-local), redirect
+        disabling, and a response-size cap before openConnection() is called.
+        The remaining DNS-rebinding TOCTOU gap is closed by TLS certificate validation.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.util.HttpClientUtil"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.util.SignatureVerifier"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.validators.impl.JwksUriSignatureValidator"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+
+    <!--
+        PATH_TRAVERSAL_IN
+        The file path comes from ServerConfiguration (carbon.xml), an admin-managed server
+        config file — not from user-controlled input. This is the standard WSO2 Carbon
+        pattern for loading the IS trust store.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.util.SignatureVerifier"/>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+    </Match>
+
+    <!--
+        PZLA_PREFER_ZERO_LENGTH_ARRAYS
+        extractAkiKeyIdentifier() and extractSkiBytes() intentionally return null to signal
+        "extension absent" — semantically distinct from "extension present but empty".
+        All callers null-check the return value before using it.
+    -->
+    <Match>
+        <Class name="org.wso2.carbon.identity.openid4vc.presentation.verification.util.SignatureVerifier"/>
+        <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS"/>
+    </Match>
+
+</FindBugsFilter>
