@@ -32,10 +32,6 @@
     <description>OpenID4VC Credential Template Management Component</description>
     <packaging>bundle</packaging>
 
-    <properties>
-        <mavan.spotbugsplugin.exclude.file>../../spotbugs-exclude-filter.xml</mavan.spotbugsplugin.exclude.file>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.wso2.carbon.identity.openid4vc</groupId>
