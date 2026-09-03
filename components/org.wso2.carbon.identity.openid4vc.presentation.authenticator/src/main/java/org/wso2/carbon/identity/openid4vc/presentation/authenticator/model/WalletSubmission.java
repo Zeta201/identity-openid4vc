@@ -42,6 +42,9 @@ public class WalletSubmission {
     /** Not serialized — tracks whether this submission arrived as a JWE (direct_post.jwt). */
     private transient boolean encrypted;
 
+    /** Compact JWE token received in a {@code direct_post.jwt} response; null for plain {@code direct_post}. */
+    private transient String rawJwe;
+
     public WalletSubmission() {
 
     }
@@ -94,6 +97,16 @@ public class WalletSubmission {
     public void setEncrypted(boolean encrypted) {
 
         this.encrypted = encrypted;
+    }
+
+    public String getRawJwe() {
+
+        return rawJwe;
+    }
+
+    public void setRawJwe(String rawJwe) {
+
+        this.rawJwe = rawJwe;
     }
 
     @Override

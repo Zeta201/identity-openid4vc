@@ -33,7 +33,6 @@ public class VPFlowSession implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String requestId;
     private String tenantDomain;
     private int tenantId;
     private VPFlowStatus status;
@@ -49,34 +48,14 @@ public class VPFlowSession implements Serializable {
     private DcqlQuery dcqlQuery;
     private String failureReason;
 
-    public String getRequestId() {
-
-        return requestId;
-    }
-
-    public void setRequestId(String requestId) {
-
-        this.requestId = requestId;
-    }
-
     public String getTenantDomain() {
 
         return tenantDomain;
     }
 
-    public void setTenantDomain(String tenantDomain) {
-
-        this.tenantDomain = tenantDomain;
-    }
-
     public int getTenantId() {
 
         return tenantId;
-    }
-
-    public void setTenantId(int tenantId) {
-
-        this.tenantId = tenantId;
     }
 
     public VPFlowStatus getStatus() {
@@ -104,19 +83,9 @@ public class VPFlowSession implements Serializable {
         return nonce;
     }
 
-    public void setNonce(String nonce) {
-
-        this.nonce = nonce;
-    }
-
     public String getEphemeralPrivateKeyJwk() {
 
         return ephemeralPrivateKeyJwk;
-    }
-
-    public void setEphemeralPrivateKeyJwk(String ephemeralPrivateKeyJwk) {
-
-        this.ephemeralPrivateKeyJwk = ephemeralPrivateKeyJwk;
     }
 
     public long getExpiresAt() {
@@ -124,19 +93,9 @@ public class VPFlowSession implements Serializable {
         return expiresAt;
     }
 
-    public void setExpiresAt(long expiresAt) {
-
-        this.expiresAt = expiresAt;
-    }
-
     public String getClientId() {
 
         return clientId;
-    }
-
-    public void setClientId(String clientId) {
-
-        this.clientId = clientId;
     }
 
     public String getClientIdScheme() {
@@ -144,19 +103,9 @@ public class VPFlowSession implements Serializable {
         return clientIdScheme;
     }
 
-    public void setClientIdScheme(String clientIdScheme) {
-
-        this.clientIdScheme = clientIdScheme;
-    }
-
     public String getResponseUri() {
 
         return responseUri;
-    }
-
-    public void setResponseUri(String responseUri) {
-
-        this.responseUri = responseUri;
     }
 
     public String getResponseMode() {
@@ -164,29 +113,14 @@ public class VPFlowSession implements Serializable {
         return responseMode;
     }
 
-    public void setResponseMode(String responseMode) {
-
-        this.responseMode = responseMode;
-    }
-
     public String getWalletUrl() {
 
         return walletUrl;
     }
 
-    public void setWalletUrl(String walletUrl) {
-
-        this.walletUrl = walletUrl;
-    }
-
     public DcqlQuery getDcqlQuery() {
 
         return dcqlQuery;
-    }
-
-    public void setDcqlQuery(DcqlQuery dcqlQuery) {
-
-        this.dcqlQuery = dcqlQuery;
     }
 
     public String getFailureReason() {
@@ -204,7 +138,6 @@ public class VPFlowSession implements Serializable {
      */
     public static class Builder {
 
-        private String requestId;
         private String tenantDomain;
         private int tenantId;
         private VPFlowStatus status;
@@ -217,12 +150,6 @@ public class VPFlowSession implements Serializable {
         private String responseMode;
         private String walletUrl;
         private DcqlQuery dcqlQuery;
-
-        public Builder requestId(String requestId) {
-
-            this.requestId = requestId;
-            return this;
-        }
 
         public Builder tenantDomain(String tenantDomain) {
 
@@ -304,7 +231,6 @@ public class VPFlowSession implements Serializable {
         public VPFlowSession build() {
 
             VPFlowSession session = new VPFlowSession();
-            session.requestId = this.requestId;
             session.tenantDomain = this.tenantDomain;
             session.tenantId = this.tenantId;
             session.status = this.status;

@@ -18,14 +18,10 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.servlet;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
-import org.owasp.encoder.Encode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
@@ -33,21 +29,16 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.V
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.ServletResponseUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_CONTENT_TYPE_CHARSET_UTF_8;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.RESPONSE_ERROR_DESCRIPTION;
 
 /**
  * Servlet handling VP (Verifiable Presentation) authorization request operations.
@@ -76,10 +67,6 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
 
     private static final Log LOG = LogFactory.getLog(VPAuthorizationRequestServlet.class);
 
-    private static final Gson gson = new GsonBuilder()
-            .setPrettyPrinting()
-            .create();
-
     @Override
     public void init() throws ServletException {
 
@@ -98,7 +85,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
         String pathInfo = request.getPathInfo();
 
         if (StringUtils.isBlank(pathInfo) || "/".equals(pathInfo)) {
-            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+            ServletResponseUtil.sendError(response, HttpServletResponse.SC_BAD_REQUEST,
                 new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
                     "Request ID is required in path."));
             return;
@@ -107,7 +94,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
         String[] pathParts = pathInfo.split("/");
 
         if (pathParts.length < 2) {
-            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+            ServletResponseUtil.sendError(response, HttpServletResponse.SC_BAD_REQUEST,
                 new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
                     "Invalid path format."));
             return;
@@ -116,7 +103,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
         // Only the bare /{requestId} path is served here (wallet fetches the authorization JWT).
         // Status polling is handled by VPFlowStatusServlet at /openid4vp/v1/status.
         if (pathParts.length >= 3) {
-            sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND,
+            ServletResponseUtil.sendError(response, HttpServletResponse.SC_NOT_FOUND,
                     new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
                             "Unknown path: " + pathInfo));
             return;
@@ -127,7 +114,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
         try {
             VPFlowSession session = VPDataHolder.getVPFlowService().getSession(requestId);
             if (session == null) {
-                sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND,
+                ServletResponseUtil.sendError(response, HttpServletResponse.SC_NOT_FOUND,
                         new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND,
                                 "VP request not found: " + requestId));
                 return;
@@ -148,22 +135,22 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
                     "VP request is not active: " + status);
 
         } catch (VPAuthenticatorClientException e) {
-            VPAuthenticatorUtil.markSessionFailed(requestId, e.getMessage());
+            VPDataHolder.getVPFlowService().failSession(requestId, e.getMessage());
             if (VPAuthenticatorErrorCode.VP_REQUEST_EXPIRED.getCode().equals(e.getCode())) {
-                sendErrorResponse(response, HttpServletResponse.SC_GONE, e);
+                ServletResponseUtil.sendError(response, HttpServletResponse.SC_GONE, e);
             } else {
-                sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND, e);
+                ServletResponseUtil.sendError(response, HttpServletResponse.SC_NOT_FOUND, e);
             }
         } catch (VPAuthenticatorServerException e) {
             LOG.error("Server error serving VP authorization request for requestId: " + requestId, e);
-            VPAuthenticatorUtil.markSessionFailed(requestId, "An internal server error occurred.");
-            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
+            VPDataHolder.getVPFlowService().failSession(requestId, "An internal server error occurred.");
+            ServletResponseUtil.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
         } catch (VPAuthenticatorException e) {
-            VPAuthenticatorUtil.markSessionFailed(requestId, e.getMessage());
-            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, e);
+            VPDataHolder.getVPFlowService().failSession(requestId, e.getMessage());
+            ServletResponseUtil.sendError(response, HttpServletResponse.SC_BAD_REQUEST, e);
         } catch (RuntimeException | IOException e) {
-            VPAuthenticatorUtil.markSessionFailed(requestId, "An internal server error occurred.");
-            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+            VPDataHolder.getVPFlowService().failSession(requestId, "An internal server error occurred.");
+            ServletResponseUtil.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
                     "Internal server error.", e));
         }
@@ -189,58 +176,8 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
                 "Failed to generate request JWT for request: " + requestId);
         }
 
-        response.setContentType(VPConstants.HTTP.CONTENT_TYPE_OAUTH_AUTHZ_REQ);
-        response.setStatus(HttpServletResponse.SC_OK);
-        writeResponse(response, requestJwt);
+        ServletResponseUtil.sendBody(response, HttpServletResponse.SC_OK,
+                VPConstants.HTTP.CONTENT_TYPE_OAUTH_AUTHZ_REQ, requestJwt);
     }
 
-    /**
-     * Writes a UTF-8 encoded string directly to the response output stream and flushes it.
-     *
-     * @param response the HTTP response to write to
-     * @param content  the string content to write
-     * @throws IOException if writing to the response output stream fails
-     */
-    private void writeResponse(HttpServletResponse response, String content) throws IOException {
-
-        response.getOutputStream().write(content.getBytes(StandardCharsets.UTF_8));
-        response.getOutputStream().flush();
-    }
-
-    /**
-     * Serialises {@code data} to JSON and writes it to the response with the given HTTP status code
-     * and a {@code application/json;charset=UTF-8} content type.
-     *
-     * @param response   the HTTP response to write to
-     * @param statusCode the HTTP status code to set
-     * @param data       the object to serialise as the response body
-     * @throws IOException if writing to the response output stream fails
-     */
-    private void sendJsonResponse(HttpServletResponse response, int statusCode, Object data)
-            throws IOException {
-
-        response.setStatus(statusCode);
-        response.setContentType(VPConstants.HTTP.CONTENT_TYPE_JSON + RESPONSE_CONTENT_TYPE_CHARSET_UTF_8);
-
-        writeResponse(response, gson.toJson(data));
-    }
-
-    /**
-     * Writes a JSON error body containing the error type and description,
-     * then sends it with the given HTTP status code.
-     *
-     * @param response   the HTTP response to write to
-     * @param statusCode the HTTP status code to set
-     * @param exception  the exception whose error type and message populate the response body
-     * @throws IOException if writing to the response output stream fails
-     */
-    private void sendErrorResponse(HttpServletResponse response, int statusCode,
-            VPAuthenticatorException exception)
-            throws IOException {
-
-        JsonObject errorObj = new JsonObject();
-        errorObj.addProperty(RESPONSE_ERROR, exception.getErrorType());
-        errorObj.addProperty(RESPONSE_ERROR_DESCRIPTION, Encode.forJava(exception.getMessage()));
-        sendJsonResponse(response, statusCode, errorObj);
-    }
 }

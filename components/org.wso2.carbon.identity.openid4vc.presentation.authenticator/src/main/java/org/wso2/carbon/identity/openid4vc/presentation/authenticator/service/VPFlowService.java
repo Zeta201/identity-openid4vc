@@ -22,6 +22,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.V
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowInitiationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission;
 
 /**
  * OSGi service for VP flow session management (standalone verification and self-registration flows).
@@ -58,6 +59,30 @@ public interface VPFlowService {
      * @throws VPAuthenticatorServerException If the database read or secret decryption fails
      */
     VPFlowSession getSession(String requestId) throws VPAuthenticatorServerException;
+
+    /**
+     * Processes an inbound wallet VP response submission.
+     *
+     * <p>Handles wallet-side errors (marks the session FAILED and returns normally so
+     * the server still responds 200 OK to the wallet), validates the submission,
+     * enforces response-mode compliance, invokes credential verification, and updates
+     * the session to the terminal state ({@code VERIFIED} or {@code FAILED}).
+     *
+     * @param submission the parsed wallet submission
+     * @throws VPAuthenticatorException on validation failure, expired/inactive session,
+     *                                  response-mode mismatch, or verification error
+     */
+    void processWalletResponse(WalletSubmission submission) throws VPAuthenticatorException;
+
+    /**
+     * Marks a VP flow session as FAILED if it exists and has not already reached a terminal state.
+     * Call this from error paths so the browser polling loop sees an immediate FAILED state
+     * instead of waiting for session expiry.
+     *
+     * @param requestId the VP session identifier; does nothing when blank or null
+     * @param reason    human-readable failure reason surfaced via the status endpoint
+     */
+    void failSession(String requestId, String reason);
 
     /**
      * Removes a VP flow session from the cache, releasing any stored PII.

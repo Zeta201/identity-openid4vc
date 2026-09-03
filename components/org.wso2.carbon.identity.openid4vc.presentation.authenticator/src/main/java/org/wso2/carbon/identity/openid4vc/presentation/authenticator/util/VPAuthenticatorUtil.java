@@ -30,13 +30,10 @@ import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.InboundProtocol;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverException;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
@@ -51,6 +48,7 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -392,34 +390,26 @@ public class VPAuthenticatorUtil {
     }
 
     /**
-     * Marks a VP session as FAILED if it exists and has not already reached a terminal state.
-     * Best-effort: swallows any cache/store exceptions so it never masks the original error.
-     * All servlet and executor catch blocks must call this so the browser polling loop stops
-     * immediately instead of waiting for session expiry.
+     * Flattens a DCQL vp_token map from {@code Map<String, Object>} to {@code Map<String, String>}.
+     * Per DCQL spec, each value is a JSON array of credential tokens; we take index 0.
+     * String values from non-DCQL wallets are used as-is.
      *
-     * @param requestId the VP session identifier; does nothing when blank or null
-     * @param reason    human-readable failure reason surfaced to the browser via the status endpoint
+     * @param rawMap the raw vp_token map
+     * @return flattened map of credential query ID to credential token string
      */
-    public static void markSessionFailed(String requestId, String reason) {
+    public static Map<String, String> flattenVpTokenMap(Map<String, Object> rawMap) {
 
-        if (StringUtils.isBlank(requestId)) {
-            return;
-        }
-        try {
-            VPFlowSession session = VPSessionCache.getInstance().get(requestId);
-            if (session == null) {
-                return;
+        Map<String, String> flattened = new HashMap<>();
+        for (Map.Entry<String, Object> entry : rawMap.entrySet()) {
+            Object val = entry.getValue();
+            if (val instanceof List) {
+                List<?> list = (List<?>) val;
+                flattened.put(entry.getKey(), list.isEmpty() ? null : String.valueOf(list.get(0)));
+            } else {
+                flattened.put(entry.getKey(), val != null ? String.valueOf(val) : null);
             }
-            VPFlowStatus current = session.getStatus();
-            if (current == VPFlowStatus.VERIFIED || current == VPFlowStatus.FAILED) {
-                return;
-            }
-            session.setStatus(VPFlowStatus.FAILED);
-            session.setFailureReason(reason);
-            VPSessionCache.getInstance().put(requestId, session);
-        } catch (Exception e) {
-            LOG.warn("Failed to mark VP session as FAILED for requestId: " + requestId, e);
         }
+        return flattened;
     }
 
 }

@@ -28,7 +28,6 @@ import org.wso2.carbon.identity.flow.execution.engine.graph.AuthenticationExecut
 import org.wso2.carbon.identity.flow.execution.engine.metadata.FlowExecutorMetadata;
 import org.wso2.carbon.identity.flow.execution.engine.model.ExecutorResponse;
 import org.wso2.carbon.identity.flow.execution.engine.model.FlowExecutionContext;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowInitiationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
@@ -126,7 +125,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         } catch (VPAuthenticatorException e) {
             LOG.error("VP registration executor failed for tenant: " + context.getTenantDomain(), e);
 
-            VPAuthenticatorUtil.markSessionFailed((String) context.getProperty(VP_REQUEST_ID),
+            vpFlowService.failSession((String) context.getProperty(VP_REQUEST_ID),
                     "VP registration failed: " + e.getMessage());
             ExecutorResponse response = new ExecutorResponse();
             response.setResult(STATUS_ERROR);
@@ -140,7 +139,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
 
         String requestId = (String) context.getProperty(VP_REQUEST_ID);
         if (requestId != null) {
-            VPSessionCache.getInstance().remove(requestId);
+            vpFlowService.removeSession(requestId);
         }
         return new ExecutorResponse(STATUS_COMPLETE);
     }
@@ -273,7 +272,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
                 context.getExternalIdPConfig());
         registerFederatedAssociation(context, subjectIdentifier);
 
-        VPSessionCache.getInstance().remove((String) context.getProperty(VP_REQUEST_ID));
+        vpFlowService.removeSession((String) context.getProperty(VP_REQUEST_ID));
 
         ExecutorResponse response = new ExecutorResponse(STATUS_COMPLETE);
         response.setUpdatedUserClaims(localClaims);

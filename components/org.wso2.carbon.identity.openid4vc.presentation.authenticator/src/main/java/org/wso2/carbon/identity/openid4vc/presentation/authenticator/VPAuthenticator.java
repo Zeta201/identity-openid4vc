@@ -35,7 +35,6 @@ import org.wso2.carbon.identity.application.authentication.framework.model.Authe
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
@@ -200,7 +199,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
         VPFlowSession session;
         try {
-            session = VPSessionCache.getInstance().get(requestId);
+            session = VPDataHolder.getVPFlowService().getSession(requestId);
         } catch (VPAuthenticatorServerException e) {
             LOG.error("Failed to retrieve VP session for requestId: " + requestId, e);
             throw new AuthenticationFailedException(
@@ -220,7 +219,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
                     VPAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getMessage());
         }
 
-        VPSessionCache.getInstance().remove(requestId);
+        VPDataHolder.getVPFlowService().removeSession(requestId);
 
         Map<String, Object> verifiedClaims = verificationResult.getVerifiedClaims() != null
                 ? verificationResult.getVerifiedClaims()
@@ -372,7 +371,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
             processAuthenticationResponse(request, response, context);
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
         } else if (STATUS_FAILED.equals(status)) {
-            VPSessionCache.getInstance().remove((String) context.getProperty(CONTEXT_VP_REQUEST_ID));
+            VPDataHolder.getVPFlowService().removeSession((String) context.getProperty(CONTEXT_VP_REQUEST_ID));
             context.setRetrying(true);
             throw new AuthenticationFailedException(
                     VPAuthenticatorErrorCode.VERIFICATION_FAILED.getCode(),

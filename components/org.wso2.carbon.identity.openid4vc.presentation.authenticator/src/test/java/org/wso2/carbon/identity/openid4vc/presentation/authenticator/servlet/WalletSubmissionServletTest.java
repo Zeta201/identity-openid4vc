@@ -18,31 +18,32 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.servlet;
 
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorClientException;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Test class for {@link WalletSubmissionServlet}.
- * Tests doPost via the public service(ServletRequest, ServletResponse) method.
+ * Covers only HTTP-layer concerns: feature guard, body size guard, and exception → status mapping.
+ * Business-logic assertions (session state transitions, cache mutations, verification results)
+ * belong in VPFlowServiceImplTest.
  */
 public class WalletSubmissionServletTest {
 
@@ -50,6 +51,7 @@ public class WalletSubmissionServletTest {
     private HttpServletRequest request;
     private HttpServletResponse response;
     private InMemoryServletOutputStream responseOutput;
+    private VPFlowService mockService;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -58,6 +60,7 @@ public class WalletSubmissionServletTest {
         request = mock(HttpServletRequest.class);
         response = mock(HttpServletResponse.class);
         responseOutput = new InMemoryServletOutputStream();
+        mockService = mock(VPFlowService.class);
         when(request.getMethod()).thenReturn("POST");
         when(response.getOutputStream()).thenReturn(responseOutput);
     }
@@ -66,204 +69,85 @@ public class WalletSubmissionServletTest {
     public void tearDown() {
 
         VPDataHolder.setVPFlowService(null);
-        VPDataHolder.setVerificationService(null);
     }
 
-    @Test(priority = 1, description = "Test doPost returns 501 when the OpenID4VP feature is not enabled")
+    @Test(priority = 1, description = "Returns 501 when the OpenID4VP feature is not enabled")
     public void testDoPostWhenFeatureNotEnabled() throws Exception {
 
-        // Feature is disabled when VPFlowService is null
         VPDataHolder.setVPFlowService(null);
 
-        // Execute test
         servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
-        // Verify
         verify(response).sendError(HttpServletResponse.SC_NOT_IMPLEMENTED,
                 "OpenID4VP feature is not enabled.");
     }
 
-    @Test(priority = 2, description = "Test doPost returns 413 when the request body exceeds the maximum allowed size")
+    @Test(priority = 2, description = "Returns 413 when the request body exceeds the maximum allowed size")
     public void testDoPostWhenBodyTooLarge() throws Exception {
 
-        // Set up a request body that exceeds MAX_BODY_BYTES (1024 * 1024)
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
+        VPDataHolder.setVPFlowService(mockService);
         when(request.getContentLength()).thenReturn(1024 * 1024 + 1);
 
-        // Execute test
         servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
-        // Verify
         verify(response).sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE,
                 "Request body exceeds maximum allowed size.");
     }
 
-    @Test(priority = 3,
-            description = "Test doPost sets session to FAILED and returns 200 when wallet sends an error response")
-    public void testDoPostWithWalletErrorResponse() throws Exception {
+    @Test(priority = 3, description = "Returns 200 when processWalletResponse completes normally")
+    public void testDoPostSuccess() throws Exception {
 
-        // Set up request with wallet error
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
-        setupFormEncodedRequest(
-                "state=req-error-123&error=access_denied&error_description=User+denied+the+request");
+        VPDataHolder.setVPFlowService(mockService);
+        doNothing().when(mockService).processWalletResponse(any());
+        setupFormEncodedRequest("state=req-1&vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
 
-        // Set up session to be updated
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-error-123")
-                .status(VPFlowStatus.ACTIVE)
-                .build();
-
-        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-            VPSessionCache mockCache = mock(VPSessionCache.class);
-            mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
-            when(mockCache.get("req-error-123")).thenReturn(session);
-
-            // Execute test
-            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-            // Verify session is set to FAILED and success response is returned
-            Assert.assertEquals(session.getStatus(), VPFlowStatus.FAILED,
-                    "Session status must be FAILED after wallet sends an error response");
-            verify(mockCache).put("req-error-123", session);
-            verify(response).setStatus(HttpServletResponse.SC_OK);
-            Assert.assertEquals(responseOutput.getContent(), "{}",
-                    "Response body should be empty JSON object on wallet error");
-        }
-    }
-
-    @Test(priority = 4, description = "Test doPost returns 400 when the state parameter is missing")
-    public void testDoPostWithMissingState() throws Exception {
-
-        // Set up request without state (only vp_token present)
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
-        setupFormEncodedRequest("vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
-
-        // Execute test
         servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
-        // Verify
+        verify(response).setStatus(HttpServletResponse.SC_OK);
+        Assert.assertEquals(responseOutput.getContent(), "{}");
+    }
+
+    @Test(priority = 4, description = "Returns 400 when processWalletResponse throws a client exception")
+    public void testDoPostClientError() throws Exception {
+
+        VPDataHolder.setVPFlowService(mockService);
+        doThrow(new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                "Missing state parameter."))
+                .when(mockService).processWalletResponse(any());
+        setupFormEncodedRequest("vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
+
+        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
+
         verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
         Assert.assertTrue(responseOutput.getContent().contains("Missing state parameter"),
-                "Response body should contain 'Missing state parameter'");
+                "Response body should contain the client error message");
     }
 
-    @Test(priority = 5, description = "Test doPost returns 400 when the vp_token parameter is missing")
-    public void testDoPostWithMissingVpToken() throws Exception {
+    @Test(priority = 5, description = "Returns 500 when processWalletResponse throws a server exception")
+    public void testDoPostServerError() throws Exception {
 
-        // Set up request without vp_token (only state present)
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
-        setupFormEncodedRequest("state=req-123");
+        VPDataHolder.setVPFlowService(mockService);
+        doThrow(new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
+                "Signing failed."))
+                .when(mockService).processWalletResponse(any());
+        setupFormEncodedRequest("state=req-1&vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
 
-        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-            VPSessionCache mockCache = mock(VPSessionCache.class);
-            mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
-            when(mockCache.get("req-123")).thenReturn(null);
+        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
-            // Execute test
-            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-            // Verify
-            verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            Assert.assertTrue(responseOutput.getContent().contains("Missing vp_token"),
-                    "Response body should contain 'Missing vp_token'");
-        }
+        verify(response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
-    @Test(priority = 6, description = "Test doPost returns 400 when no session is found for the given state")
-    public void testDoPostWithSessionNotFound() throws Exception {
+    @Test(priority = 6, description = "Returns 500 when processWalletResponse throws an unexpected RuntimeException")
+    public void testDoPostUnexpectedError() throws Exception {
 
-        // Set up request with a state that has no corresponding session
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
-        setupFormEncodedRequest(
-                "state=unknown-req&vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
+        VPDataHolder.setVPFlowService(mockService);
+        doThrow(new RuntimeException("unexpected"))
+                .when(mockService).processWalletResponse(any());
+        setupFormEncodedRequest("state=req-1&vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
 
-        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-            VPSessionCache mockCache = mock(VPSessionCache.class);
-            mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
-            when(mockCache.get("unknown-req")).thenReturn(null);
+        servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
 
-            // Execute test
-            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-            // Verify
-            verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            Assert.assertTrue(responseOutput.getContent().contains("Invalid state parameter"),
-                    "Response body should contain 'Invalid state parameter'");
-        }
-    }
-
-    @Test(priority = 7,
-            description = "Test doPost returns 400 when response mode is direct_post.jwt but submission is unencrypted")
-    public void testDoPostWithResponseModeMismatch() throws Exception {
-
-        // Set up request with valid submission (form-encoded, unencrypted)
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
-        setupFormEncodedRequest(
-                "state=req-mismatch&vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
-
-        // Session expects direct_post.jwt but the submission is plain form data (unencrypted)
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-mismatch")
-                .responseMode("direct_post.jwt")
-                .status(VPFlowStatus.ACTIVE)
-                .expiresAt(Long.MAX_VALUE)
-                .build();
-
-        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-            VPSessionCache mockCache = mock(VPSessionCache.class);
-            mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
-            when(mockCache.get("req-mismatch")).thenReturn(session);
-
-            // Execute test
-            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-            // Verify
-            verify(response).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            Assert.assertTrue(responseOutput.getContent().contains("Response mode mismatch"),
-                    "Response body should contain 'Response mode mismatch'");
-        }
-    }
-
-    @Test(priority = 8, description = "Test doPost returns 200 with empty body after successful VP verification")
-    public void testDoPostVerificationSuccess() throws Exception {
-
-        // Set up services and valid form submission
-        VerificationService mockVerification = mock(VerificationService.class);
-        VPDataHolder.setVPFlowService(mock(VPFlowService.class));
-        VPDataHolder.setVerificationService(mockVerification);
-        setupFormEncodedRequest(
-                "state=req-success&vp_token=%7B%22cred-1%22%3A%5B%22token1%22%5D%7D");
-
-        // Set up session and a successful verification result
-        VPFlowSession session = new VPFlowSession.Builder()
-                .requestId("req-success")
-                .responseMode(Constants.RESPONSE_MODE_DIRECT_POST)
-                .status(VPFlowStatus.ACTIVE)
-                .expiresAt(Long.MAX_VALUE)
-                .build();
-        VerificationResult verifiedResult = new VerificationResult.Builder()
-                .isVerified(true)
-                .build();
-        when(mockVerification.verify(
-                Mockito.any(), Mockito.anyInt(), Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(verifiedResult);
-
-        try (MockedStatic<VPSessionCache> mockedCache = Mockito.mockStatic(VPSessionCache.class)) {
-            VPSessionCache mockCache = mock(VPSessionCache.class);
-            mockedCache.when(VPSessionCache::getInstance).thenReturn(mockCache);
-            when(mockCache.get("req-success")).thenReturn(session);
-
-            // Execute test
-            servlet.service((javax.servlet.ServletRequest) request, (javax.servlet.ServletResponse) response);
-
-            // Verify session is VERIFIED and response is 200 with empty body
-            Assert.assertEquals(session.getStatus(), VPFlowStatus.VERIFIED,
-                    "Session status must be VERIFIED after successful verification");
-            verify(mockCache).put("req-success", session);
-            verify(response).setStatus(HttpServletResponse.SC_OK);
-            Assert.assertEquals(responseOutput.getContent(), "{}",
-                    "Response body should be empty JSON object on success");
-        }
+        verify(response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -276,5 +160,4 @@ public class WalletSubmissionServletTest {
         when(request.getContentType()).thenReturn("application/x-www-form-urlencoded");
         when(request.getInputStream()).thenReturn(new InMemoryServletInputStream(bodyBytes));
     }
-
 }

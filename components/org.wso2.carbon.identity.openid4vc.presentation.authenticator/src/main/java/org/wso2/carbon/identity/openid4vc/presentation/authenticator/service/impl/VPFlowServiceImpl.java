@@ -19,9 +19,13 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.impl;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,6 +40,9 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPAut
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowInitiationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.AuthorizationRequestBuilder;
@@ -51,6 +58,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.util.DcqlQue
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -145,8 +153,12 @@ public class VPFlowServiceImpl implements VPFlowService {
             }
         }
 
+        String requestUri = baseUrl + Constants.REQUEST_URI_ENDPOINT + requestId;
+        String walletUrl = VPConstants.Protocol.OPENID4VP_SCHEME + "?"
+                + VPConstants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+                + "&" + VPConstants.RequestParams.REQUEST_URI + "=" + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
+
         VPFlowSession session = new VPFlowSession.Builder()
-                .requestId(requestId)
                 .dcqlQuery(dcqlQuery)
                 .tenantDomain(tenantDomain)
                 .tenantId(tenantId)
@@ -158,14 +170,9 @@ public class VPFlowServiceImpl implements VPFlowService {
                 .clientIdScheme(scheme)
                 .responseUri(responseUri)
                 .responseMode(responseMode)
+                .walletUrl(walletUrl)
                 .build();
 
-        String requestUri = baseUrl + Constants.REQUEST_URI_ENDPOINT + requestId;
-        String walletUrl = VPConstants.Protocol.OPENID4VP_SCHEME + "?"
-                + VPConstants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
-                + "&" + VPConstants.RequestParams.REQUEST_URI + "=" + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
-
-        session.setWalletUrl(walletUrl);
         VPSessionCache.getInstance().put(requestId, session);
 
         return new VPFlowInitiationResult(requestId, walletUrl, requestUri, clientId, expiresAt);
@@ -229,6 +236,174 @@ public class VPFlowServiceImpl implements VPFlowService {
     public void removeSession(String requestId) {
 
         VPSessionCache.getInstance().remove(requestId);
+    }
+
+    @Override
+    public void failSession(String requestId, String reason) {
+
+        if (StringUtils.isBlank(requestId)) {
+            return;
+        }
+        try {
+            VPFlowSession session = VPSessionCache.getInstance().get(requestId);
+            if (session == null) {
+                return;
+            }
+            if (session.getStatus() == VPFlowStatus.VERIFIED || session.getStatus() == VPFlowStatus.FAILED) {
+                return;
+            }
+            failSession(session, requestId, reason);
+        } catch (Exception e) {
+            LOG.warn("Failed to mark VP session as FAILED for requestId: " + requestId, e);
+        }
+    }
+
+    @Override
+    public void processWalletResponse(WalletSubmission submission) throws VPAuthenticatorException {
+
+        if (submission.getRawJwe() != null) {
+            decryptJweIntoSubmission(submission);
+        }
+
+        String requestId = submission.getRequestId();
+
+        // Handle wallet-side errors record the failure and return normally —
+        // the server always responds 200 OK to the wallet even when the wallet reports an error.
+        if (StringUtils.isNotBlank(submission.getError())) {
+            if (StringUtils.isNotBlank(requestId)) {
+                VPFlowSession errorSession = VPSessionCache.getInstance().get(requestId);
+                if (errorSession != null) {
+                    String reason = StringUtils.isNotBlank(submission.getErrorDescription())
+                            ? submission.getErrorDescription() : submission.getError();
+                    errorSession.setStatus(VPFlowStatus.FAILED);
+                    errorSession.setFailureReason(reason);
+                    VPSessionCache.getInstance().put(requestId, errorSession);
+                }
+            }
+            return;
+        }
+
+        if (StringUtils.isBlank(requestId)) {
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "Missing state parameter.");
+        }
+        if (submission.getCredentialTokens() == null || submission.getCredentialTokens().isEmpty()) {
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "Missing vp_token.");
+        }
+
+        VPFlowSession session = VPSessionCache.getInstance().get(requestId);
+        if (session == null) {
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "Invalid state parameter.");
+        }
+        if (System.currentTimeMillis() > session.getExpiresAt()) {
+            VPSessionCache.getInstance().remove(requestId);
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VP_REQUEST_EXPIRED,
+                    "VP session has expired.");
+        }
+        if (session.getStatus() != VPFlowStatus.ACTIVE) {
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "VP session is no longer active.");
+        }
+
+        boolean expectEncrypted = Constants.RESPONSE_MODE_DIRECT_POST_JWT.equals(session.getResponseMode());
+        if (expectEncrypted && !submission.isEncrypted()) {
+            failSession(session, requestId, "Response mode mismatch.");
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "Response mode mismatch: direct_post.jwt was configured but wallet sent an unencrypted response.");
+        }
+        if (!expectEncrypted && submission.isEncrypted()) {
+            failSession(session, requestId, "Response mode mismatch.");
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                    "Response mode mismatch: direct_post was configured but wallet sent an encrypted JWE response.");
+        }
+
+        try {
+            VerificationResult result = VPDataHolder.getVerificationService()
+                    .verify(session.getDcqlQuery(), session.getTenantId(),
+                            submission.getCredentialTokens(), session.getNonce(), session.getClientId());
+
+            if (!result.isVerified()) {
+                String errorMsg = result.getErrors() != null && !result.getErrors().isEmpty()
+                        ? String.join(", ", result.getErrors()) : "VP verification failed.";
+                failSession(session, requestId, errorMsg);
+                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VERIFICATION_FAILED, errorMsg);
+            }
+
+            session.setVerificationResult(result);
+            session.setStatus(VPFlowStatus.VERIFIED);
+            VPSessionCache.getInstance().put(requestId, session);
+
+        } catch (VerificationException e) {
+            failSession(session, requestId, e.getMessage());
+            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VERIFICATION_FAILED, e.getMessage());
+        }
+    }
+
+    private static void failSession(VPFlowSession session, String requestId, String reason) {
+
+        session.setStatus(VPFlowStatus.FAILED);
+        session.setFailureReason(reason);
+        VPSessionCache.getInstance().put(requestId, session);
+    }
+
+    /**
+     * Decrypts a {@code direct_post.jwt} JWE and populates {@code submission} with the extracted claims.
+     * The JWE kid identifies the session whose ephemeral private key is used for decryption.
+     * On decryption failure the session is marked FAILED before throwing, so the polling client
+     * sees an immediate terminal state rather than waiting for session expiry.
+     *
+     * @param submission the submission carrying a raw JWE in {@link WalletSubmission#getRawJwe()}
+     * @throws VPAuthenticatorException on JWE header parse failure, missing ephemeral key,
+     *                                  decryption error, or inner JWT claim parsing failure
+     */
+    private void decryptJweIntoSubmission(WalletSubmission submission) throws VPAuthenticatorException {
+
+        String jweCompact = submission.getRawJwe();
+        String requestId = null;
+        try {
+            JWEObject jweObject = JWEObject.parse(jweCompact);
+            requestId = jweObject.getHeader().getKeyID();
+            if (StringUtils.isBlank(requestId)) {
+                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                        "direct_post.jwt: missing kid in JWE header.");
+            }
+
+            VPFlowSession session = VPSessionCache.getInstance().get(requestId);
+            if (session == null || StringUtils.isBlank(session.getEphemeralPrivateKeyJwk())) {
+                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                        "direct_post.jwt: no ephemeral key found for state: " + requestId);
+            }
+
+            jweObject.decrypt(new ECDHDecrypter(ECKey.parse(session.getEphemeralPrivateKeyJwk())));
+
+            // Some wallets encrypt plain JSON claims directly without an inner signed JWT.
+            SignedJWT innerJwt = jweObject.getPayload().toSignedJWT();
+            JWTClaimsSet claims = (innerJwt != null)
+                    ? innerJwt.getJWTClaimsSet()
+                    : JWTClaimsSet.parse(jweObject.getPayload().toJSONObject());
+
+            Map<String, Object> vpTokenMap = claims.getJSONObjectClaim(VPConstants.ResponseParams.VP_TOKEN);
+            if (vpTokenMap != null) {
+                submission.setCredentialTokens(VPAuthenticatorUtil.flattenVpTokenMap(vpTokenMap));
+            }
+            String state = claims.getStringClaim(VPConstants.ResponseParams.STATE);
+            submission.setRequestId(state != null ? state : requestId);
+            submission.setError(claims.getStringClaim(VPConstants.ResponseParams.ERROR));
+            submission.setErrorDescription(claims.getStringClaim(VPConstants.ResponseParams.ERROR_DESCRIPTION));
+            submission.setEncrypted(true);
+
+        } catch (ParseException | JOSEException e) {
+            if (requestId != null) {
+                VPFlowSession failTarget = VPSessionCache.getInstance().get(requestId);
+                if (failTarget != null) {
+                    failSession(failTarget, requestId, "Failed to decrypt wallet response.");
+                }
+            }
+            throw new VPAuthenticatorServerException(VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
+                    "Failed to decrypt or parse direct_post.jwt JWE response.", e);
+        }
     }
 
     /**
