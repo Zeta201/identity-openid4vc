@@ -31,9 +31,6 @@
     <name>WSO2 Carbon - SD-JWT Library</name>
     <description>Selective Disclosure JWT (SD-JWT) library</description>
 
-    <properties>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
