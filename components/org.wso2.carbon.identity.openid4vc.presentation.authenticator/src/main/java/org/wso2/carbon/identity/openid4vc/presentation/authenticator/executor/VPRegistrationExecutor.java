@@ -25,6 +25,7 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.flow.execution.engine.graph.AuthenticationExecutor;
+import org.wso2.carbon.identity.flow.execution.engine.metadata.FlowExecutorMetadata;
 import org.wso2.carbon.identity.flow.execution.engine.model.ExecutorResponse;
 import org.wso2.carbon.identity.flow.execution.engine.model.FlowExecutionContext;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache.VPSessionCache;
@@ -96,6 +97,15 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
     public List<String> getInitiationData() {
 
         return Collections.emptyList();
+    }
+
+    @Override
+    public FlowExecutorMetadata getExecutorMetadata() {
+
+        return FlowExecutorMetadata.builder()
+                .associatedAuthenticator(AMR_VALUE)
+                .connectionRequired(true)
+                .build();
     }
 
     @Override
