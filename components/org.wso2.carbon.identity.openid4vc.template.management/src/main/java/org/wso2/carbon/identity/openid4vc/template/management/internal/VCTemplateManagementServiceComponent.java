@@ -31,6 +31,8 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.identity.api.resource.mgt.APIResourceManager;
 import org.wso2.carbon.identity.openid4vc.template.management.VCTemplateManager;
 import org.wso2.carbon.identity.openid4vc.template.management.VCTemplateManagerImpl;
+import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
+import org.wso2.carbon.identity.openid4vc.template.management.service.impl.PresentationDefinitionServiceImpl;
 
 /**
  * Service component for the VC template management.
@@ -50,6 +52,8 @@ public class VCTemplateManagementServiceComponent {
             BundleContext bundleCtx = context.getBundleContext();
             bundleCtx.registerService(VCTemplateManager.class,
                     VCTemplateManagerImpl.getInstance(), null);
+            bundleCtx.registerService(PresentationDefinitionService.class,
+                    new PresentationDefinitionServiceImpl(), null);
             LOG.debug("VC template management bundle is activated");
         } catch (Throwable e) {
             LOG.error("Error while initializing VC template management component.", e);

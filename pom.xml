@@ -42,6 +42,7 @@
     </scm>
 
     <modules>
+        <module>components/org.wso2.carbon.identity.openid4vc.presentation.common</module>
         <module>components/org.wso2.carbon.identity.openid4vc.template.management</module>
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.common</module>
         <module>components/org.wso2.carbon.identity.sdjwt</module>
@@ -155,6 +156,11 @@
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
                 <version>${com.google.code.gson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
