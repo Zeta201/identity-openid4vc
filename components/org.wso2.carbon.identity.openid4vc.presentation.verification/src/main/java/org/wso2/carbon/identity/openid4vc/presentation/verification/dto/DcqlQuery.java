@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.verification.dto;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +29,9 @@ import java.util.List;
  * needed to execute a verification — no DB identifiers, display names, or tenant metadata.
  * Use {@code DcqlQueryMapper.from(PresentationDefinition)} to produce an instance.
  */
-public class DcqlQuery {
+public class DcqlQuery implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private final List<CredentialQuery> credentials;
 
@@ -66,7 +69,9 @@ public class DcqlQuery {
      * A single credential entry in the DCQL {@code credentials} array.
      * Carries the query ID, expected format, expected vct, issuer trust config, and claim constraints.
      */
-    public static class CredentialQuery {
+    public static class CredentialQuery implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final String id;
         private final String format;
@@ -161,17 +166,26 @@ public class DcqlQuery {
     /**
      * Issuer trust configuration — specifies how to resolve and trust the issuer's signing key.
      */
-    public static class IssuerConfig {
+    public static class IssuerConfig implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final String keySourceType;
         private final String issuerUrl;
         private final String keySource;
+        private final List<String> akiValues;
 
         public IssuerConfig(String keySourceType, String issuerUrl, String keySource) {
+
+            this(keySourceType, issuerUrl, keySource, null);
+        }
+
+        public IssuerConfig(String keySourceType, String issuerUrl, String keySource, List<String> akiValues) {
 
             this.keySourceType = keySourceType;
             this.issuerUrl = issuerUrl;
             this.keySource = keySource;
+            this.akiValues = akiValues != null ? new ArrayList<>(akiValues) : null;
         }
 
         public String getKeySourceType() {
@@ -188,12 +202,19 @@ public class DcqlQuery {
 
             return keySource;
         }
+
+        public List<String> getAkiValues() {
+
+            return akiValues != null ? new ArrayList<>(akiValues) : null;
+        }
     }
 
     /**
      * A single claim constraint — the path that must be present and whether it is mandatory.
      */
-    public static class ClaimQuery {
+    public static class ClaimQuery implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final String path;
         private final boolean mandatory;

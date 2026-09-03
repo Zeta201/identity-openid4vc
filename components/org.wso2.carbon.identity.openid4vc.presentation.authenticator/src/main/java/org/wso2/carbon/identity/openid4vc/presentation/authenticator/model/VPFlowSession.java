@@ -18,8 +18,8 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.model;
 
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.io.Serializable;
 
@@ -46,7 +46,7 @@ public class VPFlowSession implements Serializable {
     private String responseUri;
     private String responseMode;
     private String walletUrl;
-    private PresentationDefinition presentationDefinition;
+    private DcqlQuery dcqlQuery;
     private String failureReason;
 
     public String getRequestId() {
@@ -179,14 +179,14 @@ public class VPFlowSession implements Serializable {
         this.walletUrl = walletUrl;
     }
 
-    public PresentationDefinition getPresentationDefinition() {
+    public DcqlQuery getDcqlQuery() {
 
-        return presentationDefinition;
+        return dcqlQuery;
     }
 
-    public void setPresentationDefinition(PresentationDefinition presentationDefinition) {
+    public void setDcqlQuery(DcqlQuery dcqlQuery) {
 
-        this.presentationDefinition = presentationDefinition;
+        this.dcqlQuery = dcqlQuery;
     }
 
     public String getFailureReason() {
@@ -216,7 +216,7 @@ public class VPFlowSession implements Serializable {
         private String responseUri;
         private String responseMode;
         private String walletUrl;
-        private PresentationDefinition presentationDefinition;
+        private DcqlQuery dcqlQuery;
 
         public Builder requestId(String requestId) {
 
@@ -290,9 +290,9 @@ public class VPFlowSession implements Serializable {
             return this;
         }
 
-        public Builder presentationDefinition(PresentationDefinition presentationDefinition) {
+        public Builder dcqlQuery(DcqlQuery dcqlQuery) {
 
-            this.presentationDefinition = presentationDefinition;
+            this.dcqlQuery = dcqlQuery;
             return this;
         }
 
@@ -316,7 +316,7 @@ public class VPFlowSession implements Serializable {
             session.responseUri = this.responseUri;
             session.responseMode = this.responseMode;
             session.walletUrl = this.walletUrl;
-            session.presentationDefinition = this.presentationDefinition;
+            session.dcqlQuery = this.dcqlQuery;
             return session;
         }
     }

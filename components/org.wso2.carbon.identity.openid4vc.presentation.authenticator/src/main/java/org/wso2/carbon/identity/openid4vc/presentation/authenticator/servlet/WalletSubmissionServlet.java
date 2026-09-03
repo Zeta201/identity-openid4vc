@@ -49,7 +49,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuth
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.util.DcqlQueryMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -172,7 +171,7 @@ public class WalletSubmissionServlet extends HttpServlet {
             try {
                 VerificationResult verificationResult = VPDataHolder
                         .getVerificationService()
-                        .verify(DcqlQueryMapper.from(session.getPresentationDefinition()),
+                        .verify(session.getDcqlQuery(),
                                 session.getTenantId(), submission.getCredentialTokens(),
                                 session.getNonce(), session.getClientId());
 

@@ -18,11 +18,20 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.verification.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Maps a stored {@link PresentationDefinition} to a runtime {@link DcqlQuery}.
@@ -32,6 +41,8 @@ import java.util.List;
  * resulting {@code DcqlQuery} to {@code VerificationService.verify()}.
  */
 public class DcqlQueryMapper {
+
+    private static final Log LOG = LogFactory.getLog(DcqlQueryMapper.class);
 
     private DcqlQueryMapper() {
 
@@ -65,8 +76,13 @@ public class DcqlQueryMapper {
         if (rc.getIssuerConfigs() != null) {
             issuerConfigs = new ArrayList<>();
             for (PresentationDefinition.IssuerConfig ic : rc.getIssuerConfigs()) {
+                List<String> akiValues = null;
+                if ("x5c".equalsIgnoreCase(ic.getKeySourceType())) {
+                    akiValues = resolveAkiValues(ic.getKeySource());
+                }
                 issuerConfigs.add(
-                        new DcqlQuery.IssuerConfig(ic.getKeySourceType(), ic.getIssuerUrl(), ic.getKeySource()));
+                        new DcqlQuery.IssuerConfig(ic.getKeySourceType(), ic.getIssuerUrl(),
+                                ic.getKeySource(), akiValues));
             }
         }
 
