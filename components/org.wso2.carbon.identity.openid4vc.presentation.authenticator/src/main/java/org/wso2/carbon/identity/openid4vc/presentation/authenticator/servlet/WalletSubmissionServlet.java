@@ -241,48 +241,38 @@ public class WalletSubmissionServlet extends HttpServlet {
     private WalletSubmission parseWalletSubmission(HttpServletRequest request)
             throws IOException, VPAuthenticatorClientException, VPAuthenticatorServerException {
 
-        String contentType = StringUtils.defaultString(request.getContentType());
-
-        if (contentType.startsWith("application/x-www-form-urlencoded")) {
-            // Read the body via the stream so the size cap applies even when
-            // Content-Length is absent. Using getParameter() would let the
-            // servlet container read an unbounded body before we could check.
-            byte[] rawBody = request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);
-            if (rawBody.length > MAX_BODY_BYTES) {
-                LOG.warn("Wallet submission rejected: form body stream read exceeded limit of "
-                        + MAX_BODY_BYTES + " bytes (no Content-Length header was present).");
-                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
-                        "Request body exceeds maximum allowed size.");
-            }
-            Map<String, String> formParams = decodeFormBody(new String(rawBody, StandardCharsets.UTF_8));
-            String responseParam = formParams.get(VPConstants.ResponseParams.RESPONSE);
-            if (isJweToken(responseParam)) {
-                return decryptJweResponse(responseParam);
-            }
-            return parseFormParameters(formParams);
-        }
-
-        // JSON body (application/json) or unknown content type.
+        // Read body once; size cap applies regardless of content type.
         byte[] rawBody = request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);
         if (rawBody.length > MAX_BODY_BYTES) {
             LOG.warn("Wallet submission rejected: body stream read exceeded limit of "
-                    + MAX_BODY_BYTES + " bytes (no Content-Length header was present).");
+                    + MAX_BODY_BYTES + " bytes.");
             throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
                     "Request body exceeds maximum allowed size.");
         }
-        try {
-            JsonObject jsonBody = JsonParser.parseString(
-                    new String(rawBody, StandardCharsets.UTF_8)).getAsJsonObject();
-            JsonElement responseElem = jsonBody.get(VPConstants.ResponseParams.RESPONSE);
-            if (responseElem != null && responseElem.isJsonPrimitive()
-                    && isJweToken(responseElem.getAsString())) {
-                return decryptJweResponse(responseElem.getAsString());
+        String bodyStr = new String(rawBody, StandardCharsets.UTF_8);
+
+        if (bodyStr.stripLeading().startsWith("{")) {
+            try {
+                JsonObject jsonBody = JsonParser.parseString(bodyStr).getAsJsonObject();
+                JsonElement responseElem = jsonBody.get(VPConstants.ResponseParams.RESPONSE);
+                if (responseElem != null && responseElem.isJsonPrimitive()
+                        && isJweToken(responseElem.getAsString())) {
+                    return decryptJweResponse(responseElem.getAsString());
+                }
+                return GSON.fromJson(jsonBody, WalletSubmission.class);
+            } catch (JsonSyntaxException e) {
+                throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
+                        "Failed to parse request body as JSON.");
             }
-            return GSON.fromJson(jsonBody, WalletSubmission.class);
-        } catch (JsonSyntaxException e) {
-            throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.INVALID_REQUEST,
-                    "Failed to parse request body as JSON.");
         }
+
+        // Form-encoded body (application/x-www-form-urlencoded).
+        Map<String, String> formParams = decodeFormBody(bodyStr);
+        String responseParam = formParams.get(VPConstants.ResponseParams.RESPONSE);
+        if (isJweToken(responseParam)) {
+            return decryptJweResponse(responseParam);
+        }
+        return parseFormParameters(formParams);
     }
 
     /**

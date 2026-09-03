@@ -459,7 +459,7 @@
         <identity.oid4vc.pkg.version>${project.version}</identity.oid4vc.pkg.version>
 
         <!-- Carbon Identity Framework version -->
-        <carbon.identity.framework.version>7.8.643</carbon.identity.framework.version>
+        <carbon.identity.framework.version>7.11.196</carbon.identity.framework.version>
 
         <!-- Organization Management version -->
         <identity.organization.management.version>1.5.4</identity.organization.management.version>

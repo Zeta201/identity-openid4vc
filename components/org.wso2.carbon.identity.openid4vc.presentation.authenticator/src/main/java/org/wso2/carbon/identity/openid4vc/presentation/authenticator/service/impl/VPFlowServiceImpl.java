@@ -594,8 +594,7 @@ public class VPFlowServiceImpl implements VPFlowService {
             return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(ski);
         } catch (ArrayIndexOutOfBoundsException e) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Malformed SubjectKeyIdentifier extension bytes in trusted CA certificate: "
-                        + e.getMessage(), e);
+                LOG.debug("Malformed SubjectKeyIdentifier extension bytes in trusted CA certificate.", e);
             }
             return null;
         }

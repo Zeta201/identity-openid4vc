@@ -38,7 +38,7 @@ public class VPSessionCache extends BaseCache<VPSessionCacheKey, VPSessionCacheE
 
     private static final String CACHE_NAME = "VPSessionCache";
 
-    private static VPSessionCache instance;
+    private static final VPSessionCache instance = new VPSessionCache();
 
     private VPSessionCache() {
 
@@ -48,9 +48,6 @@ public class VPSessionCache extends BaseCache<VPSessionCacheKey, VPSessionCacheE
     public static VPSessionCache getInstance() {
 
         CarbonUtils.checkSecurity();
-        if (instance == null) {
-            instance = new VPSessionCache();
-        }
         return instance;
     }
 
