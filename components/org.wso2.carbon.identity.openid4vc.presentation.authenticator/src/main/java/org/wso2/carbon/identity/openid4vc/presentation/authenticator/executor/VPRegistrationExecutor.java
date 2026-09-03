@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.ExecutorStatus.STATUS_COMPLETE;
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.ExecutorStatus.STATUS_ERROR;
@@ -115,23 +114,13 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
             }
             return processVPResponse(context);
         } catch (VPAuthenticatorException e) {
-            LOG.error("VP registration executor failed for tenant: "
-                    + context.getTenantDomain().replace("\r", "").replace("\n", ""), e);
+            LOG.error("VP registration executor failed for tenant: " + context.getTenantDomain(), e);
 
             VPAuthenticatorUtil.markSessionFailed((String) context.getProperty(VP_REQUEST_ID),
                     "VP registration failed: " + e.getMessage());
             ExecutorResponse response = new ExecutorResponse();
             response.setResult(STATUS_ERROR);
             response.setErrorMessage("VP registration failed: " + e.getMessage());
-            return response;
-        } catch (RuntimeException e) {
-            LOG.error("Unexpected error in VP registration executor for tenant: "
-                    + context.getTenantDomain().replace("\r", "").replace("\n", ""), e);
-            VPAuthenticatorUtil.markSessionFailed((String) context.getProperty(VP_REQUEST_ID),
-                    "An unexpected error occurred during VP registration.");
-            ExecutorResponse response = new ExecutorResponse();
-            response.setResult(STATUS_ERROR);
-            response.setErrorMessage("VP registration failed due to an unexpected error.");
             return response;
         }
     }
@@ -160,17 +149,13 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
 
         String presentationDefinitionId = authenticatorProperties.get(Constants.PROP_PRESENTATION_DEFINITION_ID);
-        String requestId = UUID.randomUUID().toString();
         long timeoutMs = VPAuthenticatorUtil.resolveTimeoutMs(authenticatorProperties);
 
         VPFlowInitiationResult flowResult = vpFlowService.initiate(
-                requestId, presentationDefinitionId,
-                VPAuthenticatorUtil.resolveTenantDomain(), timeoutMs);
+                presentationDefinitionId, VPAuthenticatorUtil.resolveTenantDomain(), timeoutMs);
 
         Map<String, Object> contextProperties = new HashMap<>();
         contextProperties.put(VP_REQUEST_ID, flowResult.getRequestId());
-        contextProperties.put(WALLET_URL, flowResult.getWalletUrl());
-        contextProperties.put(SESSION_TTL_MS, String.valueOf(timeoutMs));
 
         Map<String, String> additionalInfo = new HashMap<>();
         additionalInfo.put(REDIRECT_URL, flowResult.getWalletUrl());
@@ -221,23 +206,27 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
                         : "Wallet verification failed.";
                 return userError(failureReason);
 
-            default:
-                String walletUrl = (String) context.getProperty(WALLET_URL);
-                String sessionTtlMs = (String) context.getProperty(SESSION_TTL_MS);
+            case ACTIVE:
+                String walletUrl = session.getWalletUrl();
+                long remainingMs = Math.max(0, session.getExpiresAt() - System.currentTimeMillis());
                 Map<String, String> additionalInfo = new HashMap<>();
                 additionalInfo.put(REDIRECT_URL, StringUtils.defaultString(walletUrl));
                 additionalInfo.put(VP_REQUEST_ID, requestId);
                 if (StringUtils.isNotBlank(walletUrl)) {
                     additionalInfo.put(WALLET_URL, walletUrl);
                 }
-                if (StringUtils.isNotBlank(sessionTtlMs)) {
-                    additionalInfo.put(SESSION_TTL_MS, sessionTtlMs);
-                }
+                additionalInfo.put(SESSION_TTL_MS, String.valueOf(remainingMs));
                 ExecutorResponse redirectResponse = new ExecutorResponse();
                 redirectResponse.setResult(STATUS_EXTERNAL_REDIRECTION);
                 redirectResponse.setRequiredData(Collections.singletonList(VP_REQUEST_ID));
                 redirectResponse.setAdditionalInfo(additionalInfo);
                 return redirectResponse;
+
+            case EXPIRED:
+                return userError("VP session has expired.");
+
+            default:
+                return userError("VP session is in an unexpected state: " + status);
         }
     }
 
@@ -262,33 +251,50 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
                 ? result.getVerifiedClaims()
                 : Collections.emptyMap();
 
-        Map<String, Object> localClaims = mapToLocalClaims(credentialClaims, context.getExternalIdPConfig());
-
-        String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdPConfig());
-        String subjectIdentifier = VPAuthenticatorUtil.resolveSubjectIdentifier(
-                credentialClaims, subjectClaimName, metadata);
+        String subjectIdentifier = resolveSubjectIdentifier(credentialClaims, metadata, context.getExternalIdPConfig());
         if (StringUtils.isBlank(subjectIdentifier)) {
+            String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdPConfig());
             return userError("Cannot resolve subject identifier: the configured claim '"
                     + (subjectClaimName != null ? subjectClaimName : "(none)")
                     + "' was not found in the verified credential.");
         }
 
-        // Resolve without namespacing for the local username.
-        String usernameValue = VPAuthenticatorUtil.resolveSubjectIdentifier(
-                credentialClaims, subjectClaimName, null);
+        Map<String, Object> localClaims = buildLocalClaims(credentialClaims, subjectIdentifier,
+                context.getExternalIdPConfig());
+        registerFederatedAssociation(context, subjectIdentifier);
+
+        VPSessionCache.getInstance().remove((String) context.getProperty(VP_REQUEST_ID));
+
+        ExecutorResponse response = new ExecutorResponse(STATUS_COMPLETE);
+        response.setUpdatedUserClaims(localClaims);
+        return response;
+    }
+
+    private String resolveSubjectIdentifier(Map<String, Object> credentialClaims,
+                                            PresentationMetadata metadata,
+                                            ExternalIdPConfig idpConfig) {
+
+        String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(idpConfig);
+        return VPAuthenticatorUtil.resolveSubjectIdentifier(credentialClaims, subjectClaimName, metadata);
+    }
+
+    private Map<String, Object> buildLocalClaims(Map<String, Object> credentialClaims,
+                                                  String subjectIdentifier,
+                                                  ExternalIdPConfig idpConfig) {
+
+        Map<String, Object> localClaims = mapToLocalClaims(credentialClaims, idpConfig);
+        String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(idpConfig);
+        String usernameValue = VPAuthenticatorUtil.resolveSubjectIdentifier(credentialClaims, subjectClaimName, null);
         localClaims.put(USERNAME_CLAIM_URI, StringUtils.isNotBlank(usernameValue) ? usernameValue : subjectIdentifier);
+        return localClaims;
+    }
+
+    private void registerFederatedAssociation(FlowExecutionContext context, String subjectIdentifier) {
 
         if (context.getExternalIdPConfig() != null) {
             context.getFlowUser().addFederatedAssociation(
                     context.getExternalIdPConfig().getIdPName(), subjectIdentifier);
         }
-
-        String requestId = (String) context.getProperty(VP_REQUEST_ID);
-        VPSessionCache.getInstance().remove(requestId);
-
-        ExecutorResponse response = new ExecutorResponse(STATUS_COMPLETE);
-        response.setUpdatedUserClaims(localClaims);
-        return response;
     }
 
     /**

@@ -20,14 +20,12 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache;
 
 import org.wso2.carbon.identity.core.cache.CacheKey;
 
-import java.io.Serial;
 
 /**
  * Cache key for {@link VPSessionCache}, keyed by transaction ID.
  */
 public class VPSessionCacheKey extends CacheKey {
 
-    @Serial
     private static final long serialVersionUID = 1L;
 
     private final String requestId;

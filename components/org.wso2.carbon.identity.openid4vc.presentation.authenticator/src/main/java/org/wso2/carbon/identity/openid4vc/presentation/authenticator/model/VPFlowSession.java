@@ -45,6 +45,7 @@ public class VPFlowSession implements Serializable {
     private String clientIdScheme;
     private String responseUri;
     private String responseMode;
+    private String walletUrl;
     private PresentationDefinition presentationDefinition;
     private String failureReason;
 
@@ -168,6 +169,16 @@ public class VPFlowSession implements Serializable {
         this.responseMode = responseMode;
     }
 
+    public String getWalletUrl() {
+
+        return walletUrl;
+    }
+
+    public void setWalletUrl(String walletUrl) {
+
+        this.walletUrl = walletUrl;
+    }
+
     public PresentationDefinition getPresentationDefinition() {
 
         return presentationDefinition;
@@ -204,6 +215,7 @@ public class VPFlowSession implements Serializable {
         private String clientIdScheme;
         private String responseUri;
         private String responseMode;
+        private String walletUrl;
         private PresentationDefinition presentationDefinition;
 
         public Builder requestId(String requestId) {
@@ -272,6 +284,12 @@ public class VPFlowSession implements Serializable {
             return this;
         }
 
+        public Builder walletUrl(String walletUrl) {
+
+            this.walletUrl = walletUrl;
+            return this;
+        }
+
         public Builder presentationDefinition(PresentationDefinition presentationDefinition) {
 
             this.presentationDefinition = presentationDefinition;
@@ -297,6 +315,7 @@ public class VPFlowSession implements Serializable {
             session.clientIdScheme = this.clientIdScheme;
             session.responseUri = this.responseUri;
             session.responseMode = this.responseMode;
+            session.walletUrl = this.walletUrl;
             session.presentationDefinition = this.presentationDefinition;
             return session;
         }

@@ -86,7 +86,7 @@ public class VPConfigServiceImpl implements VPConfigService {
             resourceAdd.setAttributes(attributes);
             getConfigurationManager().replaceResource(VP_CONFIG_RESOURCE_TYPE_NAME, resourceAdd);
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Saved VP config for " + tenantDomain.replace("\r", "").replace("\n", "")
+                LOG.debug("Saved VP config for " + tenantDomain
                         + ": clientIdScheme=" + config.getClientIdScheme()
                         + " responseMode=" + config.getResponseMode());
             }

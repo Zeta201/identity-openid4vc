@@ -92,7 +92,7 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
             provisionEcdsaKeyPairIfAbsent(tenantDomain);
         } catch (Exception e) {
             throw new IdentityProviderManagementException(
-                    "Failed to provision ECDSA keypair for tenant [" + sanitizeLog(tenantDomain)
+                    "Failed to provision ECDSA keypair for tenant [" + tenantDomain
                     + "]. VP request signing would be unavailable — IdP creation aborted.", e);
         }
 
@@ -137,12 +137,12 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
         if (keyStore.containsAlias(alias) && keyStore.isKeyEntry(alias)) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("ECDSA alias '" + alias + "' already exists for tenant ["
-                        + sanitizeLog(tenantDomain) + "]. Skipping.");
+                        + tenantDomain + "]. Skipping.");
             }
             return;
         }
 
-        LOG.info("Generating P-256 ECDSA keypair for tenant [" + sanitizeLog(tenantDomain)
+        LOG.info("Generating P-256 ECDSA keypair for tenant [" + tenantDomain
                 + "] alias '" + alias + "'.");
 
         CryptoUtil.getDefaultCryptoUtil();
@@ -161,7 +161,7 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
             }
         }
 
-        LOG.info("ECDSA P-256 keypair provisioned for tenant [" + sanitizeLog(tenantDomain)
+        LOG.info("ECDSA P-256 keypair provisioned for tenant [" + tenantDomain
                 + "] alias '" + alias + "'.");
     }
 
@@ -233,17 +233,4 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
                 .getCertificate(certificateHolder);
     }
 
-    /**
-     * Strips CR and LF characters from a log value to prevent log-injection attacks.
-     *
-     * @param value the raw string to sanitize; may be {@code null}
-     * @return the sanitized string, or an empty string if {@code value} is {@code null}
-     */
-    private static String sanitizeLog(String value) {
-
-        if (value == null) {
-            return "";
-        }
-        return value.replace("\r", "").replace("\n", "");
-    }
 }

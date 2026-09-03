@@ -92,32 +92,8 @@ public class VPFlowServiceImpl implements VPFlowService {
 
     private static final Log LOG = LogFactory.getLog(VPFlowServiceImpl.class);
 
-    private static final long SESSION_TTL_MS =
-            Long.parseLong(Constants.PROP_TIMEOUT_DEFAULT_VALUE) * 1000L;
-
     /**
-     * Initiates a standalone VP verification or self-registration flow.
-     *
-     * <p>Generates a random request ID, creates a {@link VPFlowSession}, and stores it in the distributed cache.
-     *
-     * @param presentationDefinitionId ID of the presentation definition describing required credentials.
-     * @param tenantDomain             Tenant domain under which the flow runs.
-     * @return {@link VPFlowInitiationResult} containing the request ID, wallet URL, and expiry time.
-     * @throws VPAuthenticatorException If either argument is blank, or session initialisation fails.
-     */
-    @Override
-    public VPFlowInitiationResult initiate(String presentationDefinitionId, String tenantDomain)
-            throws VPAuthenticatorException {
-
-        return initiateInternal(UUID.randomUUID().toString(), presentationDefinitionId,
-                tenantDomain, SESSION_TTL_MS);
-    }
-
-    /**
-     * Initiates an authentication VP flow with a configurable timeout.
-     *
-     * <p>Used by {@link org.wso2.carbon.identity.openid4vc.presentation.authenticator.VPAuthenticator}
-     * to start a login session with a per-IdP timeout.
+     * Initiates a VP flow session with a configurable timeout.
      *
      * @param presentationDefinitionId ID of the presentation definition describing required credentials.
      * @param tenantDomain             Tenant domain under which the flow runs.
@@ -126,10 +102,10 @@ public class VPFlowServiceImpl implements VPFlowService {
      * @throws VPAuthenticatorException If any argument is blank or session initialisation fails.
      */
     @Override
-    public VPFlowInitiationResult initiate(String requestId, String presentationDefinitionId, String tenantDomain,
+    public VPFlowInitiationResult initiate(String presentationDefinitionId, String tenantDomain,
             long timeoutMs) throws VPAuthenticatorException {
 
-        return initiateInternal(requestId, presentationDefinitionId, tenantDomain, timeoutMs);
+        return initiateInternal(UUID.randomUUID().toString(), presentationDefinitionId, tenantDomain, timeoutMs);
     }
 
     /**
@@ -211,11 +187,11 @@ public class VPFlowServiceImpl implements VPFlowService {
                 .responseUri(responseUri)
                 .responseMode(responseMode)
                 .build();
-        VPSessionCache.getInstance().put(requestId, session);
-
         String requestUri = baseUrl + Constants.REQUEST_URI_ENDPOINT + requestId;
-
         String walletUrl = buildWalletUrl(clientId, requestUri);
+
+        session.setWalletUrl(walletUrl);
+        VPSessionCache.getInstance().put(requestId, session);
 
         return new VPFlowInitiationResult(requestId, walletUrl, requestUri, clientId, expiresAt);
     }
@@ -426,8 +402,7 @@ public class VPFlowServiceImpl implements VPFlowService {
         } catch (VPAuthenticatorException e) {
             throw e;
         } catch (GeneralSecurityException | JOSEException | IdentityKeyStoreResolverException e) {
-            LOG.error("Error building request object JWT for tenant="
-                    + tenantDomain.replace("\r", "").replace("\n", ""), e);
+            LOG.error("Error building request object JWT for tenant=" + tenantDomain, e);
             throw new VPAuthenticatorServerException(
                     VPAuthenticatorErrorCode.SIGNING_ERROR,
                     "Error building request object JWT.", e);

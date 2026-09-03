@@ -26,8 +26,7 @@ public enum VPFlowStatus {
     ACTIVE("ACTIVE"),
     VERIFIED("VERIFIED"),
     FAILED("FAILED"),
-    EXPIRED("EXPIRED"),
-    NOT_FOUND("NOT_FOUND");
+    EXPIRED("EXPIRED");
 
     private final String value;
 

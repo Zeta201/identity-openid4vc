@@ -33,7 +33,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import java.io.IOException;
-import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 
 import javax.servlet.Servlet;
@@ -68,7 +67,6 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
 )
 public class VPFlowStatusServlet extends HttpServlet {
 
-    @Serial
     private static final long serialVersionUID = 1L;
 
     private static final Log LOG = LogFactory.getLog(VPFlowStatusServlet.class);
@@ -102,7 +100,7 @@ public class VPFlowStatusServlet extends HttpServlet {
             return;
         }
         if (session == null) {
-            sendStatus(response, requestId, VPFlowStatus.NOT_FOUND.name(), null);
+            sendStatus(response, requestId, "NOT_FOUND", null);
             return;
         }
 

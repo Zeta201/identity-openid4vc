@@ -61,7 +61,7 @@ public class VPFlowServiceImplTest {
 
         // Execute test — blank definitionId should fail validation
         Assert.assertThrows(VPAuthenticatorClientException.class,
-                () -> service.initiate("", "example.com"));
+                () -> service.initiate("", "example.com", 30_000L));
     }
 
     @Test(priority = 2,
@@ -70,7 +70,7 @@ public class VPFlowServiceImplTest {
 
         // Execute test — null definitionId should fail validation
         Assert.assertThrows(VPAuthenticatorClientException.class,
-                () -> service.initiate(null, "example.com"));
+                () -> service.initiate(null, "example.com", 30_000L));
     }
 
     @Test(priority = 3,
@@ -79,7 +79,7 @@ public class VPFlowServiceImplTest {
 
         // Execute test — blank tenantDomain should fail validation
         Assert.assertThrows(VPAuthenticatorClientException.class,
-                () -> service.initiate("def-id", ""));
+                () -> service.initiate("def-id", "", 30_000L));
     }
 
     @Test(priority = 4,
@@ -88,7 +88,7 @@ public class VPFlowServiceImplTest {
 
         // Execute test — null tenantDomain should fail validation
         Assert.assertThrows(VPAuthenticatorClientException.class,
-                () -> service.initiate("def-id", null));
+                () -> service.initiate("def-id", null, 30_000L));
     }
 
     @Test(priority = 5, description = "Test that initiate validation failure carries the INVALID_REQUEST error code")
@@ -96,7 +96,7 @@ public class VPFlowServiceImplTest {
 
         try {
             // Execute test
-            service.initiate("", "example.com");
+            service.initiate("", "example.com", 30_000L);
         } catch (VPAuthenticatorClientException e) {
             // Verify the error code is INVALID_REQUEST
             Assert.assertEquals(e.getCode(), VPAuthenticatorErrorCode.INVALID_REQUEST.getCode(),

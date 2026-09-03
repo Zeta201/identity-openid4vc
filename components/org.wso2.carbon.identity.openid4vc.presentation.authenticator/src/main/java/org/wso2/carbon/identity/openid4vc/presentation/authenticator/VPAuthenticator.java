@@ -32,7 +32,6 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
@@ -56,7 +55,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -91,7 +89,6 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
     /**
      * Serial version UID.
      */
-    @java.io.Serial
     private static final long serialVersionUID = 1L;
 
     private static final Log LOG = LogFactory.getLog(VPAuthenticator.class);
@@ -139,8 +136,8 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
      */
     @Override
     protected void initiateAuthenticationRequest(HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationContext context)
+                                                 HttpServletResponse response,
+                                                 AuthenticationContext context)
             throws AuthenticationFailedException {
 
         if (!Boolean.parseBoolean(IdentityUtil.getProperty(VPConstants.ConfigKeys.FEATURE_ENABLED))) {
@@ -150,7 +147,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
         }
 
         try {
-            String subOrganizationId = VPAuthenticatorUtil.resolveOrganizationId();
+            String organizationId = VPAuthenticatorUtil.resolveOrganizationId();
             String tenantDomain = VPAuthenticatorUtil.resolveTenantDomain();
 
             String presentationDefinitionId = MapUtils.getString(
@@ -158,14 +155,13 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
             long timeoutMs = VPAuthenticatorUtil.resolveTimeoutMs(context.getAuthenticatorProperties());
 
-            String requestId = UUID.randomUUID().toString();
-            context.setProperty(CONTEXT_VP_REQUEST_ID, requestId);
-
             VPFlowInitiationResult initiationResult = VPDataHolder.getVPFlowService()
-                    .initiate(requestId, presentationDefinitionId, tenantDomain, timeoutMs);
+                    .initiate(presentationDefinitionId, tenantDomain, timeoutMs);
+
+            context.setProperty(CONTEXT_VP_REQUEST_ID, initiationResult.getRequestId());
 
             String redirectUrl = createRedirectUrl(initiationResult, context.getContextIdentifier(),
-                    tenantDomain, subOrganizationId, timeoutMs);
+                    tenantDomain, organizationId, timeoutMs);
 
             response.sendRedirect(redirectUrl);
 
@@ -186,8 +182,9 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
      */
     @Override
     protected void processAuthenticationResponse(HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationContext context) throws AuthenticationFailedException {
+                                                 HttpServletResponse response,
+                                                 AuthenticationContext context)
+            throws AuthenticationFailedException {
 
         String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdP());
         if (StringUtils.isBlank(subjectClaimName)) {
@@ -223,11 +220,6 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
                     VPAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getMessage());
         }
 
-        // Clean up both caches now that authentication is complete.
-        String sessionDataKey = StringUtils.trimToNull(getValidatedParameter(request, PARAM_SESSION_DATA_KEY));
-        if (StringUtils.isNotBlank(sessionDataKey)) {
-            FrameworkUtils.removeAuthenticationContextFromCache(sessionDataKey);
-        }
         VPSessionCache.getInstance().remove(requestId);
 
         Map<String, Object> verifiedClaims = verificationResult.getVerifiedClaims() != null
@@ -306,7 +298,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
      * @param initiationResult the result from the VP flow service containing the request ID and wallet URL
      * @param sessionDataKey   the IS authentication context identifier (distinct from the VP requestId)
      * @param tenantDomain     the resolved tenant domain for the current authentication
-     * @param organizationId   the sub-organization ID, or empty string if not in a sub-org context
+     * @param organizationId   the organization ID, or empty string if not in an org context
      * @return the fully constructed redirect URL
      */
     private String createRedirectUrl(VPFlowInitiationResult initiationResult, String sessionDataKey,

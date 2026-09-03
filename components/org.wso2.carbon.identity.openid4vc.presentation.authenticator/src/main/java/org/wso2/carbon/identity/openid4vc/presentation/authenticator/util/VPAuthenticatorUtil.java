@@ -90,8 +90,7 @@ public class VPAuthenticatorUtil {
             }
             return configService.getConfig(tenantDomain);
         } catch (VPAuthenticatorException e) {
-            LOG.warn("Failed to read tenant config for "
-                    + tenantDomain.replace("\r", "").replace("\n", "") + "; using server defaults.", e);
+            LOG.warn("Failed to read tenant config for " + tenantDomain + "; using server defaults.", e);
             return new VPConfigService.TenantConfig();
         }
     }
@@ -341,8 +340,7 @@ public class VPAuthenticatorUtil {
                         + Constants.PROP_TIMEOUT_MIN_SECONDS + ", " + Constants.PROP_TIMEOUT_MAX_SECONDS
                         + "]; using default.");
             } catch (NumberFormatException e) {
-                LOG.warn("Invalid timeout value '"
-                        + timeoutStr.replace("\r", "").replace("\n", "") + "'; using default.", e);
+                LOG.warn("Invalid timeout value '" + timeoutStr + "'; using default.", e);
             }
         }
 
@@ -363,18 +361,17 @@ public class VPAuthenticatorUtil {
      */
     public static String resolveTenantDomain() throws VPAuthenticatorServerException {
 
-        String subOrganizationId = resolveOrganizationId();
-        if (StringUtils.isBlank(subOrganizationId)) {
+        String organizationId = resolveOrganizationId();
+        if (StringUtils.isBlank(organizationId)) {
             return PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
         }
         OrganizationManager organizationManager = VPDataHolder.getOrganizationManager();
         try {
-            return organizationManager.resolveTenantDomain(subOrganizationId);
+            return organizationManager.resolveTenantDomain(organizationId);
         } catch (OrganizationManagementException e) {
             throw new VPAuthenticatorServerException(
                     VPAuthenticatorErrorCode.INTERNAL_SERVER_ERROR,
-                    "Failed to resolve tenant domain for org: "
-                            + subOrganizationId.replace("\r", "").replace("\n", ""), e);
+                    "Failed to resolve tenant domain for org: " + organizationId, e);
         }
     }
 
@@ -421,8 +418,7 @@ public class VPAuthenticatorUtil {
             session.setFailureReason(reason);
             VPSessionCache.getInstance().put(requestId, session);
         } catch (Exception e) {
-            LOG.warn("Failed to mark VP session as FAILED for requestId: "
-                    + requestId.replace("\r", "").replace("\n", ""), e);
+            LOG.warn("Failed to mark VP session as FAILED for requestId: " + requestId, e);
         }
     }
 

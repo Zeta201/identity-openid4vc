@@ -51,7 +51,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.Verifica
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
 import java.io.IOException;
-import java.io.Serial;
 import java.lang.reflect.Type;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -88,7 +87,6 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
 )
 public class WalletSubmissionServlet extends HttpServlet {
 
-    @Serial
     private static final long serialVersionUID = 1L;
 
     private static final Log LOG = LogFactory.getLog(WalletSubmissionServlet.class);

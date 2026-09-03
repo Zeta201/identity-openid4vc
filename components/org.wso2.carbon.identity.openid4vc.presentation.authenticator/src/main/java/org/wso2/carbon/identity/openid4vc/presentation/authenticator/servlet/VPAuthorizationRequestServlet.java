@@ -37,7 +37,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuth
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 
 import java.io.IOException;
-import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 
 import javax.servlet.Servlet;
@@ -73,7 +72,6 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
 )
 public class VPAuthorizationRequestServlet extends HttpServlet {
 
-    @Serial
     private static final long serialVersionUID = 1L;
 
     private static final Log LOG = LogFactory.getLog(VPAuthorizationRequestServlet.class);

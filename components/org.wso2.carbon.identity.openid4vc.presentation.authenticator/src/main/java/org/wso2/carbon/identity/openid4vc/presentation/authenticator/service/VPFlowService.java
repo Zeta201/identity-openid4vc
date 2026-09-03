@@ -29,29 +29,16 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 public interface VPFlowService {
 
     /**
-     * Initiates a new VP flow session for standalone verification or self-registration.
-     * A random request ID is generated internally.
+     * Initiates a new VP flow session. A random request ID is generated internally
+     * and returned via the initiation result.
      *
-     * @param presentationDefinitionId the ID of the presentation definition to request
-     * @param tenantDomain             the tenant domain for the request
-     * @return initiation result containing the request ID, wallet URL, request URI, and expiry timestamp
-     * @throws VPAuthenticatorException if the configuration or presentation definition lookup fails
-     */
-    VPFlowInitiationResult initiate(String presentationDefinitionId, String tenantDomain)
-            throws VPAuthenticatorException;
-
-    /**
-     * Initiates a new VP flow session for the authentication flow with a caller-supplied request ID
-     * and configurable timeout.
-     *
-     * @param requestId                the caller-supplied transaction ID for this VP session
      * @param presentationDefinitionId the ID of the presentation definition to request
      * @param tenantDomain             the tenant domain for the request
      * @param timeoutMs                the session TTL in milliseconds
      * @return initiation result containing the request ID, wallet URL, request URI, and expiry timestamp
      * @throws VPAuthenticatorException if the configuration or presentation definition lookup fails
      */
-    VPFlowInitiationResult initiate(String requestId, String presentationDefinitionId, String tenantDomain,
+    VPFlowInitiationResult initiate(String presentationDefinitionId, String tenantDomain,
             long timeoutMs) throws VPAuthenticatorException;
 
     /**
