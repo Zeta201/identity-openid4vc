@@ -43,7 +43,7 @@ public interface Verifier {
      * Verifies the credential token in the given context end-to-end.
      *
      * @param ctx verification context carrying the raw token, request config, tenant, and nonce
-     * @return {@link CredentialVerificationResult} pairing the presentation metadata with the extracted subject-attribute claims
+     * @return {@link CredentialVerificationResult} pairing the presentation metadata with the extracted claims
      * @throws VerificationException if verification fails for any reason
      */
     CredentialVerificationResult verify(CredentialVerificationContext ctx) throws VerificationException;

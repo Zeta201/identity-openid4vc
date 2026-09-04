@@ -25,9 +25,9 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.Verifier;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationConstants;
@@ -81,7 +81,8 @@ public class VerificationServiceImplTest {
     public void testVerifyWithEmptyTokensReturnsNotVerified() throws Exception {
 
         // Execute test
-        PresentationVerificationResult result = service.verify(emptyQuery(), TENANT_ID, Collections.emptyMap(), null, null);
+        PresentationVerificationResult result =
+                service.verify(emptyQuery(), TENANT_ID, Collections.emptyMap(), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
