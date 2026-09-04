@@ -18,7 +18,6 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.verification.internal;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.validators.CredentialSignatureValidator;
 
 import java.util.ArrayList;

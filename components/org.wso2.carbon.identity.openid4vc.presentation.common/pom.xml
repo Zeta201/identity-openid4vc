@@ -91,6 +91,7 @@
                             org.wso2.carbon.identity.core.util;resolution:=optional,
                             *;resolution:=optional
                         </Import-Package>
+                        <_removeheaders>Require-Capability</_removeheaders>
                     </instructions>
                 </configuration>
             </plugin>

@@ -530,6 +530,5 @@
         <h2database.version>2.2.224</h2database.version>
 
         <equinox.osgi.services.version>3.12.0</equinox.osgi.services.version>
-
     </properties>
 </project>
