@@ -22,7 +22,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.owasp.encoder.Encode;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
@@ -61,8 +60,8 @@ import javax.servlet.http.HttpServletResponse;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.AUTHENTICATOR_FRIENDLY_NAME;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.AUTHENTICATOR_NAME;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.CONTEXT_VP_REQUEST_ID;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.DISPLAY_ORDER_1;
-import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.DISPLAY_ORDER_3;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.DISPLAY_ORDER_PRESENTATION_DEFINITION;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.DISPLAY_ORDER_TIMEOUT;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.PARAM_STATUS;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.PARAM_VP_REQUEST_ID;
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Constants.PROP_PRESENTATION_DEFINITION_ID;
@@ -94,6 +93,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
     private static final String WALLET_LOGIN_PAGE = "/authenticationendpoint/wallet_login.jsp";
     private static final String PARAM_SESSION_DATA_KEY = "sessionDataKey";
+
     private static final String PARAM_REQUEST_ID = "requestId";
     private static final String PARAM_WALLET_URL = "walletUrl";
     private static final String PARAM_TENANT_DOMAIN = "tenantDomain";
@@ -187,7 +187,9 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
 
         String subjectClaimName = VPAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdP());
         if (StringUtils.isBlank(subjectClaimName)) {
-            LOG.debug("No subject attribute configured on Digital Wallet IdP; will fall back to cnf claim.");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("No subject attribute configured on Digital Wallet IdP; will fall back to cnf claim.");
+            }
         }
 
         String requestId = (String) context.getProperty(CONTEXT_VP_REQUEST_ID);
@@ -410,7 +412,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
         presentationDefId.setName(PROP_PRESENTATION_DEFINITION_ID);
         presentationDefId.setDisplayName(PROP_PRESENTATION_DEFINITION_ID_DISPLAY);
         presentationDefId.setDescription(PROP_PRESENTATION_DEFINITION_ID_DESC);
-        presentationDefId.setDisplayOrder(DISPLAY_ORDER_1);
+        presentationDefId.setDisplayOrder(DISPLAY_ORDER_PRESENTATION_DEFINITION);
         presentationDefId.setRequired(false);
         configProperties.add(presentationDefId);
 
@@ -418,7 +420,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
         timeout.setName(PROP_TIMEOUT_SECONDS);
         timeout.setDisplayName(PROP_TIMEOUT_SECONDS_DISPLAY);
         timeout.setDescription(PROP_TIMEOUT_SECONDS_DESC);
-        timeout.setDisplayOrder(DISPLAY_ORDER_3);
+        timeout.setDisplayOrder(DISPLAY_ORDER_TIMEOUT);
         timeout.setDefaultValue(PROP_TIMEOUT_DEFAULT_VALUE);
         timeout.setRequired(false);
         configProperties.add(timeout);
@@ -426,16 +428,8 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
         return configProperties;
     }
 
-    /**
-     * Retrieves and HTML-encodes a request parameter, returning {@code null} if the value is blank.
-     *
-     * @param request the HTTP request
-     * @param name    the parameter name to retrieve
-     * @return the HTML-encoded parameter value, or {@code null} if absent or blank
-     */
     private String getValidatedParameter(HttpServletRequest request, String name) {
 
-        String value = request.getParameter(name);
-        return StringUtils.isNotBlank(value) ? Encode.forHtml(value) : null;
+        return StringUtils.trimToNull(request.getParameter(name));
     }
 }

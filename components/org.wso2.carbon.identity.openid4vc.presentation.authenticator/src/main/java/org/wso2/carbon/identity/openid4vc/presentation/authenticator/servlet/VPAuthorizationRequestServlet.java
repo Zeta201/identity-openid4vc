@@ -68,12 +68,6 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
     private static final Log LOG = LogFactory.getLog(VPAuthorizationRequestServlet.class);
 
     @Override
-    public void init() throws ServletException {
-
-        super.init();
-    }
-
-    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -99,7 +93,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
                     "Invalid path format."));
             return;
         }
-        
+
         // Only the bare /{requestId} path is served here (wallet fetches the authorization JWT).
         // Status polling is handled by VPFlowStatusServlet at /openid4vp/v1/status.
         if (pathParts.length >= 3) {
@@ -166,7 +160,7 @@ public class VPAuthorizationRequestServlet extends HttpServlet {
      * @throws IOException              if writing to the response output stream fails
      */
     private void serveAuthorizationRequestJwt(HttpServletResponse response,
-                                         String requestId) throws VPAuthenticatorException, IOException {
+            String requestId) throws VPAuthenticatorException, IOException {
 
         String requestJwt = VPDataHolder.getVPFlowService().createAuthorizationRequestJwt(requestId);
 

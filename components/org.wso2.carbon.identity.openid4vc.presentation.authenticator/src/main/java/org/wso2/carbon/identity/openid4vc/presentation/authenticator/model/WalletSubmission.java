@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.model;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -61,12 +62,12 @@ public class WalletSubmission {
 
     public Map<String, String> getCredentialTokens() {
 
-        return credentialTokens;
+        return credentialTokens != null ? new HashMap<>(credentialTokens) : null;
     }
 
     public void setCredentialTokens(Map<String, String> credentialTokens) {
 
-        this.credentialTokens = credentialTokens;
+        this.credentialTokens = credentialTokens != null ? new HashMap<>(credentialTokens) : null;
     }
 
     public String getError() {

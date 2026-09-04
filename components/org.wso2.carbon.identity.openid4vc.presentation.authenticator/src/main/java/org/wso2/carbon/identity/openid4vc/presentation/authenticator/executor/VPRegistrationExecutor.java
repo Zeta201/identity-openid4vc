@@ -64,6 +64,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
     private static final String EXECUTOR_NAME = Constants.EXECUTOR_NAME;
     private static final String AMR_VALUE = Constants.AUTHENTICATOR_NAME;
 
+    // Package-private so unit tests in the same package can reference these keys directly.
     static final String VP_REQUEST_ID = Constants.CONTEXT_VP_REQUEST_ID;
     static final String WALLET_URL = Constants.CONTEXT_WALLET_URL;
     static final String SESSION_TTL_MS = Constants.CONTEXT_SESSION_TTL_MS;
@@ -123,7 +124,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
             }
             return processVPResponse(context);
         } catch (VPAuthenticatorException e) {
-            LOG.error("VP registration executor failed for tenant: " + context.getTenantDomain(), e);
+            LOG.error("VP registration executor failed for requestId: " + context.getProperty(VP_REQUEST_ID), e);
 
             vpFlowService.failSession((String) context.getProperty(VP_REQUEST_ID),
                     "VP registration failed: " + e.getMessage());
@@ -184,7 +185,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
      * Processes the VP flow response after the wallet has submitted the presentation.
      * Reads the session status and returns the appropriate executor response.
      *
-     * @param context the current flow execution context carrying the {@code vp_requestId}
+     * @param context the current flow execution context carrying the {@code vp_request_id}
      * @return {@code STATUS_COMPLETE} if verified, {@code STATUS_USER_ERROR} if failed,
      *         or {@code STATUS_EXTERNAL_REDIRECTION} if still pending
      */
@@ -198,10 +199,6 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
         }
 
         VPFlowStatus status = session.getStatus();
-        if (status == null) {
-            return userError("VP session has no status.");
-        }
-
         switch (status) {
             case VERIFIED:
                 return buildCompleteResponse(context, session);
@@ -209,7 +206,6 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
             case FAILED:
                 VerificationResult verificationResult = session.getVerificationResult();
                 String failureReason = (verificationResult != null
-                        && verificationResult.getErrors() != null
                         && !verificationResult.getErrors().isEmpty())
                         ? verificationResult.getErrors().get(0)
                         : "Wallet verification failed.";

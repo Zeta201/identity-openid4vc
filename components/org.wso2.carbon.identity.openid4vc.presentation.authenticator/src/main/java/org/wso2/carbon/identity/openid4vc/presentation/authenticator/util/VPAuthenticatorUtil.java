@@ -59,6 +59,9 @@ public class VPAuthenticatorUtil {
 
     private static final Log LOG = LogFactory.getLog(VPAuthenticatorUtil.class);
 
+    // X.509 SAN GeneralName type for dNSName (RFC 5280).
+    private static final int SAN_TYPE_DNS = 2;
+
     private VPAuthenticatorUtil() { }
 
     /**
@@ -202,7 +205,7 @@ public class VPAuthenticatorUtil {
             Collection<List<?>> sans = cert.getSubjectAlternativeNames();
             if (sans != null) {
                 for (List<?> san : sans) {
-                    if (san.size() >= 2 && Integer.valueOf(2).equals(san.get(0))) {
+                    if (san.size() >= 2 && Integer.valueOf(SAN_TYPE_DNS).equals(san.get(0))) {
                         return (String) san.get(1);
                     }
                 }
@@ -214,7 +217,6 @@ public class VPAuthenticatorUtil {
     }
 
     /**
-     * Resolves the subject identifier from verified credential claims.
      * Resolves the subject identifier for the authenticated user from the verified credential claims.
      * The raw claim value is namespaced by the credential issuer (the JWT {@code iss} value from
      * {@code metadata}) to prevent cross-issuer collisions: two credentials from different issuers
@@ -411,5 +413,4 @@ public class VPAuthenticatorUtil {
         }
         return flattened;
     }
-
 }

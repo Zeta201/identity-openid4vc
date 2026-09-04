@@ -41,8 +41,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPConfigService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.AuthorizationRequestBuilder;
@@ -50,10 +48,12 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Consta
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.util.DcqlQueryMapper;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.util.DcqlQueryMapper;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -156,7 +156,8 @@ public class VPFlowServiceImpl implements VPFlowService {
         String requestUri = baseUrl + Constants.REQUEST_URI_ENDPOINT + requestId;
         String walletUrl = VPConstants.Protocol.OPENID4VP_SCHEME + "?"
                 + VPConstants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
-                + "&" + VPConstants.RequestParams.REQUEST_URI + "=" + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
+                + "&" + VPConstants.RequestParams.REQUEST_URI + "="
+                + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
 
         VPFlowSession session = new VPFlowSession.Builder()
                 .dcqlQuery(dcqlQuery)
@@ -267,7 +268,7 @@ public class VPFlowServiceImpl implements VPFlowService {
 
         String requestId = submission.getRequestId();
 
-        // Handle wallet-side errors record the failure and return normally —
+        // Handle wallet-side errors: record the failure and return normally —
         // the server always responds 200 OK to the wallet even when the wallet reports an error.
         if (StringUtils.isNotBlank(submission.getError())) {
             if (StringUtils.isNotBlank(requestId)) {
@@ -325,7 +326,7 @@ public class VPFlowServiceImpl implements VPFlowService {
                             submission.getCredentialTokens(), session.getNonce(), session.getClientId());
 
             if (!result.isVerified()) {
-                String errorMsg = result.getErrors() != null && !result.getErrors().isEmpty()
+                String errorMsg = !result.getErrors().isEmpty()
                         ? String.join(", ", result.getErrors()) : "VP verification failed.";
                 failSession(session, requestId, errorMsg);
                 throw new VPAuthenticatorClientException(VPAuthenticatorErrorCode.VERIFICATION_FAILED, errorMsg);
@@ -341,7 +342,8 @@ public class VPFlowServiceImpl implements VPFlowService {
         }
     }
 
-    private static void failSession(VPFlowSession session, String requestId, String reason) {
+    private static void failSession(VPFlowSession session, String requestId, String reason)
+            throws VPAuthenticatorServerException {
 
         session.setStatus(VPFlowStatus.FAILED);
         session.setFailureReason(reason);

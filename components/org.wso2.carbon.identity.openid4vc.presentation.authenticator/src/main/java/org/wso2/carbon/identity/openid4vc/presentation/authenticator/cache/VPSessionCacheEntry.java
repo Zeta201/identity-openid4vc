@@ -40,9 +40,4 @@ public class VPSessionCacheEntry extends CacheEntry {
 
         return session;
     }
-
-    public void setSession(VPFlowSession session) {
-
-        this.session = session;
-    }
 }

@@ -56,19 +56,9 @@ public class VPAuthorizationRequest {
         return requestId;
     }
 
-    public void setRequestId(String requestId) {
-
-        this.requestId = requestId;
-    }
-
     public String getClientId() {
 
         return clientId;
-    }
-
-    public void setClientId(String clientId) {
-
-        this.clientId = clientId;
     }
 
     public String getNonce() {
@@ -76,19 +66,9 @@ public class VPAuthorizationRequest {
         return nonce;
     }
 
-    public void setNonce(String nonce) {
-
-        this.nonce = nonce;
-    }
-
     public String getPresentationDefinitionId() {
 
         return presentationDefinitionId;
-    }
-
-    public void setPresentationDefinitionId(String presentationDefinitionId) {
-
-        this.presentationDefinitionId = presentationDefinitionId;
     }
 
     public String getResponseUri() {
@@ -96,19 +76,9 @@ public class VPAuthorizationRequest {
         return responseUri;
     }
 
-    public void setResponseUri(String responseUri) {
-
-        this.responseUri = responseUri;
-    }
-
     public String getResponseMode() {
 
         return responseMode;
-    }
-
-    public void setResponseMode(String responseMode) {
-
-        this.responseMode = responseMode;
     }
 
     public String getRequestJwt() {
@@ -116,19 +86,9 @@ public class VPAuthorizationRequest {
         return requestJwt;
     }
 
-    public void setRequestJwt(String requestJwt) {
-
-        this.requestJwt = requestJwt;
-    }
-
     public VPFlowStatus getStatus() {
 
         return status;
-    }
-
-    public void setStatus(VPFlowStatus status) {
-
-        this.status = status;
     }
 
     public long getExpiresAt() {
@@ -136,19 +96,9 @@ public class VPAuthorizationRequest {
         return expiresAt;
     }
 
-    public void setExpiresAt(long expiresAt) {
-
-        this.expiresAt = expiresAt;
-    }
-
     public String getRequestUri() {
 
         return requestUri;
-    }
-
-    public void setRequestUri(String requestUri) {
-
-        this.requestUri = requestUri;
     }
 
     @Override

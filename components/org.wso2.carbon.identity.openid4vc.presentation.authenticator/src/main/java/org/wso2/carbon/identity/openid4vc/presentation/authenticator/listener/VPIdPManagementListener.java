@@ -69,7 +69,6 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
     private static final String EC_CURVE = "secp256r1";
     private static final String SIGN_ALGORITHM = "SHA256withECDSA";
 
-
     @Override
     public int getDefaultOrderId() {
 
@@ -136,14 +135,12 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
 
         if (keyStore.containsAlias(alias) && keyStore.isKeyEntry(alias)) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("ECDSA alias '" + alias + "' already exists for tenant ["
-                        + tenantDomain + "]. Skipping.");
+                LOG.debug("ECDSA alias already exists for tenant " + tenantDomain + ". Skipping.");
             }
             return;
         }
 
-        LOG.info("Generating P-256 ECDSA keypair for tenant [" + tenantDomain
-                + "] alias '" + alias + "'.");
+        LOG.info("Generating P-256 ECDSA keypair for tenant " + tenantDomain + ".");
 
         CryptoUtil.getDefaultCryptoUtil();
 
@@ -161,8 +158,7 @@ public class VPIdPManagementListener extends AbstractIdentityProviderMgtListener
             }
         }
 
-        LOG.info("ECDSA P-256 keypair provisioned for tenant [" + tenantDomain
-                + "] alias '" + alias + "'.");
+        LOG.info("ECDSA P-256 keypair provisioned for tenant " + tenantDomain + ".");
     }
 
     /**

@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorErrorCode;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.WalletSubmission;
@@ -50,7 +51,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 
 /**
  * OSGi HTTP whiteboard servlet that receives the wallet's VP token submission at
@@ -79,12 +79,6 @@ public class WalletSubmissionServlet extends HttpServlet {
     private static final int MAX_BODY_BYTES = 1024 * 1024;
 
     @Override
-    public void init() throws ServletException {
-
-        super.init();
-    }
-
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         if (VPDataHolder.getVPFlowService() == null) {
@@ -107,7 +101,7 @@ public class WalletSubmissionServlet extends HttpServlet {
 
         } catch (VPAuthenticatorClientException e) {
             ServletResponseUtil.sendError(response, HttpServletResponse.SC_BAD_REQUEST, e);
-        } catch (VPAuthenticatorServerException e) {
+        } catch (VPAuthenticatorException e) {
             LOG.error("Server error processing VP submission.", e);
             ServletResponseUtil.sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e);
         } catch (RuntimeException e) {

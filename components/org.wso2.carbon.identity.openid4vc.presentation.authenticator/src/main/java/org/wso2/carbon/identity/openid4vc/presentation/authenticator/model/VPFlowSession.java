@@ -33,6 +33,7 @@ public class VPFlowSession implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private String requestId;
     private String tenantDomain;
     private int tenantId;
     private VPFlowStatus status;
@@ -47,6 +48,16 @@ public class VPFlowSession implements Serializable {
     private String walletUrl;
     private DcqlQuery dcqlQuery;
     private String failureReason;
+
+    public String getRequestId() {
+
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+
+        this.requestId = requestId;
+    }
 
     public String getTenantDomain() {
 
@@ -133,11 +144,16 @@ public class VPFlowSession implements Serializable {
         this.failureReason = failureReason;
     }
 
+    public VPFlowSession() {
+
+    }
+
     /**
      * Builder for {@link VPFlowSession}.
      */
     public static class Builder {
 
+        private String requestId;
         private String tenantDomain;
         private int tenantId;
         private VPFlowStatus status;
@@ -150,6 +166,12 @@ public class VPFlowSession implements Serializable {
         private String responseMode;
         private String walletUrl;
         private DcqlQuery dcqlQuery;
+
+        public Builder requestId(String requestId) {
+
+            this.requestId = requestId;
+            return this;
+        }
 
         public Builder tenantDomain(String tenantDomain) {
 
@@ -231,6 +253,7 @@ public class VPFlowSession implements Serializable {
         public VPFlowSession build() {
 
             VPFlowSession session = new VPFlowSession();
+            session.requestId = this.requestId;
             session.tenantDomain = this.tenantDomain;
             session.tenantId = this.tenantId;
             session.status = this.status;

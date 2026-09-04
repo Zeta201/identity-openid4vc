@@ -21,7 +21,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.util;
 /**
  * Constants for the OpenID for Verifiable Presentations (OpenID4VP) presentation server.
  */
-public class Constants {
+public final class Constants {
 
     public static final String AUTHENTICATOR_NAME = "VPAuthenticator";
     public static final String AUTHENTICATOR_FRIENDLY_NAME = "Wallet (OpenID4VP)";
@@ -41,26 +41,22 @@ public class Constants {
     public static final String RESPONSE_REQUEST_ID = "requestId";
     public static final String RESPONSE_ERROR = "error";
     public static final String RESPONSE_ERROR_DESCRIPTION = "error_description";
-    public static final String RESPONSE_STATUS_SUCCESS = "success";
-    public static final String RESPONSE_MESSAGE = "message";
     public static final String RESPONSE_CONTENT_TYPE_CHARSET_UTF_8 = ";charset=UTF-8";
     public static final String RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS = "X-Content-Type-Options";
     public static final String RESPONSE_HEADER_VALUE_NOSNIFF = "nosniff";
 
-    public static final String CLAIM_PRESENTATION_DEFINITION = "presentation_definition";
     public static final String CLAIM_CLIENT_METADATA = "client_metadata";
     public static final String METADATA_CLIENT_NAME = "client_name";
     public static final String METADATA_VP_FORMATS = "vp_formats";
     public static final String METADATA_SD_JWT_ALG_VALUES = "sd-jwt_alg_values";
     public static final String METADATA_KB_JWT_ALG_VALUES = "kb-jwt_alg_values";
     public static final String JOSE_TYPE_OAUTH_AUTHZ_REQ = "oauth-authz-req+jwt";
-    public static final String ALG_RS256 = "RS256";
 
     public static final String STATUS_SUCCESS = "success";
     public static final String STATUS_FAILED = "failed";
 
-    public static final int DISPLAY_ORDER_1 = 1;
-    public static final int DISPLAY_ORDER_3 = 3;
+    public static final int DISPLAY_ORDER_PRESENTATION_DEFINITION = 1;
+    public static final int DISPLAY_ORDER_TIMEOUT = 3;
 
     // Configuration property display labels and descriptions
     public static final String PROP_PRESENTATION_DEFINITION_ID_DISPLAY = "Presentation Definition ID";
@@ -71,9 +67,6 @@ public class Constants {
     public static final String PROP_TIMEOUT_DEFAULT_VALUE = "120";
     public static final int PROP_TIMEOUT_MIN_SECONDS = 30;
     public static final int PROP_TIMEOUT_MAX_SECONDS = 180;
-
-    // Internal context property keys
-    public static final String CONTEXT_AMR_OPENID4VP = "openid4vp";
 
     // Registration executor constants
     public static final String EXECUTOR_NAME = "VPRegistrationExecutor";

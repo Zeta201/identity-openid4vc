@@ -22,7 +22,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception;
  * Exception type for client-side presentation server errors.
  */
 public class VPAuthenticatorClientException extends VPAuthenticatorException {
-    
+
     public VPAuthenticatorClientException(String message) {
 
         super(message);

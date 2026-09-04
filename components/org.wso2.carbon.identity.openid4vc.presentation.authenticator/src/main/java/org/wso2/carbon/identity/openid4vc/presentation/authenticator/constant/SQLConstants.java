@@ -30,21 +30,21 @@ public final class SQLConstants {
     public static final String TABLE_NAME = "IDN_VP_SESSION_STORE";
 
     public static final String INSERT =
-            "INSERT INTO IDN_VP_SESSION_STORE (SESSION_ID, TENANT_ID, SESSION_DATA, CREATED_AT, EXPIRES_AT) " +
+            "INSERT INTO " + TABLE_NAME + " (SESSION_ID, TENANT_ID, SESSION_DATA, CREATED_AT, EXPIRES_AT) " +
             "VALUES (?, ?, ?, ?, ?)";
 
     public static final String UPDATE =
-            "UPDATE IDN_VP_SESSION_STORE SET SESSION_DATA = ?, EXPIRES_AT = ? WHERE SESSION_ID = ?";
+            "UPDATE " + TABLE_NAME + " SET SESSION_DATA = ?, EXPIRES_AT = ? WHERE SESSION_ID = ?";
 
     public static final String SELECT =
-            "SELECT SESSION_DATA, EXPIRES_AT FROM IDN_VP_SESSION_STORE WHERE SESSION_ID = ?";
+            "SELECT SESSION_DATA, EXPIRES_AT FROM " + TABLE_NAME + " WHERE SESSION_ID = ?";
 
     public static final String DELETE =
-            "DELETE FROM IDN_VP_SESSION_STORE WHERE SESSION_ID = ?";
+            "DELETE FROM " + TABLE_NAME + " WHERE SESSION_ID = ?";
 
     public static final String DELETE_EXPIRED =
-            "DELETE FROM IDN_VP_SESSION_STORE WHERE EXPIRES_AT < ?";
+            "DELETE FROM " + TABLE_NAME + " WHERE EXPIRES_AT < ?";
 
     public static final String DELETE_BY_TENANT =
-            "DELETE FROM IDN_VP_SESSION_STORE WHERE TENANT_ID = ?";
+            "DELETE FROM " + TABLE_NAME + " WHERE TENANT_ID = ?";
 }

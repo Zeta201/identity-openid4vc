@@ -20,9 +20,8 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.cache;
 
 import org.wso2.carbon.identity.core.cache.CacheKey;
 
-
 /**
- * Cache key for {@link VPSessionCache}, keyed by transaction ID.
+ * Cache key for {@link VPSessionCache}, keyed by VP request ID.
  */
 public class VPSessionCacheKey extends CacheKey {
 

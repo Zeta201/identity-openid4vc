@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.servlet;
 
-import org.mockito.Mockito;
+
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

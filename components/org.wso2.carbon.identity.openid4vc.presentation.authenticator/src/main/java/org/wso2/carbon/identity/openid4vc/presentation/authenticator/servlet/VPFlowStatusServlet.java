@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
-import org.owasp.encoder.Encode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.VPAuthenticatorServerException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.VPDataHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlowSession;
@@ -46,7 +45,8 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.util
  *
  * <p>Endpoint: {@code GET /openid4vp/v1/status?requestId={id}}</p>
  *
- * <p>Reads session state via {@link org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService},
+ * <p>Reads session state via
+ * {@link org.wso2.carbon.identity.openid4vc.presentation.authenticator.service.VPFlowService},
  * whose backing cache is DB-backed and visible across all cluster nodes.</p>
  */
 @Component(
@@ -107,7 +107,7 @@ public class VPFlowStatusServlet extends HttpServlet {
         body.addProperty(RESPONSE_REQUEST_ID, requestId);
         body.addProperty(RESPONSE_STATUS, status);
         if (StringUtils.isNotBlank(message)) {
-            body.addProperty(FIELD_MESSAGE, Encode.forJava(message));
+            body.addProperty(FIELD_MESSAGE, message);
         }
         ServletResponseUtil.sendJson(response, HttpServletResponse.SC_OK, body);
     }

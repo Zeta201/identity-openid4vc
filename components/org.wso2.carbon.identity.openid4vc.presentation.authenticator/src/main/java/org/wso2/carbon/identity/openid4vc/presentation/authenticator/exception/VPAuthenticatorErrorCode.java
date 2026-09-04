@@ -23,7 +23,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception;
  */
 public enum VPAuthenticatorErrorCode {
 
-        INVALID_REQUEST("VPA-40001", "invalid_request",
+    INVALID_REQUEST("VPA-40001", "invalid_request",
             "Invalid request.", "Invalid or malformed request."),
 
     VP_REQUEST_NOT_FOUND("VPA-40401", "vp_request_not_found",
