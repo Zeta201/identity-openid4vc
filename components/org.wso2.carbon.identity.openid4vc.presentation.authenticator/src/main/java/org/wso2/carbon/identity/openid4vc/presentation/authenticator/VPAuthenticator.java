@@ -43,7 +43,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.model.VPFlo
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -214,7 +214,7 @@ public class VPAuthenticator extends AbstractApplicationAuthenticator
                     VPAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getMessage());
         }
 
-        VerificationResult verificationResult = session.getVerificationResult();
+        PresentationVerificationResult verificationResult = session.getVerificationResult();
         if (verificationResult == null) {
             throw new AuthenticationFailedException(
                     VPAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getCode(),

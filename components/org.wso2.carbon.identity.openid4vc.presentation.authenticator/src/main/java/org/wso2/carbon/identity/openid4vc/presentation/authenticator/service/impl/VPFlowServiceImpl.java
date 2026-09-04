@@ -48,7 +48,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Consta
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.DcqlQueryMapper;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
@@ -321,7 +321,7 @@ public class VPFlowServiceImpl implements VPFlowService {
         }
 
         try {
-            VerificationResult result = VPDataHolder.getVerificationService()
+            PresentationVerificationResult result = VPDataHolder.getVerificationService()
                     .verify(session.getDcqlQuery(), session.getTenantId(),
                             submission.getCredentialTokens(), session.getNonce(), session.getClientId());
 

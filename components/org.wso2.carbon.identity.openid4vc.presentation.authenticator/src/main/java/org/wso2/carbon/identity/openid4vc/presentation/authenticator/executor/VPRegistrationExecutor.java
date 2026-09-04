@@ -37,7 +37,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.Consta
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.VPAuthenticatorUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -204,7 +204,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
                 return buildCompleteResponse(context, session);
 
             case FAILED:
-                VerificationResult verificationResult = session.getVerificationResult();
+                PresentationVerificationResult verificationResult = session.getVerificationResult();
                 String failureReason = (verificationResult != null
                         && !verificationResult.getErrors().isEmpty())
                         ? verificationResult.getErrors().get(0)
@@ -248,7 +248,7 @@ public class VPRegistrationExecutor extends AuthenticationExecutor {
     private ExecutorResponse buildCompleteResponse(FlowExecutionContext context,
                                                    VPFlowSession session) {
 
-        VerificationResult result = session.getVerificationResult();
+        PresentationVerificationResult result = session.getVerificationResult();
         List<PresentationMetadata> metadataList = result != null ? result.getCredentialMetadataList() : null;
         PresentationMetadata metadata = (metadataList != null && !metadataList.isEmpty()) ? metadataList.get(0) : null;
 

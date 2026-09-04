@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.model;
 
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 
 import java.io.Serializable;
 
@@ -37,7 +37,7 @@ public class VPFlowSession implements Serializable {
     private String tenantDomain;
     private int tenantId;
     private VPFlowStatus status;
-    private VerificationResult verificationResult;
+    private PresentationVerificationResult verificationResult;
     private String nonce;
     private String ephemeralPrivateKeyJwk;
     private long expiresAt;
@@ -79,12 +79,12 @@ public class VPFlowSession implements Serializable {
         this.status = status;
     }
 
-    public VerificationResult getVerificationResult() {
+    public PresentationVerificationResult getVerificationResult() {
 
         return verificationResult;
     }
 
-    public void setVerificationResult(VerificationResult verificationResult) {
+    public void setVerificationResult(PresentationVerificationResult verificationResult) {
 
         this.verificationResult = verificationResult;
     }
