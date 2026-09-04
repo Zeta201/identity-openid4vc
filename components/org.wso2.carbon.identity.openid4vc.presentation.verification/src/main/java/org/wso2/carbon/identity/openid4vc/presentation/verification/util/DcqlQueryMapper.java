@@ -87,26 +87,4 @@ public class DcqlQueryMapper {
                 .build();
     }
 
-    private static List<String> resolveAkiValues(String trustedCaPem) {
-
-        if (trustedCaPem == null || trustedCaPem.isBlank()) {
-            LOG.warn("x5c issuer config has no trustedCaPem; trusted_authorities AKI will be absent.");
-            return Collections.emptyList();
-        }
-        try {
-            CertificateFactory cf = CertificateFactory.getInstance(VerificationConstants.JCA_X509);
-            X509Certificate caCert = (X509Certificate) cf.generateCertificate(
-                    new ByteArrayInputStream(trustedCaPem.getBytes(StandardCharsets.UTF_8)));
-            Optional<byte[]> skiBytes = SignatureVerifier.extractSkiBytes(caCert);
-            if (!skiBytes.isPresent()) {
-                LOG.warn("Trusted CA certificate has no SubjectKeyIdentifier; trusted_authorities AKI will be absent.");
-                return Collections.emptyList();
-            }
-            String encoded = Base64.getUrlEncoder().withoutPadding().encodeToString(skiBytes.get());
-            return Collections.singletonList(encoded);
-        } catch (Exception e) {
-            LOG.warn("Could not parse trustedCaPem for AKI computation: " + e.getMessage(), e);
-            return Collections.emptyList();
-        }
-    }
 }
