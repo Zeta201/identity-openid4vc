@@ -1,0 +1,112 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.carbon.identity.openid4vc.presentation.verification.util;
+
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Maps a stored {@link PresentationDefinition} to a runtime {@link DcqlQuery}.
+ *
+ * <p>This is the boundary between the template-management storage model and the verification
+ * execution model. Callers fetch a {@code PresentationDefinition} from the DB and pass the
+ * resulting {@code DcqlQuery} to {@code VerificationService.verify()}.
+ */
+public class DcqlQueryMapper {
+
+    private DcqlQueryMapper() {
+
+    }
+
+    /**
+     * Converts a {@link PresentationDefinition} into a {@link DcqlQuery}.
+     *
+     * @param definition the stored presentation definition
+     * @return the equivalent DCQL query for verification
+     */
+    public static DcqlQuery from(PresentationDefinition definition) {
+
+        List<PresentationDefinition.RequestedCredential> requestedCredentials =
+                definition.getRequestedCredentials();
+        List<DcqlQuery.CredentialQuery> credentialQueries = new ArrayList<>();
+        if (requestedCredentials != null) {
+            for (PresentationDefinition.RequestedCredential rc : requestedCredentials) {
+                credentialQueries.add(mapCredentialQuery(rc));
+            }
+        }
+        return new DcqlQuery.Builder()
+                .credentials(credentialQueries)
+                .build();
+    }
+
+    private static DcqlQuery.CredentialQuery mapCredentialQuery(
+            PresentationDefinition.RequestedCredential rc) {
+
+        List<DcqlQuery.IssuerConfig> issuerConfigs = null;
+        if (rc.getIssuerConfigs() != null) {
+            issuerConfigs = new ArrayList<>();
+            for (PresentationDefinition.IssuerConfig ic : rc.getIssuerConfigs()) {
+                issuerConfigs.add(
+                        new DcqlQuery.IssuerConfig(ic.getKeySourceType(), ic.getIssuerUrl(), ic.getKeySource()));
+            }
+        }
+
+        List<DcqlQuery.ClaimQuery> claims = null;
+        if (rc.getClaims() != null) {
+            claims = new ArrayList<>();
+            for (PresentationDefinition.ClaimConstraint cc : rc.getClaims()) {
+                claims.add(new DcqlQuery.ClaimQuery(cc.getPath(), cc.isMandatory()));
+            }
+        }
+
+        return new DcqlQuery.CredentialQuery.Builder()
+                .id(rc.getIdentifier())
+                .format(rc.getFormat())
+                .vct(rc.getType())
+                .issuerConfigs(issuerConfigs)
+                .claims(claims)
+                .build();
+    }
+
+    private static List<String> resolveAkiValues(String trustedCaPem) {
+
+        if (trustedCaPem == null || trustedCaPem.isBlank()) {
+            LOG.warn("x5c issuer config has no trustedCaPem; trusted_authorities AKI will be absent.");
+            return Collections.emptyList();
+        }
+        try {
+            CertificateFactory cf = CertificateFactory.getInstance(VerificationConstants.JCA_X509);
+            X509Certificate caCert = (X509Certificate) cf.generateCertificate(
+                    new ByteArrayInputStream(trustedCaPem.getBytes(StandardCharsets.UTF_8)));
+            Optional<byte[]> skiBytes = SignatureVerifier.extractSkiBytes(caCert);
+            if (!skiBytes.isPresent()) {
+                LOG.warn("Trusted CA certificate has no SubjectKeyIdentifier; trusted_authorities AKI will be absent.");
+                return Collections.emptyList();
+            }
+            String encoded = Base64.getUrlEncoder().withoutPadding().encodeToString(skiBytes.get());
+            return Collections.singletonList(encoded);
+        } catch (Exception e) {
+            LOG.warn("Could not parse trustedCaPem for AKI computation: " + e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+}
