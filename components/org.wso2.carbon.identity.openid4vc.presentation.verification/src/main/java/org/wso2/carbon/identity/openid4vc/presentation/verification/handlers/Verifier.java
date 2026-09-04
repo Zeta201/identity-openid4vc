@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.handlers;
 
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationOutput;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
 /**
@@ -43,8 +43,8 @@ public interface Verifier {
      * Verifies the credential token in the given context end-to-end.
      *
      * @param ctx verification context carrying the raw token, request config, tenant, and nonce
-     * @return {@link VerificationOutput} pairing the presentation metadata with the extracted subject-attribute claims
+     * @return {@link CredentialVerificationResult} pairing the presentation metadata with the extracted subject-attribute claims
      * @throws VerificationException if verification fails for any reason
      */
-    VerificationOutput verify(CredentialVerificationContext ctx) throws VerificationException;
+    CredentialVerificationResult verify(CredentialVerificationContext ctx) throws VerificationException;
 }

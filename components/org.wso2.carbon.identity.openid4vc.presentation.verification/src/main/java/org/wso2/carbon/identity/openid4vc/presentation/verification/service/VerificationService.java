@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.service;
 
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
 import java.util.Map;
@@ -42,7 +42,7 @@ public interface VerificationService {
      * @return the verification outcome
      * @throws VerificationException if verification fails critically
      */
-    VerificationResult verify(DcqlQuery query, int tenantId,
+    PresentationVerificationResult verify(DcqlQuery query, int tenantId,
             Map<String, String> credentialTokens, String expectedNonce,
             String expectedAudience) throws VerificationException;
 }

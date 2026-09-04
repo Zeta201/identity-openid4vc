@@ -27,8 +27,8 @@ import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.VPConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationOutput;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.handlers.Verifier;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationConstants;
 
@@ -67,7 +67,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWithNullTokensReturnsNotVerified() throws Exception {
 
         // Execute test
-        VerificationResult result = service.verify(emptyQuery(), TENANT_ID, null, null, null);
+        PresentationVerificationResult result = service.verify(emptyQuery(), TENANT_ID, null, null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -81,7 +81,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWithEmptyTokensReturnsNotVerified() throws Exception {
 
         // Execute test
-        VerificationResult result = service.verify(emptyQuery(), TENANT_ID, Collections.emptyMap(), null, null);
+        PresentationVerificationResult result = service.verify(emptyQuery(), TENANT_ID, Collections.emptyMap(), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -95,7 +95,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWithNullDefinitionReturnsNotVerified() throws Exception {
 
         // Execute test
-        VerificationResult result = service.verify(null, TENANT_ID, Map.of(CRED_ID, "token"), null, null);
+        PresentationVerificationResult result = service.verify(null, TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
         Assert.assertFalse(result.isVerified(),
@@ -109,7 +109,7 @@ public class VerificationServiceImplTest {
     public void testVerifyWhenCredentialIdNotInTokenMapReturnsNotVerified() throws Exception {
 
         // Set up a query requesting CRED_ID but only provide an unknown credential
-        VerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
+        PresentationVerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
                 Map.of("unknown_cred", "token"), null, null);
 
         // Verify
@@ -131,7 +131,7 @@ public class VerificationServiceImplTest {
         DcqlQuery.ClaimQuery constraint = new DcqlQuery.ClaimQuery("email", true);
 
         // Execute test
-        VerificationResult result = service.verify(queryWithClaims(constraint),
+        PresentationVerificationResult result = service.verify(queryWithClaims(constraint),
                 TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
@@ -151,7 +151,7 @@ public class VerificationServiceImplTest {
         DcqlQuery.ClaimQuery constraint = new DcqlQuery.ClaimQuery("email", true);
 
         // Execute test
-        VerificationResult result = service.verify(queryWithClaims(constraint),
+        PresentationVerificationResult result = service.verify(queryWithClaims(constraint),
                 TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
@@ -172,7 +172,7 @@ public class VerificationServiceImplTest {
         DcqlQuery.ClaimQuery constraint = new DcqlQuery.ClaimQuery("phone", false);
 
         // Execute test
-        VerificationResult result = service.verify(queryWithClaims(constraint),
+        PresentationVerificationResult result = service.verify(queryWithClaims(constraint),
                 TENANT_ID, Map.of(CRED_ID, "token"), null, null);
 
         // Verify
@@ -190,7 +190,7 @@ public class VerificationServiceImplTest {
         injectMockVerifier(claims);
 
         // Execute test
-        VerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
+        PresentationVerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
                 Map.of(CRED_ID, "token"), null, null);
 
         // Verify
@@ -213,7 +213,7 @@ public class VerificationServiceImplTest {
         injectMockVerifier(claims);
 
         // Execute test
-        VerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
+        PresentationVerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
                 Map.of(CRED_ID, "token"), null, null);
 
         // Verify all claims are in the result
@@ -235,7 +235,7 @@ public class VerificationServiceImplTest {
         injectMockVerifier(claims);
 
         // Execute test
-        VerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
+        PresentationVerificationResult result = service.verify(queryForCredential(CRED_ID), TENANT_ID,
                 Map.of(CRED_ID, "token"), null, null);
 
         // Verify issuer is present in metadata
@@ -277,7 +277,7 @@ public class VerificationServiceImplTest {
         PresentationMetadata metadata = new PresentationMetadata.Builder()
                 .issuer((String) returnedClaims.get(VPConstants.JWTClaims.ISS))
                 .build();
-        VerificationOutput output = new VerificationOutput(metadata, returnedClaims);
+        CredentialVerificationResult output = new CredentialVerificationResult(metadata, returnedClaims);
         when(mockVerifier.getFormat()).thenReturn(DCQL_FORMAT);
         when(mockVerifier.verify(any())).thenReturn(output);
         Field f = VerificationServiceImpl.class.getDeclaredField("verifiers");

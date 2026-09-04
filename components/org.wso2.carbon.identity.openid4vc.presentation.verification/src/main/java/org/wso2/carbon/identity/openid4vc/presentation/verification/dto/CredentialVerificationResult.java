@@ -21,15 +21,15 @@ package org.wso2.carbon.identity.openid4vc.presentation.verification.dto;
 import java.util.Map;
 
 /**
- * Output of a single credential verification.
+ * Result of verifying a single credential.
  * Pairs the extracted subject claims with the presentation metadata for that credential.
  */
-public class VerificationOutput {
+public class CredentialVerificationResult {
 
     private final PresentationMetadata metadata;
     private final Map<String, Object> subjectClaims;
 
-    public VerificationOutput(PresentationMetadata metadata, Map<String, Object> subjectClaims) {
+    public CredentialVerificationResult(PresentationMetadata metadata, Map<String, Object> subjectClaims) {
 
         this.metadata = metadata;
         this.subjectClaims = subjectClaims;

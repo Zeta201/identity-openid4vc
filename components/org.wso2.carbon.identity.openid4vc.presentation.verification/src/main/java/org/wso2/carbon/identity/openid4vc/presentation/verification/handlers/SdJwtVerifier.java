@@ -34,7 +34,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.Credenti
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery.CredentialQuery;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationMetadata;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationOutput;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -90,7 +90,7 @@ public class SdJwtVerifier implements Verifier {
     }
 
     @Override
-    public VerificationOutput verify(CredentialVerificationContext ctx) throws VerificationException {
+    public CredentialVerificationResult verify(CredentialVerificationContext ctx) throws VerificationException {
 
         SDJWT sdJwt;
         try {
@@ -127,7 +127,7 @@ public class SdJwtVerifier implements Verifier {
 
         PresentationMetadata metadata = buildMetadata(issuerJwt, kbJwt, claims, subjectClaims);
 
-        return new VerificationOutput(metadata, subjectClaims);
+        return new CredentialVerificationResult(metadata, subjectClaims);
     }
 
     /**

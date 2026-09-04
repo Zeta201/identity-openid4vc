@@ -26,8 +26,8 @@ import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationContext;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.DcqlQuery.CredentialQuery;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationOutput;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.VerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.CredentialVerificationResult;
+import org.wso2.carbon.identity.openid4vc.presentation.verification.dto.PresentationVerificationResult;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -67,11 +67,11 @@ public class VerificationServiceImpl implements VerificationService {
     }
 
     @Override
-    public VerificationResult verify(DcqlQuery query, int tenantId,
+    public PresentationVerificationResult verify(DcqlQuery query, int tenantId,
             Map<String, String> credentialTokens, String expectedNonce,
             String expectedAudience) throws VerificationException {
 
-        VerificationResult.Builder resultBuilder = new VerificationResult.Builder();
+        PresentationVerificationResult.Builder resultBuilder = new PresentationVerificationResult.Builder();
         try {
             if (query == null) {
                 throw new VerificationClientException(VerificationErrorCode.INVALID_VP_SUBMISSION,
@@ -91,7 +91,7 @@ public class VerificationServiceImpl implements VerificationService {
                     new CredentialVerificationContext(credentialToken, credentialQuery, tenantId,
                             expectedNonce, expectedAudience);
 
-            VerificationOutput output = verifier.verify(verificationContext);
+            CredentialVerificationResult output = verifier.verify(verificationContext);
 
             verifyRequiredClaimsForCredential(output.getSubjectClaims(), credentialQuery);
 

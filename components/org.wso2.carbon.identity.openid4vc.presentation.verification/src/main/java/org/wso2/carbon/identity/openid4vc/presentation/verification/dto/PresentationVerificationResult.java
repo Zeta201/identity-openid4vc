@@ -29,7 +29,7 @@ import java.util.Map;
  * Carries the verified/failed decision, error messages, extracted subject claims,
  * and per-credential presentation metadata.
  */
-public class VerificationResult implements Serializable {
+public class PresentationVerificationResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -39,7 +39,7 @@ public class VerificationResult implements Serializable {
     private Map<String, Object> verifiedClaims;
     private List<PresentationMetadata> credentialMetadataList;
 
-    private VerificationResult(Builder builder) {
+    private PresentationVerificationResult(Builder builder) {
 
         this.isVerified = builder.isVerified;
         this.statusMessage = builder.statusMessage;
@@ -75,7 +75,7 @@ public class VerificationResult implements Serializable {
     }
 
     /**
-     * Builder class for VerificationResult.
+     * Builder class for PresentationVerificationResult.
      */
     public static class Builder {
 
@@ -121,9 +121,9 @@ public class VerificationResult implements Serializable {
             return this;
         }
 
-        public VerificationResult build() {
+        public PresentationVerificationResult build() {
 
-            return new VerificationResult(this);
+            return new PresentationVerificationResult(this);
         }
     }
 }
