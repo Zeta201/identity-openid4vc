@@ -82,6 +82,7 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Bundle-RequiredExecutionEnvironment>JavaSE-21</Bundle-RequiredExecutionEnvironment>
+                        <_noee>true</_noee>
                         <Export-Package>
                             org.wso2.carbon.identity.openid4vc.presentation.common.*;version="${identity.oid4vc.pkg.version}"
                         </Export-Package>
