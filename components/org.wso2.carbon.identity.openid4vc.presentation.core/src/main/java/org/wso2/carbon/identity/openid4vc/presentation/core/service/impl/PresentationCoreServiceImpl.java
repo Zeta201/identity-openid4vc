@@ -183,66 +183,87 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                     PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
         }
 
-        String clientIdScheme = StringUtils.defaultIfBlank(session.getClientIdScheme(), Constants.DEFAULT_CLIENT_ID_SCHEME);
         String tenantDomain = session.getTenantDomain();
         int tenantId = session.getTenantId();
-        ECKey ephemeralPublicKey = PresentationCoreUtil.resolveEphemeralPublicKey(session);
+        JWTClaimsSet claims = buildPresentationRequestClaims(session);
+        return signWithTenantKey(claims, tenantDomain, tenantId);
+    }
+
+    /**
+     * Signs the given JWT claims with the tenant's EC private key.
+     *
+     * <p>Loads the tenant's OAuth keystore, resolves the EC private key and signing certificate,
+     * builds the JWS header with type {@code oauth-authz-req+jwt}, the certificate hash as {@code kid},
+     * and the full chain as {@code x5c}, then signs with ES256.
+     *
+     * @param claims       JWT claims to sign.
+     * @param tenantDomain tenant whose keystore is used for signing.
+     * @param tenantId     numeric tenant ID used to obtain the keystore manager.
+     * @return the compact-serialized signed JWS string.
+     * @throws PresentationCoreException if key/cert loading or signing fails.
+     */
+    private String signWithTenantKey(JWTClaimsSet claims, String tenantDomain, int tenantId)
+            throws PresentationCoreException {
 
         try {
             KeyStoreManager keyStoreManager = KeyStoreManager.getInstance(tenantId);
-            KeyStore keyStore = IdentityKeyStoreResolver.getInstance().getKeyStore(tenantDomain, InboundProtocol.OAUTH);
+            KeyStore keyStore = IdentityKeyStoreResolver.getInstance()
+                    .getKeyStore(tenantDomain, InboundProtocol.OAUTH);
+            // Resolve the EC key alias registered for this tenant.
             String keyAlias = PresentationCoreUtil.resolveSigningKeyAlias(tenantDomain);
-
+            // Load the EC private key using the tenant keystore password.
             ECPrivateKey ecKey = PresentationCoreUtil.loadEcPrivateKey(keyStore, keyAlias,
                     PresentationCoreUtil.resolveKeyPassword(keyStoreManager, tenantDomain));
-
+            X509Certificate certificate = PresentationCoreUtil.resolveSigningCertificate(keyStore, keyAlias);
             Certificate[] certificateChain = keyStore.getCertificateChain(keyAlias);
-            X509Certificate certificate = certificateChain != null && certificateChain.length > 0
-                    ? (X509Certificate) certificateChain[0] : (X509Certificate) keyStore.getCertificate(keyAlias);
-            if (certificate == null) {
-                throw PresentationCoreExceptionHandler.handleServerException(
-                        PresentationCoreErrorCode.SIGNING_CERTIFICATE_ERROR, null);
-            }
-
             JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256)
                     .type(new JOSEObjectType(PresentationCoreConstants.JOSE_TYPE_OAUTH_AUTHZ_REQ))
                     .keyID(PresentationCoreUtil.computeCertHash(certificate))
                     .x509CertChain(PresentationCoreUtil.buildX5cChain(certificateChain, certificate))
                     .build();
-            JWTClaimsSet claims = buildPresentationRequestClaims(session, requestId, clientIdScheme, ephemeralPublicKey);
-
             JWSObject jws = new JWSObject(header, new Payload(claims.toJSONObject()));
             jws.sign(new ECDSASigner(ecKey));
             return jws.serialize();
-
         } catch (GeneralSecurityException | JOSEException | IdentityKeyStoreResolverException e) {
-            LOG.error("Error building auth request JWT for tenant=" + tenantDomain, e);
             throw PresentationCoreExceptionHandler.handleServerException(
                     PresentationCoreErrorCode.SIGNING_ERROR, e);
         }
     }
 
-    private static JWTClaimsSet buildPresentationRequestClaims(VPSession session, String requestId, String scheme,
-                                                               ECKey ephemeralPublicKey) {
+    /**
+     * Builds the JWT claims set for the VP request.
+     *
+     * <p>Populates standard OAuth/OpenID4VP parameters from the session: issuer, audience,
+     * {@code client_id}, {@code response_type}, {@code response_mode}, {@code response_uri},
+     * {@code nonce}, {@code state}, and the DCQL query that describes the requested credentials.
+     * When {@code direct_post.jwt} is configured, the ephemeral public key is included in
+     * {@code client_metadata} so the wallet can perform ECDH-ES encryption.
+     *
+     * @param session active VP session containing all parameters for this VP request.
+     * @return the assembled {@link JWTClaimsSet} ready to be signed.
+     * @throws PresentationCoreServerException if the ephemeral public key cannot be parsed.
+     */
+    private static JWTClaimsSet buildPresentationRequestClaims(VPSession session) throws
+        PresentationCoreServerException{
 
         String clientId = session.getClientId();
         return new JWTClaimsSet.Builder()
                 .issuer(clientId)
                 .audience(Constants.Protocol.REQUEST_AUDIENCE)
                 .claim(Constants.RequestParams.CLIENT_ID, clientId)
-                .claim(Constants.JWTClaims.CLIENT_ID_SCHEME, scheme)
+                .claim(Constants.JWTClaims.CLIENT_ID_SCHEME, session.getClientIdScheme())
                 .claim(Constants.RequestParams.RESPONSE_TYPE, Constants.Protocol.RESPONSE_TYPE_VP_TOKEN)
                 .claim(Constants.RequestParams.RESPONSE_MODE, session.getResponseMode())
                 .claim(Constants.RequestParams.RESPONSE_URI, session.getResponseUri())
                 .claim(Constants.RequestParams.NONCE, session.getNonce())
-                .claim(Constants.RequestParams.STATE, requestId)
+                .claim(Constants.RequestParams.STATE, session.getRequestId())
                 .issueTime(new Date())
                 .expirationTime(new Date(session.getExpiresAt()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim(Constants.JWTClaims.DCQL_QUERY,
                         DcqlUtil.buildDcqlQuery(session.getPresentationDefinition()))
                 .claim(PresentationCoreConstants.CLAIM_CLIENT_METADATA,
-                        DcqlUtil.buildClientMetadata(clientId, ephemeralPublicKey))
+                        DcqlUtil.buildClientMetadata(clientId, PresentationCoreUtil.resolveEphemeralPublicKey(session)))
                 .build();
     }
 
