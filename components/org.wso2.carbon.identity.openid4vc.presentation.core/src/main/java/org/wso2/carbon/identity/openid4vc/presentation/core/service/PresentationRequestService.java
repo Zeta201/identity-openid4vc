@@ -29,9 +29,11 @@ public interface PresentationRequestService {
      * Generates the signed presentation request JWT for a VP flow session,
      * served to the wallet via {@code request_uri}.
      *
-     * @param requestId the transaction ID of the VP session
+     * @param requestId    the transaction ID of the VP session
+     * @param tenantDomain the tenant domain resolved from the request URL
      * @return the signed request JWT string
-     * @throws PresentationCoreException if the session is not found or the JWT cannot be built
+     * @throws PresentationCoreException if the session is not found, does not belong to the given tenant,
+     *                                   or the JWT cannot be built
      */
-    String buildPresentationRequest(String requestId) throws PresentationCoreException;
+    String buildPresentationRequest(String requestId, String tenantDomain) throws PresentationCoreException;
 }
