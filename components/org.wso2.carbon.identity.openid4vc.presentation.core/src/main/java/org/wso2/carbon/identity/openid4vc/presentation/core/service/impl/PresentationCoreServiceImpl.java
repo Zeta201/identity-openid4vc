@@ -139,7 +139,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         String baseUrl = PresentationCoreUtil.buildServerBaseUrl();
 //        TODO: use private methods
 //        Use a util method to build the response uri
-        String responseUri = baseUrl + PresentationCoreConstants.RESPONSE_URI_ENDPOINT;
+        String responseUri = baseUrl + PresentationCoreConstants.CONTEXT_OID4VP_RESPONSES;
         VPTenantConfig vptenantConfig = PresentationCoreDataHolder.getInstance()
                 .getVpConfigService().getVPConfig(tenantDomain);
         String scheme = StringUtils.defaultIfBlank(
@@ -158,7 +158,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
             }
         }
 //       TODO: use a build
-        String requestUri = baseUrl + PresentationCoreConstants.REQUEST_URI_ENDPOINT + requestId;
+        String requestUri = baseUrl + PresentationCoreConstants.CONTEXT_OID4VP_REQUESTS + requestId;
         String walletUrl = Constants.Protocol.OPENID4VP_SCHEME + "?"
                 + Constants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
                 + "&" + Constants.RequestParams.REQUEST_URI + "="
