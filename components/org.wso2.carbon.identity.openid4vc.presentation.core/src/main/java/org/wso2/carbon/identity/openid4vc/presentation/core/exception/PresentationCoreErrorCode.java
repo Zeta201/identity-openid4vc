@@ -61,6 +61,10 @@ public enum PresentationCoreErrorCode {
             "Invalid vp_token.",
             "The vp_token is missing, malformed, or does not contain the required credential."),
 
+    VP_SESSION_PENDING("VPC-60008", "verification_pending",
+            "Session pending.",
+            "The verification result is not yet available; the session is still active."),
+
     // Server errors (65xxx)
     INTERNAL_SERVER_ERROR("VPC-65001", "server_error",
             "Internal server error.",
