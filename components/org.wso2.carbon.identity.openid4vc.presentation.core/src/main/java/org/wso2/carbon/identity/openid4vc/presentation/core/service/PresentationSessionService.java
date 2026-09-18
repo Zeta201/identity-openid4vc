@@ -23,6 +23,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationSubm
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionRespDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionStatusDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
@@ -121,6 +122,6 @@ public interface PresentationSessionService {
      * @return the result, or {@code null} if no session exists for the given request ID
      * @throws PresentationCoreException if the session lookup fails
      */
-    VerificationSessionRespDTO getPresentationSessionStatus(String requestId) throws PresentationCoreException;
+    VerificationSessionStatusDTO getPresentationSessionStatus(String requestId) throws PresentationCoreException;
 
 }
