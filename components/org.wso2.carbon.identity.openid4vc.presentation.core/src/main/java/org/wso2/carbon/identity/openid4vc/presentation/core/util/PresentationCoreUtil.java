@@ -276,6 +276,32 @@ public class PresentationCoreUtil {
     }
 
     /**
+     * Resolves the signing certificate from the given keystore by alias.
+     *
+     * <p>Prefers the first entry in the certificate chain (end-entity cert); falls back to a
+     * direct alias lookup for keystores that do not store a full chain.
+     *
+     * @param ks       the keystore to query
+     * @param keyAlias the alias of the signing key
+     * @return the end-entity X.509 signing certificate
+     * @throws KeyStoreException               if the alias lookup fails
+     * @throws PresentationCoreServerException if no certificate is found for the alias
+     */
+    public static X509Certificate resolveSigningCertificate(KeyStore ks, String keyAlias)
+            throws KeyStoreException, PresentationCoreServerException {
+
+        // Prefer chain[0] (end-entity); fall back to a direct alias lookup.
+        Certificate[] chain = ks.getCertificateChain(keyAlias);
+        X509Certificate cert = (X509Certificate) (chain != null && chain.length > 0
+                ? chain[0] : ks.getCertificate(keyAlias));
+        if (cert == null) {
+            throw PresentationCoreExceptionHandler.handleServerException(
+                    PresentationCoreErrorCode.SIGNING_CERTIFICATE_ERROR, null);
+        }
+        return cert;
+    }
+
+    /**
      * Builds the tenant-scoped {@code request_uri} at which the wallet fetches the signed
      * authorization request JWT.
      *
@@ -356,4 +382,5 @@ public class PresentationCoreUtil {
                 + "&" + Constants.RequestParams.REQUEST_URI + "="
                 + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
     }
+
 }
