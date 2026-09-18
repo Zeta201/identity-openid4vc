@@ -26,6 +26,8 @@ import org.wso2.carbon.identity.common.testng.WithH2Database;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.impl.PresentationDefinitionDAOImpl;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementClientException;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.util.ArrayList;
@@ -61,7 +63,7 @@ public class PresentationDefinitionDAOTest {
         PresentationDefinition result = dao.getPresentationDefinitionById(definitionId, TENANT_ID);
 
         Assert.assertNotNull(result, "Definition should be found for a valid ID");
-        Assert.assertEquals(result.getDefinitionId(), definitionId);
+        Assert.assertEquals(result.getId(), definitionId);
         Assert.assertEquals(result.getIdentifier(), IDENTIFIER);
         Assert.assertEquals(result.getDisplayName(), DISPLAY_NAME);
     }
@@ -90,7 +92,7 @@ public class PresentationDefinitionDAOTest {
                 dao.getPresentationDefinitionByIdentifier(IDENTIFIER, TENANT_ID);
 
         Assert.assertNotNull(result);
-        Assert.assertEquals(result.getDefinitionId(), definitionId);
+        Assert.assertEquals(result.getId(), definitionId);
     }
 
     @Test(priority = 5)
@@ -110,7 +112,7 @@ public class PresentationDefinitionDAOTest {
 
         Assert.assertNotNull(all);
         Assert.assertFalse(all.isEmpty(), "Should have at least one definition");
-        boolean found = all.stream().anyMatch(d -> definitionId.equals(d.getDefinitionId()));
+        boolean found = all.stream().anyMatch(d -> definitionId.equals(d.getId()));
         Assert.assertTrue(found, "Created definition should appear in the full list");
     }
 
@@ -167,25 +169,33 @@ public class PresentationDefinitionDAOTest {
     public void testCreateWithCredentialAndReadBack() throws Exception {
 
         String id = UUID.randomUUID().toString();
-        PresentationDefinition def = buildDefinition(id, "with-creds", "With Credentials");
 
-        PresentationDefinition.RequestedCredential cred = new PresentationDefinition.RequestedCredential();
+        PresentationClaim claim = new PresentationClaim();
+        claim.setPath("given_name");
+        claim.setMandatory(true);
+
+        Credential cred = new Credential();
         cred.setIdentifier("cred-1");
         cred.setType("VerifiableId");
         cred.setFormat("vc+sd-jwt");
-
-        PresentationDefinition.ClaimConstraint claim = new PresentationDefinition.ClaimConstraint();
-        claim.setPath("given_name");
         cred.setClaims(Collections.singletonList(claim));
-        def.setRequestedCredentials(Collections.singletonList(cred));
+
+        PresentationDefinition def = new PresentationDefinition.Builder()
+                .id(id)
+                .identifier("with-creds")
+                .displayName("With Credentials")
+                .description(DESCRIPTION)
+                .tenantId(TENANT_ID)
+                .credentials(Collections.singletonList(cred))
+                .build();
 
         dao.createPresentationDefinition(def);
 
         PresentationDefinition loaded = dao.getPresentationDefinitionById(id, TENANT_ID);
         Assert.assertNotNull(loaded);
-        Assert.assertNotNull(loaded.getRequestedCredentials());
-        Assert.assertEquals(loaded.getRequestedCredentials().size(), 1);
-        Assert.assertEquals(loaded.getRequestedCredentials().get(0).getIdentifier(), "cred-1");
+        Assert.assertNotNull(loaded.getCredentials());
+        Assert.assertEquals(loaded.getCredentials().size(), 1);
+        Assert.assertEquals(loaded.getCredentials().get(0).getIdentifier(), "cred-1");
     }
 
     @Test(priority = 14)
@@ -250,7 +260,7 @@ public class PresentationDefinitionDAOTest {
     private PresentationDefinition buildDefinition(String id, String identifier, String displayName) {
 
         return new PresentationDefinition.Builder()
-                .definitionId(id)
+                .id(id)
                 .identifier(identifier)
                 .displayName(displayName)
                 .description(DESCRIPTION)

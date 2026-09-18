@@ -25,8 +25,8 @@ import org.testng.annotations.Test;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.PresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementClientException;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 
 import java.util.Collections;
 import java.util.List;
@@ -105,13 +105,13 @@ public class PresentationDefinitionServiceImplTest {
     public void testCreateDefinitionWithInvalidCredentialIdThrowsValidationError() throws Exception {
 
         // Set up a credential with spaces and special characters in its ID
-        RequestedCredential cred = new RequestedCredential();
+        Credential cred = new Credential();
         cred.setIdentifier("invalid id with spaces!");
 
         PresentationDefinition pd = new PresentationDefinition.Builder()
                 .identifier(DEFINITION_IDENTIFIER)
                 .displayName(DEFINITION_DISPLAY_NAME)
-                .requestedCredentials(Collections.singletonList(cred))
+                .credentials(Collections.singletonList(cred))
                 .build();
 
         try {
@@ -131,13 +131,13 @@ public class PresentationDefinitionServiceImplTest {
     public void testCreateDefinitionWithBlankCredentialIdThrowsValidationError() throws Exception {
 
         // Set up a credential with a blank ID
-        RequestedCredential cred = new RequestedCredential();
+        Credential cred = new Credential();
         cred.setIdentifier("   ");
 
         PresentationDefinition pd = new PresentationDefinition.Builder()
                 .identifier(DEFINITION_IDENTIFIER)
                 .displayName(DEFINITION_DISPLAY_NAME)
-                .requestedCredentials(Collections.singletonList(cred))
+                .credentials(Collections.singletonList(cred))
                 .build();
 
         try {
@@ -167,9 +167,9 @@ public class PresentationDefinitionServiceImplTest {
         PresentationDefinition result = service.createPresentationDefinition(pd, TENANT_ID);
 
         // Verify a UUID was generated
-        Assert.assertNotNull(result.getDefinitionId(),
+        Assert.assertNotNull(result.getId(),
                 "definitionId should be generated and not null");
-        Assert.assertTrue(result.getDefinitionId().length() > 0,
+        Assert.assertTrue(result.getId().length() > 0,
                 "Expected a generated UUID definition ID, got blank");
     }
 
@@ -214,7 +214,7 @@ public class PresentationDefinitionServiceImplTest {
         PresentationDefinition result = service.createPresentationDefinition(pd, TENANT_ID);
 
         // Verify
-        Assert.assertNotNull(result.getDefinitionId(),
+        Assert.assertNotNull(result.getId(),
                 "Returned definition ID should be a generated UUID");
         Assert.assertEquals(result.getIdentifier(), DEFINITION_IDENTIFIER,
                 "Returned identifier should match the provided identifier");
@@ -272,7 +272,7 @@ public class PresentationDefinitionServiceImplTest {
         PresentationDefinition result = service.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID);
 
         // Verify
-        Assert.assertEquals(result.getDefinitionId(), DEFINITION_ID,
+        Assert.assertEquals(result.getId(), DEFINITION_ID,
                 "Returned definition ID should match the requested ID");
     }
 
@@ -291,7 +291,7 @@ public class PresentationDefinitionServiceImplTest {
         // Verify
         Assert.assertEquals(result.size(), 1,
                 "Result list should have exactly 1 element");
-        Assert.assertEquals(result.get(0).getDefinitionId(), DEFINITION_ID,
+        Assert.assertEquals(result.get(0).getId(), DEFINITION_ID,
                 "The single returned definition should have the expected ID");
     }
 
@@ -348,7 +348,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(null);
 
         PresentationDefinition pd = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
+                .id(DEFINITION_ID)
                 .displayName("New Display Name")
                 .build();
 
@@ -372,13 +372,13 @@ public class PresentationDefinitionServiceImplTest {
         PresentationDefinition existing = buildDefinition(DEFINITION_ID, DEFINITION_DISPLAY_NAME);
         when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(existing);
 
-        RequestedCredential badCred = new RequestedCredential();
+        Credential badCred = new Credential();
         badCred.setIdentifier("bad id!");
 
         PresentationDefinition pd = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
+                .id(DEFINITION_ID)
                 .displayName("Updated Display Name")
-                .requestedCredentials(Collections.singletonList(badCred))
+                .credentials(Collections.singletonList(badCred))
                 .build();
 
         try {
@@ -402,7 +402,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(existing);
 
         PresentationDefinition update = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
+                .id(DEFINITION_ID)
                 .displayName("Updated Display Name")
                 .build();
 
@@ -412,7 +412,7 @@ public class PresentationDefinitionServiceImplTest {
         // Verify
         Assert.assertEquals(result.getDisplayName(), "Updated Display Name",
                 "The returned definition should have the updated display name");
-        Assert.assertEquals(result.getDefinitionId(), DEFINITION_ID,
+        Assert.assertEquals(result.getId(), DEFINITION_ID,
                 "The returned definition ID should be unchanged");
         verify(mockDao).updatePresentationDefinition(
                 any(PresentationDefinition.class), anyList(), eq(TENANT_ID));
@@ -427,7 +427,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(existing);
 
         PresentationDefinition update = new PresentationDefinition.Builder()
-                .definitionId(DEFINITION_ID)
+                .id(DEFINITION_ID)
                 .displayName(null)
                 .build();
 
@@ -498,7 +498,7 @@ public class PresentationDefinitionServiceImplTest {
     private PresentationDefinition buildDefinition(String id, String displayName) {
 
         return new PresentationDefinition.Builder()
-                .definitionId(id)
+                .id(id)
                 .identifier(DEFINITION_IDENTIFIER)
                 .displayName(displayName)
                 .tenantId(TENANT_ID)
