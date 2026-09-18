@@ -27,9 +27,10 @@ import org.wso2.carbon.identity.openid4vc.template.management.exception.Presenta
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.ClaimConstraint;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinitionSearchResult;
 import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.openid4vc.template.management.util.Constants;
@@ -76,11 +77,11 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
         String definitionId = UUID.randomUUID().toString();
 
         PresentationDefinition definitionToCreate = new PresentationDefinition.Builder()
-                .definitionId(definitionId)
+                .id(definitionId)
                 .identifier(identifier)
                 .displayName(presentationDefinition.getDisplayName())
                 .description(presentationDefinition.getDescription())
-                .requestedCredentials(presentationDefinition.getRequestedCredentials())
+                .credentials(presentationDefinition.getCredentials())
                 .tenantId(tenantId)
                 .build();
 
@@ -122,18 +123,18 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
             PresentationDefinition presentationDefinition, int tenantId)
             throws PresentationManagementException {
 
-        String definitionId = presentationDefinition.getDefinitionId();
+        String definitionId = presentationDefinition.getId();
         PresentationDefinition existing = getPresentationDefinitionById(definitionId, tenantId);
 
-        List<RequestedCredential> updatedCredentials = presentationDefinition.getRequestedCredentials() != null
-                ? presentationDefinition.getRequestedCredentials()
-                : existing.getRequestedCredentials();
+        List<Credential> updatedCredentials = presentationDefinition.getCredentials() != null
+                ? presentationDefinition.getCredentials()
+                : existing.getCredentials();
         if (updatedCredentials != null && !updatedCredentials.isEmpty()) {
             validateCredentialIds(updatedCredentials);
         }
 
         PresentationDefinition definitionToUpdate = new PresentationDefinition.Builder()
-                .definitionId(definitionId)
+                .id(definitionId)
                 .identifier(existing.getIdentifier())
                 .displayName(StringUtils.isNotBlank(presentationDefinition.getDisplayName())
                         ? presentationDefinition.getDisplayName()
@@ -141,11 +142,11 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
                 .description(presentationDefinition.getDescription() != null
                         ? presentationDefinition.getDescription()
                         : existing.getDescription())
-                .requestedCredentials(updatedCredentials)
+                .credentials(updatedCredentials)
                 .tenantId(tenantId)
                 .build();
 
-        List<String> staleClaimPaths = computeStalePaths(existing.getRequestedCredentials(), updatedCredentials);
+        List<String> staleClaimPaths = computeStalePaths(existing.getCredentials(), updatedCredentials);
         presentationDefinitionDAO.updatePresentationDefinition(
                 definitionToUpdate, staleClaimPaths, tenantId);
 
@@ -213,7 +214,7 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
 
     @Override
     public void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<PresentationDefinition.IssuerConfig> issuerConfigs, int tenantId)
+            List<Issuer> issuerConfigs, int tenantId)
             throws PresentationManagementException {
 
         if (issuerConfigs == null || issuerConfigs.isEmpty()) {
@@ -241,8 +242,8 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
      * @param newCredentials the requested credentials after the update
      * @return the list of dot-joined claim paths that no longer exist after the update
      */
-    private List<String> computeStalePaths(List<RequestedCredential> oldCredentials,
-            List<RequestedCredential> newCredentials) {
+    private List<String> computeStalePaths(List<Credential> oldCredentials,
+            List<Credential> newCredentials) {
 
         Set<String> oldClaimPaths = extractClaimPaths(oldCredentials);
         Set<String> newClaimPaths = extractClaimPaths(newCredentials);
@@ -253,20 +254,20 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
     /**
      * Extracts the set of dot-joined claim paths from the given requested credentials.
      *
-     * @param requestedCredentials the list of requested credentials to extract paths from; may be null
+     * @param credentials the list of requested credentials to extract paths from; may be null
      * @return the set of dot-joined claim paths across all credentials and their constraints
      */
-    private Set<String> extractClaimPaths(List<RequestedCredential> requestedCredentials) {
+    private Set<String> extractClaimPaths(List<Credential> credentials) {
 
         Set<String> claimPaths = new HashSet<>();
-        if (requestedCredentials == null) {
+        if (credentials == null) {
             return claimPaths;
         }
-        for (RequestedCredential credential : requestedCredentials) {
+        for (Credential credential : credentials) {
             if (credential.getClaims() == null) {
                 continue;
             }
-            for (ClaimConstraint constraint : credential.getClaims()) {
+            for (PresentationClaim constraint : credential.getClaims()) {
                 if (constraint.getPath() != null && !constraint.getPath().isEmpty()) {
                     claimPaths.add(constraint.getPath());
                 }
@@ -307,7 +308,7 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
                     PresentationManagementErrorCode.VALIDATION_ERROR,
                     "Presentation definition display name is required.");
         }
-        List<RequestedCredential> requestedCredentials = definition.getRequestedCredentials();
+        List<Credential> requestedCredentials = definition.getCredentials();
         if (requestedCredentials != null && !requestedCredentials.isEmpty()) {
             validateCredentialIds(requestedCredentials);
         }
@@ -321,10 +322,10 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
      * @throws PresentationManagementClientException if any credential ID is blank or contains
      * invalid characters
      */
-    private void validateCredentialIds(List<RequestedCredential> requestedCredentials)
+    private void validateCredentialIds(List<Credential> requestedCredentials)
             throws PresentationManagementClientException {
 
-        for (RequestedCredential credential : requestedCredentials) {
+        for (Credential credential : requestedCredentials) {
             if (credential == null) {
                 continue;
             }

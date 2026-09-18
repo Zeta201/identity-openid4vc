@@ -29,10 +29,11 @@ import org.wso2.carbon.identity.openid4vc.template.management.exception.Presenta
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementServerException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
+import org.wso2.carbon.identity.openid4vc.template.management.model.KeyResolutionMethod;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.ClaimConstraint;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.IssuerConfig;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.template.management.util.Constants;
 import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionFilterQueryBuilder;
 import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionFilterUtil;
@@ -65,15 +66,15 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             try {
                 try (PreparedStatement ps = connection.prepareStatement(
                         PresentationDefinitionSQLConstants.INSERT_DEFINITION)) {
-                    ps.setString(1, presentationDefinition.getDefinitionId());
+                    ps.setString(1, presentationDefinition.getId());
                     ps.setString(2, presentationDefinition.getIdentifier());
                     ps.setString(3, presentationDefinition.getDisplayName());
                     ps.setString(4, presentationDefinition.getDescription());
                     ps.setInt(5, presentationDefinition.getTenantId());
                     ps.executeUpdate();
                 }
-                insertCredentials(connection, presentationDefinition.getDefinitionId(),
-                        presentationDefinition.getRequestedCredentials(), presentationDefinition.getTenantId());
+                insertCredentials(connection, presentationDefinition.getId(),
+                        presentationDefinition.getCredentials(), presentationDefinition.getTenantId());
                 IdentityDatabaseUtil.commitTransaction(connection);
 
             } catch (SQLException e) {
@@ -88,7 +89,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                 throw new PresentationManagementServerException(
                         PresentationManagementErrorCode.DATABASE_ERROR,
                         "Error creating presentation definition: " +
-                                presentationDefinition.getDefinitionId(), e);
+                                presentationDefinition.getId(), e);
             }
         } catch (SQLException e) {
             throw new PresentationManagementServerException(
@@ -156,12 +157,12 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                         PresentationDefinitionSQLConstants.UPDATE_DEFINITION)) {
                     ps.setString(1, presentationDefinition.getDisplayName());
                     ps.setString(2, presentationDefinition.getDescription());
-                    ps.setString(3, presentationDefinition.getDefinitionId());
+                    ps.setString(3, presentationDefinition.getId());
                     ps.setInt(4, presentationDefinition.getTenantId());
                     ps.executeUpdate();
                 }
-                upsertCredentials(connection, presentationDefinition.getDefinitionId(),
-                        presentationDefinition.getRequestedCredentials(), tenantId);
+                upsertCredentials(connection, presentationDefinition.getId(),
+                        presentationDefinition.getCredentials(), tenantId);
                 if (staleClaimPaths != null && !staleClaimPaths.isEmpty()) {
                     String placeholders = String.join(",",
                             Collections.nCopies(staleClaimPaths.size(), "?"));
@@ -173,7 +174,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                         for (String path : staleClaimPaths) {
                             ps.setString(i++, path);
                         }
-                        ps.setString(i++, presentationDefinition.getDefinitionId());
+                        ps.setString(i++, presentationDefinition.getId());
                         ps.setInt(i, tenantId);
                         ps.executeUpdate();
                     }
@@ -187,7 +188,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
             throw new PresentationManagementServerException(
                     PresentationManagementErrorCode.DATABASE_ERROR,
                     "Error updating presentation definition with cleanup: " +
-                            presentationDefinition.getDefinitionId(), e);
+                            presentationDefinition.getId(), e);
         }
     }
 
@@ -259,13 +260,13 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
                             PresentationDefinition definition = new PresentationDefinition.Builder()
-                                    .definitionId(rs.getString(Constants.COL_DEFINITION_ID))
+                                    .id(rs.getString(Constants.COL_DEFINITION_ID))
+                                    .cursorKey(rs.getInt(Constants.COL_CURSOR_KEY))
                                     .identifier(rs.getString(Constants.COL_IDENTIFIER))
                                     .displayName(rs.getString(Constants.COL_DISPLAY_NAME))
                                     .description(rs.getString(Constants.COL_DESCRIPTION))
                                     .tenantId(tenantId)
                                     .build();
-                            definition.setCursorKey(rs.getInt(Constants.COL_CURSOR_KEY));
                             results.add(definition);
                         }
                     }
@@ -484,7 +485,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
      * Claims are replaced per credential. Removed credentials are deleted by ID.
      */
     private void upsertCredentials(Connection connection, String definitionId,
-            List<RequestedCredential> credentials, int tenantId) throws SQLException {
+            List<Credential> credentials, int tenantId) throws SQLException {
 
         if (credentials == null || credentials.isEmpty()) {
             try (PreparedStatement ps = connection.prepareStatement(
@@ -498,7 +499,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         Map<String, Integer> existingIds = loadCredentialIds(connection, definitionId);
         List<Integer> keptIds = new ArrayList<>();
 
-        for (RequestedCredential cred : credentials) {
+        for (Credential cred : credentials) {
             Integer existingId = existingIds.get(cred.getIdentifier());
             int credentialDbId;
 
@@ -528,7 +529,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                         credentialDbId = generatedKeys.getInt(1);
                     }
                 }
-                insertIssuerConfigs(connection, credentialDbId, cred.getIssuerConfigs(), tenantId);
+                insertIssuerConfigs(connection, credentialDbId, cred.getIssuers(), tenantId);
             }
             keptIds.add(credentialDbId);
             replaceClaimsForCredential(connection, credentialDbId, cred.getClaims(), tenantId);
@@ -539,10 +540,10 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
 
     @Override
     public void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<PresentationDefinition.IssuerConfig> issuerConfigs, int tenantId)
+            List<Issuer> issuers, int tenantId)
             throws PresentationManagementException {
 
-        if (issuerConfigs == null || issuerConfigs.isEmpty()) {
+        if (issuers == null || issuers.isEmpty()) {
             throw new PresentationManagementClientException(
                     PresentationManagementErrorCode.VALIDATION_ERROR,
                     "At least one issuer configuration is required for credential '" + credentialIdentifier + "'.");
@@ -561,7 +562,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                     ps.setInt(1, credentialDbId);
                     ps.executeUpdate();
                 }
-                insertIssuerConfigs(connection, credentialDbId, issuerConfigs, tenantId);
+                insertIssuerConfigs(connection, credentialDbId, issuers, tenantId);
                 IdentityDatabaseUtil.commitTransaction(connection);
             } catch (SQLException e) {
                 IdentityDatabaseUtil.rollbackTransaction(connection);
@@ -593,7 +594,7 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     }
 
     private void replaceClaimsForCredential(Connection connection, int credentialDbId,
-            List<ClaimConstraint> claims, int tenantId) throws SQLException {
+            List<PresentationClaim> claims, int tenantId) throws SQLException {
 
         try (PreparedStatement ps = connection.prepareStatement(
                 PresentationDefinitionSQLConstants.DELETE_CLAIMS_FOR_CREDENTIAL)) {
@@ -630,12 +631,12 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
      * @throws SQLException if any JDBC operation fails
      */
     private void insertCredentials(Connection connection, String definitionId,
-            List<RequestedCredential> credentials, int tenantId) throws SQLException {
+            List<Credential> credentials, int tenantId) throws SQLException {
 
         if (credentials == null || credentials.isEmpty()) {
             return;
         }
-        for (RequestedCredential cred : credentials) {
+        for (Credential cred : credentials) {
             try (PreparedStatement ps = connection.prepareStatement(
                     PresentationDefinitionSQLConstants.INSERT_CREDENTIAL, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, definitionId);
@@ -652,24 +653,26 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
                     credentialDbId = generatedKeys.getInt(1);
                 }
                 insertClaims(connection, credentialDbId, cred.getClaims(), tenantId);
-                insertIssuerConfigs(connection, credentialDbId, cred.getIssuerConfigs(), tenantId);
+                insertIssuerConfigs(connection, credentialDbId, cred.getIssuers(), tenantId);
             }
         }
     }
 
     private void insertIssuerConfigs(Connection connection, int credentialDbId,
-            List<IssuerConfig> issuerConfigs, int tenantId) throws SQLException {
+            List<Issuer> issuers, int tenantId) throws SQLException {
 
-        if (issuerConfigs == null || issuerConfigs.isEmpty()) {
+        if (issuers == null || issuers.isEmpty()) {
             return;
         }
         try (PreparedStatement ps = connection.prepareStatement(
                 PresentationDefinitionSQLConstants.INSERT_ISSUER_CONFIG)) {
-            for (IssuerConfig config : issuerConfigs) {
+            for (Issuer issuer : issuers) {
                 ps.setInt(1, credentialDbId);
-                ps.setString(2, config.getKeySourceType());
-                ps.setString(3, config.getIssuerUrl());
-                ps.setString(4, config.getKeySource());
+                ps.setString(2, issuer.getKeyResolutionMethod().name());
+                ps.setString(3, issuer.getIssuerUrl());
+                String keySource = issuer.getKeyResolutionMethod() == KeyResolutionMethod.JWKS_URI
+                        ? issuer.getJwksUri() : issuer.getCertificate();
+                ps.setString(4, keySource);
                 ps.setInt(5, tenantId);
                 ps.addBatch();
             }
@@ -677,37 +680,45 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         }
     }
 
-    private List<IssuerConfig> loadIssuerConfigs(Connection connection,
+    private List<Issuer> loadIssuerConfigs(Connection connection,
             int credentialDbId) throws SQLException {
 
-        List<IssuerConfig> configs = new ArrayList<>();
+        List<Issuer> issuers = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(
                 PresentationDefinitionSQLConstants.SELECT_ISSUER_CONFIGS)) {
             ps.setInt(1, credentialDbId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    IssuerConfig config = new IssuerConfig();
-                    config.setKeySourceType(rs.getString(Constants.COL_KEY_SOURCE_TYPE));
-                    config.setIssuerUrl(rs.getString(Constants.COL_ISSUER_URL));
-                    config.setKeySource(rs.getString(Constants.COL_KEY_SOURCE));
-                    configs.add(config);
+                    Issuer issuer = new Issuer();
+                    KeyResolutionMethod method = KeyResolutionMethod.valueOf(
+                            rs.getString(Constants.COL_KEY_SOURCE_TYPE).toUpperCase());
+                    issuer.setKeyResolutionMethod(method);
+                    issuer.setIssuerUrl(rs.getString(Constants.COL_ISSUER_URL));
+                    String keySource = rs.getString(Constants.COL_KEY_SOURCE);
+                    if (method == KeyResolutionMethod.JWKS_URI) {
+                        issuer.setJwksUri(keySource);
+                    } else {
+                        issuer.setCertificate(keySource);
+                    }
+                    issuers.add(issuer);
                 }
             }
         }
-        return configs;
+        return issuers;
     }
 
     private void loadIssuerConfigsForDefinition(Connection connection,
             PresentationDefinition definition) throws SQLException {
 
-        if (definition.getRequestedCredentials() == null) {
+        List<Credential> credentials = definition.getCredentials();
+        if (credentials == null || credentials.isEmpty()) {
             return;
         }
-        Map<String, Integer> credentialIds = loadCredentialIds(connection, definition.getDefinitionId());
-        for (RequestedCredential cred : definition.getRequestedCredentials()) {
+        Map<String, Integer> credentialIds = loadCredentialIds(connection, definition.getId());
+        for (Credential cred : credentials) {
             Integer credentialDbId = credentialIds.get(cred.getIdentifier());
             if (credentialDbId != null) {
-                cred.setIssuerConfigs(loadIssuerConfigs(connection, credentialDbId));
+                cred.setIssuers(loadIssuerConfigs(connection, credentialDbId));
             }
         }
     }
@@ -722,13 +733,13 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
      * @throws SQLException if any JDBC operation fails
      */
     private void insertClaims(Connection connection, int credentialDbId,
-            List<ClaimConstraint> claims, int tenantId) throws SQLException {
+            List<PresentationClaim> claims, int tenantId) throws SQLException {
 
         if (claims == null || claims.isEmpty()) {
             return;
         }
         try (PreparedStatement ps = connection.prepareStatement(PresentationDefinitionSQLConstants.INSERT_CLAIM)) {
-            for (ClaimConstraint claim : claims) {
+            for (PresentationClaim claim : claims) {
                 ps.setInt(1, credentialDbId);
                 ps.setString(2, claim.getPath() != null ? claim.getPath() : "");
                 ps.setBoolean(3, claim.isMandatory());
@@ -755,8 +766,8 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         String displayName = null;
         String description = null;
         int tenantId = 0;
-        Map<String, RequestedCredential> credMap = new LinkedHashMap<>();
-        Map<String, List<ClaimConstraint>> claimsMap = new LinkedHashMap<>();
+        Map<String, Credential> credMap = new LinkedHashMap<>();
+        Map<String, List<PresentationClaim>> claimsMap = new LinkedHashMap<>();
 
         while (rs.next()) {
             if (definitionId == null) {
@@ -781,16 +792,16 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         if (definitionId == null) {
             return null;
         }
-        for (Map.Entry<String, RequestedCredential> entry : credMap.entrySet()) {
+        for (Map.Entry<String, Credential> entry : credMap.entrySet()) {
             entry.getValue().setClaims(claimsMap.get(entry.getKey()));
         }
         return new PresentationDefinition.Builder()
-                .definitionId(definitionId)
+                .id(definitionId)
                 .identifier(identifier)
                 .displayName(displayName)
                 .description(description)
                 .tenantId(tenantId)
-                .requestedCredentials(new ArrayList<>(credMap.values()))
+                .credentials(new ArrayList<>(credMap.values()))
                 .build();
     }
 
@@ -807,14 +818,14 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     private List<PresentationDefinition> buildDefinitionList(ResultSet rs) throws SQLException {
 
         Map<String, PresentationDefinition.Builder> builders = new LinkedHashMap<>();
-        Map<String, Map<String, RequestedCredential>> credsByDef = new LinkedHashMap<>();
-        Map<String, List<ClaimConstraint>> claimsByCredential = new LinkedHashMap<>();
+        Map<String, Map<String, Credential>> credsByDef = new LinkedHashMap<>();
+        Map<String, List<PresentationClaim>> claimsByCredential = new LinkedHashMap<>();
 
         while (rs.next()) {
             String definitionId = rs.getString(Constants.COL_DEFINITION_ID);
             if (!builders.containsKey(definitionId)) {
                 builders.put(definitionId, new PresentationDefinition.Builder()
-                        .definitionId(definitionId)
+                        .id(definitionId)
                         .identifier(rs.getString(Constants.COL_IDENTIFIER))
                         .displayName(rs.getString(Constants.COL_DISPLAY_NAME))
                         .description(rs.getString(Constants.COL_DESCRIPTION))
@@ -837,28 +848,28 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
         List<PresentationDefinition> result = new ArrayList<>();
         for (Map.Entry<String, PresentationDefinition.Builder> builderEntry : builders.entrySet()) {
             String definitionId = builderEntry.getKey();
-            Map<String, RequestedCredential> creds = credsByDef.get(definitionId);
-            for (Map.Entry<String, RequestedCredential> credEntry : creds.entrySet()) {
+            Map<String, Credential> creds = credsByDef.get(definitionId);
+            for (Map.Entry<String, Credential> credEntry : creds.entrySet()) {
                 credEntry.getValue().setClaims(claimsByCredential.get(definitionId + "|" + credEntry.getKey()));
             }
             result.add(builderEntry.getValue()
-                    .requestedCredentials(new ArrayList<>(creds.values()))
+                    .credentials(new ArrayList<>(creds.values()))
                     .build());
         }
         return result;
     }
 
     /**
-     * Maps the credential columns of the current result set row to a {@link RequestedCredential}.
+     * Maps the credential columns of the current result set row to a {@link Credential}.
      * Claims are NOT read here; they are accumulated separately and set by the caller after grouping.
      *
      * @param rs the result set positioned at the row to map
-     * @return a {@link RequestedCredential} populated from the current row, with an empty claims list
+     * @return a {@link Credential} populated from the current row, with an empty claims list
      * @throws SQLException if reading any column from the result set fails
      */
-    private RequestedCredential mapCredentialRow(ResultSet rs) throws SQLException {
+    private Credential mapCredentialRow(ResultSet rs) throws SQLException {
 
-        RequestedCredential cred = new RequestedCredential();
+        Credential cred = new Credential();
         cred.setIdentifier(rs.getString(Constants.COL_CREDENTIAL_ID));
         cred.setType(rs.getString(Constants.COL_CREDENTIAL_TYPE));
         cred.setFormat(rs.getString(Constants.COL_CREDENTIAL_FORMAT));
@@ -866,15 +877,15 @@ public class PresentationDefinitionDAOImpl implements PresentationDefinitionDAO 
     }
 
     /**
-     * Maps the claim columns of the current result set row to a {@link ClaimConstraint}.
+     * Maps the claim columns of the current result set row to a {@link PresentationClaim}.
      *
      * @param rs the result set positioned at the row to map
-     * @return a {@link ClaimConstraint} populated from the current row
+     * @return a {@link PresentationClaim} populated from the current row
      * @throws SQLException if reading any column from the result set fails
      */
-    private ClaimConstraint mapClaimRow(ResultSet rs) throws SQLException {
+    private PresentationClaim mapClaimRow(ResultSet rs) throws SQLException {
 
-        ClaimConstraint claim = new ClaimConstraint();
+        PresentationClaim claim = new PresentationClaim();
         claim.setPath(rs.getString(Constants.COL_CLAIM_PATH));
         claim.setMandatory(rs.getBoolean(Constants.COL_IS_MANDATORY));
         return claim;

@@ -29,6 +29,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.cache.Presentation
 import org.wso2.carbon.identity.openid4vc.template.management.dao.PresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.util.List;
@@ -227,7 +228,7 @@ public class CacheBackedPresentationDefinitionDAO implements PresentationDefinit
             List<String> staleClaimPaths, int tenantId) throws PresentationManagementException {
 
         presentationDefinitionDAO.updatePresentationDefinition(presentationDefinition, staleClaimPaths, tenantId);
-        clearAllCaches(presentationDefinition.getDefinitionId(), tenantId);
+        clearAllCaches(presentationDefinition.getId(), tenantId);
     }
 
     @Override
@@ -239,7 +240,7 @@ public class CacheBackedPresentationDefinitionDAO implements PresentationDefinit
 
     @Override
     public void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<PresentationDefinition.IssuerConfig> issuerConfigs, int tenantId)
+            List<Issuer> issuerConfigs, int tenantId)
             throws PresentationManagementException {
 
         presentationDefinitionDAO.replaceIssuerConfigs(definitionId, credentialIdentifier,
@@ -251,9 +252,9 @@ public class CacheBackedPresentationDefinitionDAO implements PresentationDefinit
 
         PresentationDefinitionCacheEntry cacheEntry = new PresentationDefinitionCacheEntry(definition);
 
-        if (definition.getDefinitionId() != null) {
+        if (definition.getId() != null) {
             presentationDefinitionCacheById.addToCache(
-                    new PresentationDefinitionIdCacheKey(definition.getDefinitionId()), cacheEntry, tenantId);
+                    new PresentationDefinitionIdCacheKey(definition.getId()), cacheEntry, tenantId);
         }
         if (definition.getIdentifier() != null) {
             presentationDefinitionCacheByIdentifier.addToCache(

@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.openid4vc.template.management.dao;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
 import java.util.List;
@@ -182,16 +183,16 @@ public interface PresentationDefinitionDAO {
     /**
      * Replaces all issuer configurations for a specific credential within a presentation definition.
      * The replacement is atomic: existing configs are deleted and the new list is inserted in one
-     * transaction. At least one {@link PresentationDefinition.IssuerConfig} must be provided.
+     * transaction. At least one {@link Issuer} must be provided.
      *
      * @param definitionId         the UUID of the parent presentation definition
      * @param credentialIdentifier the user-facing identifier of the target credential
-     * @param issuerConfigs        the replacement list of issuer configurations; must not be empty
+     * @param issuers        the replacement list of issuer configurations; must not be empty
      * @param tenantId             the tenant ID scoping the update
-     * @throws PresentationManagementException if the credential is not found, issuerConfigs is empty,
+     * @throws PresentationManagementException if the credential is not found, issuers is empty,
      *                                         or a database error occurs
      */
     void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<PresentationDefinition.IssuerConfig> issuerConfigs, int tenantId)
+                              List<Issuer> issuers, int tenantId)
             throws PresentationManagementException;
 }

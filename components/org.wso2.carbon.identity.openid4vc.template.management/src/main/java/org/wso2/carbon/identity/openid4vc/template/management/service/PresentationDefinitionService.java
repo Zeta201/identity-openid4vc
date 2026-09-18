@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.openid4vc.template.management.service;
 
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinitionSearchResult;
 
@@ -151,7 +152,7 @@ public interface PresentationDefinitionService {
      *                                         issuerConfigs is empty, or a database error occurs
      */
     void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<PresentationDefinition.IssuerConfig> issuerConfigs, int tenantId)
+            List<Issuer> issuerConfigs, int tenantId)
             throws PresentationManagementException;
 
 }
