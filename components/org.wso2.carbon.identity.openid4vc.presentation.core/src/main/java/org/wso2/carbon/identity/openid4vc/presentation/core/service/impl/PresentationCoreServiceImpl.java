@@ -313,12 +313,11 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         return entry != null ? entry.getSession() : null;
     }
 
-    // TODO
-    private void validateResponseMode(VPSession session, String requestId, boolean encryptedResponseExpected)
+    private void validateResponseMode(String configuredResponseMode, boolean encryptedResponseExpected)
             throws PresentationCoreClientException {
 
         boolean isEncryptedResponseMode = PresentationCoreConstants.RESPONSE_MODE_DIRECT_POST_JWT
-                .equals(session.getResponseMode());
+                .equals(configuredResponseMode);
         if (isEncryptedResponseMode != encryptedResponseExpected) {
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.RESPONSE_MODE_MISMATCH);
@@ -356,7 +355,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                 throw PresentationCoreExceptionHandler.handleClientException(
                         PresentationCoreErrorCode.INVALID_REQUEST);
             }
-            validateResponseMode(session, requestId, true);
+            validateResponseMode(session.getResponseMode(), true);
             JWTClaimsSet claims = PresentationCoreUtil.decryptJweResponse(
                     jweObject, session.getEphemeralPrivateKeyJwk());
 
@@ -406,7 +405,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         if (StringUtils.isNotBlank(requestId)) {
             VPSession session = getSessionFromCache(requestId, tenantId);
             if (session != null) {
-                validateResponseMode(session, requestId, false);
+                validateResponseMode(session.getResponseMode(), false);
             }
         }
 
