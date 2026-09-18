@@ -18,11 +18,11 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.core.dto;
 
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 
 /**
- * Immutable context DTO produced by
- * {@link org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService#buildVerificationRequest}
+ * Immutable context DTO produced by {@link PresentationSessionService#buildVerificationRequest}
  * and consumed by the verification pipeline.
  *
  * <p>Each field is required by at least one verification step:
