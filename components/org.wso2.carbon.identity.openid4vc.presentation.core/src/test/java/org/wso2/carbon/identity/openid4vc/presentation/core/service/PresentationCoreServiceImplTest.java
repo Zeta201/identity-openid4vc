@@ -254,7 +254,8 @@ public class PresentationCoreServiceImplTest {
         Assert.assertNull(result, "Should return null when no session exists");
     }
 
-    @Test(priority = 11, description = "Test getPresentationSessionStatus returns ACTIVE status without removing session")
+    @Test(priority = 11,
+            description = "Test getPresentationSessionStatus returns ACTIVE status without removing session")
     public void testGetPresentationSessionResultActiveSession() {
 
         VPSession activeSession = new VPSession.Builder()

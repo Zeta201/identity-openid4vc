@@ -18,6 +18,10 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.core.service.impl;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWEObject;
@@ -39,20 +43,20 @@ import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.Inbo
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
-import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreAuditLogger;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCacheEntry;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCacheKey;
 import org.wso2.carbon.identity.openid4vc.presentation.core.constant.PresentationCoreConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationRequestResponseDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationSubmissionDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionRespDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionStatusDTO;
-import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationSubmissionDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreServerException;
-import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreExceptionHandler;
 import org.wso2.carbon.identity.openid4vc.presentation.core.internal.PresentationCoreDataHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
@@ -60,18 +64,13 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPTenantConfig
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationRequestService;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.util.DcqlUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreAuditLogger;
+import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreExceptionHandler;
 import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreUtil;
-import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
-import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
-import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -252,7 +251,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
      * @throws PresentationCoreServerException if the ephemeral public key cannot be parsed.
      */
     private static JWTClaimsSet buildPresentationRequestClaims(VPSession session) throws
-        PresentationCoreServerException{
+        PresentationCoreServerException {
 
         String clientId = session.getClientId();
         return new JWTClaimsSet.Builder()
@@ -281,7 +280,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
      *
      * @param requestId Request ID returned by {@code initiate}.
      * @return The cached session, or {@code null} if absent or expired.
-     * @throws PresentationCoreServerException If the database read or secret decryption fails.
+     * @throws PresentationCoreException If the database read or secret decryption fails.
      */
     @Override
     public VPSession getPresentationSession(String requestId, String tenantDomain) throws PresentationCoreException {
@@ -473,8 +472,8 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     }
 
     @Override
-    public void handleSessionVerified(String requestId, VerificationResponseDTO verificationResponse, String tenantDomain)
-            throws PresentationCoreException {
+    public void handleSessionVerified(String requestId, VerificationResponseDTO verificationResponse,
+            String tenantDomain) throws PresentationCoreException {
         int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
         VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {

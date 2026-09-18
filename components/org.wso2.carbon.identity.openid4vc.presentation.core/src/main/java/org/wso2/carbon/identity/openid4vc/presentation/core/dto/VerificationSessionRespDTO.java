@@ -19,8 +19,10 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.dto;
 
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+
 /**
- * DTO returned by {@link org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService#getPresentationSessionStatus}.
+ * DTO returned by {@link PresentationSessionService#getPresentationSessionResult}.
  * Carries the terminal session state and, when verified, the full verification response.
  */
 public class VerificationSessionRespDTO {

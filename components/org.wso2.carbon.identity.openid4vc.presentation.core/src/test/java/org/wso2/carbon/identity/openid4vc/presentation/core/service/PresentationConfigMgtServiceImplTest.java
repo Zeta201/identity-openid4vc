@@ -99,7 +99,8 @@ public class PresentationConfigMgtServiceImplTest {
         Assert.assertNull(result.getResponseMode(), "responseMode should be null for empty config");
     }
 
-    @Test(priority = 3, description = "Test getVPConfig returns empty config when resource exists but has no attributes")
+    @Test(priority = 3,
+            description = "Test getVPConfig returns empty config when resource exists but has no attributes")
     public void testGetVPConfigNullAttributes() throws Exception {
 
         Resource resource = new Resource();
@@ -113,7 +114,8 @@ public class PresentationConfigMgtServiceImplTest {
         Assert.assertNull(result.getResponseMode());
     }
 
-    @Test(priority = 4, description = "Test getVPConfig wraps unexpected ConfigurationManagementException as server error")
+    @Test(priority = 4,
+            description = "Test getVPConfig wraps unexpected ConfigurationManagementException as server error")
     public void testGetVPConfigUnexpectedExceptionWrapped() throws Exception {
 
         ConfigurationManagementException unexpectedEx = new ConfigurationManagementException(

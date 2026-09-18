@@ -108,7 +108,8 @@ public class VPIdPMgtListener extends AbstractIdentityProviderMgtListener {
             return false;
         }
         return Arrays.stream(authenticatorConfigs)
-                .anyMatch(authenticatorConfig -> PresentationCoreConstants.AUTHENTICATOR_NAME.equals(authenticatorConfig.getName()));
+                .anyMatch(authenticatorConfig ->
+                        PresentationCoreConstants.AUTHENTICATOR_NAME.equals(authenticatorConfig.getName()));
     }
 
     /**
