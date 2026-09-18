@@ -21,203 +21,171 @@ package org.wso2.carbon.identity.openid4vc.template.management.exception;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages;
+import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionMgtExceptionHandler;
 
 /**
- * Unit tests for the presentation management exception hierarchy and error codes.
- * Tests message, cause, error code, and error type behaviour across all exception variants.
+ * Unit tests for the presentation management exception hierarchy and error messages.
  */
 public class PresentationManagementExceptionTest {
 
     @Test(priority = 1,
-        description = "Test that base exception stores the message and returns null error code by default")
+            description = "Base exception with message only: errorCode and description are null")
     public void testBaseExceptionWithMessage() {
 
-        // Set up and execute
         PresentationManagementException ex = new PresentationManagementException("test message");
 
-        // Verify
-        Assert.assertEquals(ex.getMessage(), "test message",
-                "Exception message should match the value passed to the constructor");
-        Assert.assertNull(ex.getErrorCode(),
-                "errorCode should be null when constructed with message only");
-        Assert.assertNull(ex.getCode(),
-                "code should be null when constructed with message only");
+        Assert.assertEquals(ex.getMessage(), "test message");
+        Assert.assertNull(ex.getErrorCode(), "errorCode should be null when constructed with message only");
+        Assert.assertNull(ex.getDescription(), "description should be null when constructed with message only");
     }
 
     @Test(priority = 2,
-        description = "Test that base exception stores the cause when constructed with message and cause")
+            description = "Base exception with message and cause stores the cause")
     public void testBaseExceptionWithMessageAndCause() {
 
-        // Set up
         RuntimeException cause = new RuntimeException("root cause");
 
-        // Execute
         PresentationManagementException ex = new PresentationManagementException("test", cause);
 
-        // Verify
-        Assert.assertEquals(ex.getCause(), cause,
-                "Exception cause should match the RuntimeException passed to the constructor");
+        Assert.assertEquals(ex.getCause(), cause);
     }
 
     @Test(priority = 3,
-        description = "Test that base exception stores error code, error type, and description")
-    public void testBaseExceptionWithErrorCode() {
+            description = "Base exception with message, description, and error code stores all three fields")
+    public void testBaseExceptionWithAllStringParams() {
 
-        // Execute
         PresentationManagementException ex = new PresentationManagementException(
-                PresentationManagementErrorCode.DEFINITION_NOT_FOUND, "not found");
+                "not found", "detailed description", "VPD-40401");
 
-        // Verify
-        Assert.assertEquals(ex.getCode(), PresentationManagementErrorCode.DEFINITION_NOT_FOUND.getCode(),
-                "code should match the provided error code");
-        Assert.assertEquals(ex.getErrorType(),
-                PresentationManagementErrorCode.DEFINITION_NOT_FOUND.getErrorType(),
-                "Error type should match the provided error code's error type value");
-        Assert.assertNotNull(ex.getDescription(),
-                "description should not be null when constructed with an error code");
+        Assert.assertEquals(ex.getMessage(), "not found");
+        Assert.assertEquals(ex.getDescription(), "detailed description");
+        Assert.assertEquals(ex.getErrorCode(), "VPD-40401");
     }
 
     @Test(priority = 4,
-        description = "Test that PresentationManagementClientException is an instance of the base exception")
-    public void testClientExceptionIsInstanceOfBase() {
+            description = "Base exception with all four params stores error code and cause")
+    public void testBaseExceptionWithAllParams() {
 
-        // Execute
-        PresentationManagementClientException ex =
-                new PresentationManagementClientException("client error");
+        RuntimeException cause = new RuntimeException("cause");
 
-        // Verify
-        Assert.assertTrue(ex instanceof PresentationManagementException,
-                "PresentationManagementClientException should extend PresentationManagementException");
+        PresentationManagementException ex = new PresentationManagementException(
+                "msg", "desc", "VPD-50001", cause);
+
+        Assert.assertEquals(ex.getErrorCode(), "VPD-50001");
+        Assert.assertEquals(ex.getDescription(), "desc");
+        Assert.assertEquals(ex.getCause(), cause);
     }
 
     @Test(priority = 5,
-        description = "Test that client exception stores its error code and message correctly")
-    public void testClientExceptionWithErrorCode() {
+            description = "Client exception extends the base exception")
+    public void testClientExceptionIsInstanceOfBase() {
 
-        // Execute
-        PresentationManagementClientException ex = new PresentationManagementClientException(
-                PresentationManagementErrorCode.VALIDATION_ERROR, "validation failed");
+        PresentationManagementClientException ex =
+                new PresentationManagementClientException("client error", "desc", "VPD-40001");
 
-        // Verify
-        Assert.assertEquals(ex.getCode(), PresentationManagementErrorCode.VALIDATION_ERROR.getCode(),
-                "code should match the provided error code");
-        Assert.assertEquals(ex.getMessage(), "validation failed",
-                "message should match the value passed to the constructor");
+        Assert.assertTrue(ex instanceof PresentationManagementException);
     }
 
     @Test(priority = 6,
-        description = "Test that client exception stores cause and error code when constructed with all three")
-    public void testClientExceptionWithCause() {
+            description = "Client exception stores message, description, and error code")
+    public void testClientExceptionStoredFields() {
 
-        // Set up
-        RuntimeException cause = new RuntimeException("cause");
-
-        // Execute
         PresentationManagementClientException ex = new PresentationManagementClientException(
-                PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS, "duplicate", cause);
+                "duplicate", "already exists", "VPD-40901");
 
-        // Verify
-        Assert.assertEquals(ex.getCause(), cause,
-                "Exception cause should match the RuntimeException passed to the constructor");
-        Assert.assertEquals(ex.getCode(), PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS.getCode(),
-                "code should match the provided error code");
+        Assert.assertEquals(ex.getMessage(), "duplicate");
+        Assert.assertEquals(ex.getDescription(), "already exists");
+        Assert.assertEquals(ex.getErrorCode(), "VPD-40901");
     }
 
     @Test(priority = 7,
-        description = "Test that PresentationManagementServerException is an instance of the base exception")
+            description = "Server exception extends the base exception")
     public void testServerExceptionIsInstanceOfBase() {
 
-        // Execute
         PresentationManagementServerException ex =
                 new PresentationManagementServerException("server error");
 
-        // Verify
-        Assert.assertTrue(ex instanceof PresentationManagementException,
-                "PresentationManagementServerException should extend PresentationManagementException");
+        Assert.assertTrue(ex instanceof PresentationManagementException);
     }
 
     @Test(priority = 8,
-        description = "Test that server exception stores its error code and message correctly")
-    public void testServerExceptionWithErrorCode() {
+            description = "Server exception with message and cause stores both")
+    public void testServerExceptionWithMessageAndCause() {
 
-        // Execute
-        PresentationManagementServerException ex = new PresentationManagementServerException(
-                PresentationManagementErrorCode.DATABASE_ERROR, "db error");
+        RuntimeException cause = new RuntimeException("cause");
 
-        // Verify
-        Assert.assertEquals(ex.getCode(), PresentationManagementErrorCode.DATABASE_ERROR.getCode(),
-                "code should match the provided error code");
-        Assert.assertEquals(ex.getMessage(), "db error",
-                "message should match the value passed to the constructor");
+        PresentationManagementServerException ex =
+                new PresentationManagementServerException("db error", cause);
+
+        Assert.assertEquals(ex.getMessage(), "db error");
+        Assert.assertEquals(ex.getCause(), cause);
     }
 
     @Test(priority = 9,
-            description = "Test that server exception stores cause and error code when constructed with all three")
-    public void testServerExceptionWithCause() {
+            description = "Server exception with all four params stores error code and cause")
+    public void testServerExceptionWithAllParams() {
 
-        // Set up
         RuntimeException cause = new RuntimeException("cause");
 
-        // Execute
         PresentationManagementServerException ex = new PresentationManagementServerException(
-                PresentationManagementErrorCode.INTERNAL_SERVER_ERROR, "internal", cause);
+                "internal", "internal error desc", "VPD-50002", cause);
 
-        // Verify
-        Assert.assertEquals(ex.getCause(), cause,
-                "Exception cause should match the RuntimeException passed to the constructor");
-        Assert.assertEquals(ex.getCode(), PresentationManagementErrorCode.INTERNAL_SERVER_ERROR.getCode(),
-                "code should match the provided error code");
+        Assert.assertEquals(ex.getErrorCode(), "VPD-50002");
+        Assert.assertEquals(ex.getDescription(), "internal error desc");
+        Assert.assertEquals(ex.getCause(), cause);
     }
 
-    @DataProvider(name = "errorCodeProvider")
-    public Object[][] errorCodeProvider() {
+    @DataProvider(name = "errorMessageProvider")
+    public Object[][] errorMessageProvider() {
 
         return new Object[][]{
-                {PresentationManagementErrorCode.VALIDATION_ERROR, "VPD-40001", "invalid_request"},
-                {PresentationManagementErrorCode.DEFINITION_NOT_FOUND, "VPD-40401", "definition_not_found"},
-                {PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS, "VPD-40901", "definition_already_exists"},
-                {PresentationManagementErrorCode.DATABASE_ERROR, "VPD-50001", "server_error"},
-                {PresentationManagementErrorCode.INTERNAL_SERVER_ERROR, "VPD-50002", "server_error"},
+                {ErrorMessages.ERROR_CODE_VALIDATION_ERROR, "VPD-40001"},
+                {ErrorMessages.ERROR_CODE_DEFINITION_NOT_FOUND, "VPD-40401"},
+                {ErrorMessages.ERROR_CODE_DEFINITION_ALREADY_EXISTS, "VPD-40901"},
+                {ErrorMessages.ERROR_CODE_DEFINITION_IN_USE, "VPD-40902"},
+                {ErrorMessages.ERROR_CODE_INVALID_FILTER, "VPD-40002"},
+                {ErrorMessages.ERROR_CODE_INVALID_PAGINATION, "VPD-40003"},
+                {ErrorMessages.ERROR_CODE_DATABASE_ERROR, "VPD-50001"},
+                {ErrorMessages.ERROR_CODE_INTERNAL_SERVER_ERROR, "VPD-50002"},
         };
     }
 
-    @Test(dataProvider = "errorCodeProvider", priority = 10,
-            description = "Test each error code has the expected code string, error type, message and description")
-    public void testErrorCodeValues(PresentationManagementErrorCode code,
-                                    String expectedCode, String expectedErrorType) {
+    @Test(dataProvider = "errorMessageProvider", priority = 10,
+            description = "Each ErrorMessages entry has the expected code and non-null message and description")
+    public void testErrorMessageValues(ErrorMessages error, String expectedCode) {
 
-        // Verify all fields are populated correctly for each error code
-        Assert.assertEquals(code.getCode(), expectedCode,
-                "Error code string should match for " + code);
-        Assert.assertEquals(code.getErrorType(), expectedErrorType,
-                "Error type should match for " + code);
-        Assert.assertNotNull(code.getMessage(),
-                "message should not be null for " + code);
-        Assert.assertNotNull(code.getDescription(),
-                "description should not be null for " + code);
+        Assert.assertEquals(error.getCode(), expectedCode,
+                "Code should match for " + error);
+        Assert.assertNotNull(error.getMessage(),
+                "message should not be null for " + error);
+        Assert.assertNotNull(error.getDescription(),
+                "description should not be null for " + error);
     }
 
-    @Test(priority = 11, description = "Test that toString on an error code includes the code string")
-    public void testErrorCodeToString() {
+    @Test(priority = 11,
+            description = "handleClientException produces client exception with correct code and formatted description")
+    public void testHandleClientExceptionFormatsDescription() {
 
-        // Execute
-        String str = PresentationManagementErrorCode.DEFINITION_NOT_FOUND.toString();
+        PresentationManagementClientException ex = PresentationDefinitionMgtExceptionHandler
+                .handleClientException(ErrorMessages.ERROR_CODE_DEFINITION_NOT_FOUND, "test-id");
 
-        // Verify
-        Assert.assertTrue(str.contains("VPD-40401"),
-                "toString should include the code string VPD-40401, got: " + str);
+        Assert.assertEquals(ex.getErrorCode(), ErrorMessages.ERROR_CODE_DEFINITION_NOT_FOUND.getCode());
+        Assert.assertNotNull(ex.getMessage());
+        Assert.assertTrue(ex.getDescription().contains("test-id"),
+                "Description should contain the formatted data, got: " + ex.getDescription());
     }
 
     @Test(priority = 12,
-            description = "Test that exception description is overridden when a custom description is provided")
-    public void testExceptionDescriptionOverride() {
+            description = "handleServerException produces server exception with correct code and cause")
+    public void testHandleServerExceptionStoresCause() {
 
-        // Execute
-        PresentationManagementException ex = new PresentationManagementException(
-                PresentationManagementErrorCode.VALIDATION_ERROR, "msg", "custom description");
+        RuntimeException cause = new RuntimeException("db failure");
 
-        // Verify
-        Assert.assertEquals(ex.getDescription(), "custom description",
-                "getDescription should return the custom description passed to the constructor");
+        PresentationManagementServerException ex = PresentationDefinitionMgtExceptionHandler
+                .handleServerException(ErrorMessages.ERROR_CODE_DATABASE_ERROR, cause);
+
+        Assert.assertEquals(ex.getErrorCode(), ErrorMessages.ERROR_CODE_DATABASE_ERROR.getCode());
+        Assert.assertEquals(ex.getCause(), cause);
     }
 }

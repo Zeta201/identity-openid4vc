@@ -24,14 +24,16 @@ import org.wso2.carbon.identity.base.IdentityException;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.core.model.FilterTreeBuilder;
 import org.wso2.carbon.identity.core.model.Node;
+import org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementClientException;
-import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+
+import static org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages.ERROR_CODE_INVALID_FILTER;
 
 /**
  * Utility class for presentation definition filter and pagination operations.
@@ -79,9 +81,8 @@ public class PresentationDefinitionFilterUtil {
             Node rootNode = filterTreeBuilder.buildTree();
             setExpressionNodeList(rootNode, expressionNodes);
         } catch (IOException | IdentityException e) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.INVALID_FILTER,
-                    "Invalid filter expression: " + filter, e);
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_INVALID_FILTER, "Invalid filter expression: " + filter);
         }
         return expressionNodes;
     }
@@ -110,12 +111,12 @@ public class PresentationDefinitionFilterUtil {
                 String operation = expressionNode.getOperation();
                 String filterValue = expressionNode.getValue();
                 String attributeValue = expressionNode.getAttributeValue();
-                String attributeName = Constants.ATTRIBUTE_COLUMN_MAP.get(attributeValue);
+                String attributeName = PresentationDefinitionManagementConstants.ATTRIBUTE_COLUMN_MAP
+                        .get(attributeValue);
 
                 if (attributeName == null) {
-                    throw new PresentationManagementClientException(
-                            PresentationManagementErrorCode.INVALID_FILTER,
-                            "Unsupported filter attribute: " + attributeValue);
+                    throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                            ERROR_CODE_INVALID_FILTER, "Unsupported filter attribute: " + attributeValue);
                 }
                 parameterIndex = buildFilterBasedOnOperation(filterQueryBuilder, attributeName, filterValue,
                         operation, parameterIndex, whereClause);
@@ -144,16 +145,15 @@ public class PresentationDefinitionFilterUtil {
             if (StringUtils.isNotBlank(before)) {
                 String decodedCursor = new String(Base64.getDecoder().decode(before), StandardCharsets.UTF_8);
                 paginatedFilter += (StringUtils.isNotBlank(paginatedFilter) ? " and " : "")
-                        + Constants.BEFORE_LT + decodedCursor;
+                        + PresentationDefinitionManagementConstants.BEFORE_LT + decodedCursor;
             } else if (StringUtils.isNotBlank(after)) {
                 String decodedCursor = new String(Base64.getDecoder().decode(after), StandardCharsets.UTF_8);
                 paginatedFilter += (StringUtils.isNotBlank(paginatedFilter) ? " and " : "")
-                        + Constants.AFTER_GT + decodedCursor;
+                        + PresentationDefinitionManagementConstants.AFTER_GT + decodedCursor;
             }
         } catch (IllegalArgumentException e) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.INVALID_FILTER,
-                    "Invalid pagination cursor: value is not valid base64.", e);
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_INVALID_FILTER, "Invalid pagination cursor: value is not valid base64.");
         }
         return paginatedFilter;
     }
@@ -179,42 +179,41 @@ public class PresentationDefinitionFilterUtil {
         if (StringUtils.isNotBlank(attributeName) && StringUtils.isNotBlank(filterValue)
                 && StringUtils.isNotBlank(operation)) {
             switch (operation) {
-                case Constants.EQ:
+                case PresentationDefinitionManagementConstants.EQ:
                     whereClause.append(attributeName).append(" = ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, filterValue);
                     break;
-                case Constants.SW:
+                case PresentationDefinitionManagementConstants.SW:
                     whereClause.append(attributeName).append(" LIKE ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, filterValue + "%");
                     break;
-                case Constants.EW:
+                case PresentationDefinitionManagementConstants.EW:
                     whereClause.append(attributeName).append(" LIKE ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, "%" + filterValue);
                     break;
-                case Constants.CO:
+                case PresentationDefinitionManagementConstants.CO:
                     whereClause.append(attributeName).append(" LIKE ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, "%" + filterValue + "%");
                     break;
-                case Constants.GE:
+                case PresentationDefinitionManagementConstants.GE:
                     whereClause.append(attributeName).append(" >= ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, filterValue);
                     break;
-                case Constants.LE:
+                case PresentationDefinitionManagementConstants.LE:
                     whereClause.append(attributeName).append(" <= ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, filterValue);
                     break;
-                case Constants.GT:
+                case PresentationDefinitionManagementConstants.GT:
                     whereClause.append(attributeName).append(" > ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, filterValue);
                     break;
-                case Constants.LT:
+                case PresentationDefinitionManagementConstants.LT:
                     whereClause.append(attributeName).append(" < ? AND ");
                     builder.setFilterAttributeValue(parameterIndex++, filterValue);
                     break;
                 default:
-                    throw new PresentationManagementClientException(
-                            PresentationManagementErrorCode.INVALID_FILTER,
-                            "Unsupported filter operation: " + operation);
+                    throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                            ERROR_CODE_INVALID_FILTER, "Unsupported filter operation: " + operation);
             }
         }
         return parameterIndex;

@@ -19,8 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.template.management.exception;
 
 /**
- * Exception type for server-side presentation management errors.
- * Thrown for database failures, internal errors, etc. (5xx).
+ * Server error exception for presentation definition management. Thrown for 5xx errors.
  */
 public class PresentationManagementServerException extends PresentationManagementException {
 
@@ -34,36 +33,9 @@ public class PresentationManagementServerException extends PresentationManagemen
         super(message, cause);
     }
 
-    public PresentationManagementServerException(String message, String description) {
-
-        super(message, description);
-    }
-
-    public PresentationManagementServerException(String message, String description, Throwable cause) {
-
-        super(message, description, cause);
-    }
-
-    public PresentationManagementServerException(PresentationManagementErrorCode errorCode, String message) {
-
-        super(errorCode, message);
-    }
-
-    public PresentationManagementServerException(PresentationManagementErrorCode errorCode, String message,
+    public PresentationManagementServerException(String message, String description, String errorCode,
                                                  Throwable cause) {
 
-        super(errorCode, message, cause);
-    }
-
-    public PresentationManagementServerException(PresentationManagementErrorCode errorCode, String message,
-                                                 String description) {
-
-        super(errorCode, message, description);
-    }
-
-    public PresentationManagementServerException(PresentationManagementErrorCode errorCode, String message,
-                                                 String description, Throwable cause) {
-
-        super(errorCode, message, description, cause);
+        super(message, description, errorCode, cause);
     }
 }

@@ -16,15 +16,14 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.openid4vc.template.management.exception;
+package org.wso2.carbon.identity.openid4vc.template.management.model;
 
 /**
- * Client error exception for presentation definition management. Thrown for 4xx errors.
+ * Supported methods for resolving an issuer's public key during credential verification.
  */
-public class PresentationManagementClientException extends PresentationManagementException {
+public enum KeyResolutionMethod {
 
-    public PresentationManagementClientException(String message, String description, String errorCode) {
-
-        super(message, description, errorCode);
-    }
+    JWKS_URI,   // Public key fetched at runtime from a JWKS endpoint URI.
+    PEM,        // Public key derived from a PEM-encoded X.509 certificate.
+    X5C         // Root CA certificate trust anchored to an issuer.
 }

@@ -42,7 +42,6 @@
     </scm>
 
     <modules>
-        <module>components/org.wso2.carbon.identity.openid4vc.presentation.common</module>
         <module>components/org.wso2.carbon.identity.openid4vc.template.management</module>
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.common</module>
         <module>components/org.wso2.carbon.identity.sdjwt</module>
@@ -50,6 +49,7 @@
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.metadata</module>
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.offer</module>
         <module>components/org.wso2.carbon.identity.openid4vc.issuance.endpoint</module>
+        <module>components/org.wso2.carbon.identity.openid4vc.presentation.core</module>
         <module>features/org.wso2.carbon.identity.openid4vc.template.management.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.issuance.common.server.feature</module>
         <module>features/org.wso2.carbon.identity.sdjwt.server.feature</module>
@@ -235,6 +235,16 @@
                 <groupId>org.wso2.carbon.identity.framework</groupId>
                 <artifactId>org.wso2.carbon.identity.testutil</artifactId>
                 <version>${carbon.identity.framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.organization.management.core</groupId>
+                <artifactId>org.wso2.carbon.identity.organization.management.service</artifactId>
+                <version>${identity.organization.management.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.service.component.annotations</artifactId>
+                <version>${osgi.service.component.annotations.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -463,7 +473,7 @@
         <commons-collections.wso2.osgi.version.range>[3.2.0,4.0.0)</commons-collections.wso2.osgi.version.range>
 
         <!-- Carbon kernel version -->
-        <carbon.kernel.version>4.10.33</carbon.kernel.version>
+        <carbon.kernel.version>4.12.39</carbon.kernel.version>
         <carbon.kernel.feature.version>4.10.22</carbon.kernel.feature.version>
         <carbon.kernel.imp.pkg.version.range>[4.10.22, 5.0.0)</carbon.kernel.imp.pkg.version.range>
         <carbon.kernel.registry.imp.pkg.version.range>[1.0.1, 2.0.0)</carbon.kernel.registry.imp.pkg.version.range>
@@ -474,6 +484,10 @@
         <commons-io.wso2.osgi.version.range>[2.4.0,3.0.0)</commons-io.wso2.osgi.version.range>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-collections4.wso2.osgi.version.range>[4.4.0,5.0.0)</commons-collections4.wso2.osgi.version.range>
+
+        <!-- Organization Management version -->
+        <identity.organization.management.version>1.5.4</identity.organization.management.version>
+        <osgi.service.component.annotations.version>1.3.0</osgi.service.component.annotations.version>
 
         <!-- Logging versions -->
         <slf4j.version>1.7.36</slf4j.version>

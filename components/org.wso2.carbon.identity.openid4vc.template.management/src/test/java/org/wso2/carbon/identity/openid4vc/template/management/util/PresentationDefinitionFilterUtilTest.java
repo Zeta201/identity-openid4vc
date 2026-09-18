@@ -21,8 +21,8 @@ package org.wso2.carbon.identity.openid4vc.template.management.util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
+import org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementClientException;
-import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -109,7 +109,7 @@ public class PresentationDefinitionFilterUtilTest {
             PresentationDefinitionFilterUtil.getExpressionNodes("!@#$%^&*");
         } catch (PresentationManagementClientException e) {
             // Verify
-            Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.INVALID_FILTER,
+            Assert.assertEquals(e.getErrorCode(), ErrorMessages.ERROR_CODE_INVALID_FILTER.getCode(),
                     "Error code should be INVALID_FILTER for a syntactically invalid filter");
             return;
         }
@@ -302,7 +302,7 @@ public class PresentationDefinitionFilterUtilTest {
             PresentationDefinitionFilterUtil.getFilterQueryBuilder(nodes);
         } catch (PresentationManagementClientException e) {
             // Verify
-            Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.INVALID_FILTER,
+            Assert.assertEquals(e.getErrorCode(), ErrorMessages.ERROR_CODE_INVALID_FILTER.getCode(),
                     "Error code should be INVALID_FILTER for an unsupported filter attribute");
             return;
         }

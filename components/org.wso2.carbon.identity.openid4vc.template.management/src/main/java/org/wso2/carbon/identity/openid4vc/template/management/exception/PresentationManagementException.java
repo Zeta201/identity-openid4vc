@@ -19,90 +19,44 @@
 package org.wso2.carbon.identity.openid4vc.template.management.exception;
 
 /**
- * Base exception type for presentation definition management failures.
- * This class serves as the parent for both client and server exceptions.
+ * Base exception for presentation definition management.
  */
 public class PresentationManagementException extends Exception {
 
-    private final PresentationManagementErrorCode errorCode;
-    private final String description;
+    private String errorCode;
+    private String description;
 
     public PresentationManagementException(String message) {
 
         super(message);
-        this.errorCode = null;
-        this.description = null;
     }
 
     public PresentationManagementException(String message, Throwable cause) {
 
         super(message, cause);
-        this.errorCode = null;
-        this.description = null;
     }
 
-    public PresentationManagementException(String message, String description) {
-
-        super(message);
-        this.errorCode = null;
-        this.description = description;
-    }
-
-    public PresentationManagementException(String message, String description, Throwable cause) {
-
-        super(message, cause);
-        this.errorCode = null;
-        this.description = description;
-    }
-
-    public PresentationManagementException(PresentationManagementErrorCode errorCode, String message) {
-
-        super(message);
-        this.errorCode = errorCode;
-        this.description = errorCode != null ? errorCode.getDescription() : null;
-    }
-
-    public PresentationManagementException(PresentationManagementErrorCode errorCode, String message,
-                                           Throwable cause) {
-
-        super(message, cause);
-        this.errorCode = errorCode;
-        this.description = errorCode != null ? errorCode.getDescription() : null;
-    }
-
-    public PresentationManagementException(PresentationManagementErrorCode errorCode, String message,
-                                           String description) {
+    public PresentationManagementException(String message, String description, String errorCode) {
 
         super(message);
         this.errorCode = errorCode;
         this.description = description;
     }
 
-    public PresentationManagementException(PresentationManagementErrorCode errorCode, String message,
-                                           String description, Throwable cause) {
+    public PresentationManagementException(String message, String description, String errorCode, Throwable cause) {
 
         super(message, cause);
         this.errorCode = errorCode;
         this.description = description;
     }
 
-    public PresentationManagementErrorCode getErrorCode() {
+    public String getErrorCode() {
 
-        return errorCode;
-    }
-
-    public String getCode() {
-
-        return errorCode != null ? errorCode.getCode() : null;
-    }
-
-    public String getErrorType() {
-
-        return errorCode != null ? errorCode.getErrorType() : null;
+        return this.errorCode;
     }
 
     public String getDescription() {
 
-        return description;
+        return this.description;
     }
 }

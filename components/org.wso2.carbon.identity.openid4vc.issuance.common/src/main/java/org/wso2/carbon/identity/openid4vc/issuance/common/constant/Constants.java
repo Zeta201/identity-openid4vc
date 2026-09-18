@@ -116,4 +116,108 @@ public class Constants {
         public static final String AUTHORIZATION_CODE = "authorization_code";
         public static final String AUTHORIZATION_SERVER = "authorization_server";
     }
+
+    // -------------------------------------------------------------------------
+    // OpenID4VP (Verifiable Presentations) constants
+    // -------------------------------------------------------------------------
+
+    public static final String DEFAULT_CLIENT_ID_SCHEME = "x509_san_dns";
+    public static final String CLIENT_ID_SCHEME_X509_HASH = "x509_hash";
+
+    /**
+     * OpenID4VP protocol constants.
+     */
+    public static class Protocol {
+
+        public static final String RESPONSE_TYPE_VP_TOKEN = "vp_token";
+        public static final String OPENID4VP_SCHEME = "openid4vp://";
+        /** SIOPv2 audience — fixed by the spec; wallets validate aud == this value. */
+        public static final String REQUEST_AUDIENCE = "https://self-issued.me/v2";
+    }
+
+    /**
+     * OpenID4VP request parameter constants.
+     */
+    public static class RequestParams {
+
+        public static final String CLIENT_ID = "client_id";
+        public static final String RESPONSE_TYPE = "response_type";
+        public static final String RESPONSE_MODE = "response_mode";
+        public static final String RESPONSE_URI = "response_uri";
+        public static final String NONCE = "nonce";
+        public static final String STATE = "state";
+        public static final String REQUEST_URI = "request_uri";
+    }
+
+    /**
+     * OpenID4VP response parameter constants.
+     */
+    public static class ResponseParams {
+
+        public static final String RESPONSE = "response";
+        public static final String VP_TOKEN = "vp_token";
+        public static final String ERROR = "error";
+        public static final String ERROR_DESCRIPTION = "error_description";
+        public static final String STATE = "state";
+    }
+
+    /**
+     * JWT claim name constants shared across OpenID4VP.
+     */
+    public static class JWTClaims {
+
+        public static final String ISS = "iss";
+        public static final String NONCE = "nonce";
+        public static final String CNF = "cnf";
+        public static final String JWK = "jwk";
+        public static final String JKT = "jkt";
+        public static final String CLIENT_ID_SCHEME = "client_id_scheme";
+        public static final String DCQL_QUERY = "dcql_query";
+
+    }
+
+    /**
+     * Cryptographic algorithm name constants.
+     */
+    public static class Algorithms {
+
+        public static final String EDDSA = "EdDSA";
+        public static final String ES256 = "ES256";
+        public static final String RS256 = "RS256";
+        public static final String SHA_256 = "SHA-256";
+        public static final String ECDH_ES = "ECDH-ES";
+        public static final String A256GCM = "A256GCM";
+    }
+
+    /**
+     * DCQL (Digital Credentials Query Language) field name constants.
+     */
+    public static class DCQL {
+
+        public static final String CREDENTIALS = "credentials";
+        public static final String CREDENTIAL_SETS = "credential_sets";
+        public static final String CLAIM_SETS = "claim_sets";
+        public static final String ID = "id";
+        public static final String FORMAT = "format";
+        public static final String META = "meta";
+        public static final String VCT_VALUES = "vct_values";
+        public static final String CLAIMS = "claims";
+        public static final String PATH = "path";
+        public static final String OPTIONS = "options";
+        public static final String TRUSTED_AUTHORITIES = "trusted_authorities";
+        public static final String TRUSTED_AUTHORITY_TYPE = "type";
+        public static final String TRUSTED_AUTHORITY_TYPE_AKI = "aki";
+        public static final String TRUSTED_AUTHORITY_VALUES = "values";
+        }
+
+    /**
+     * OpenID4VP client metadata field name constants.
+     */
+    public static class ClientMetadata {
+
+        public static final String JWKS = "jwks";
+        public static final String KEYS = "keys";
+        public static final String AUTHORIZATION_ENCRYPTED_RESPONSE_ALG = "authorization_encrypted_response_alg";
+        public static final String AUTHORIZATION_ENCRYPTED_RESPONSE_ENC = "authorization_encrypted_response_enc";
+    }
 }

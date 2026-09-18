@@ -16,47 +16,64 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.openid4vc.template.management.service.impl;
+package org.wso2.carbon.identity.openid4vc.template.management;
 
 import org.apache.commons.lang3.StringUtils;
+import org.osgi.annotation.bundle.Capability;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
+import org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.PresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.impl.CacheBackedPresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.impl.PresentationDefinitionDAOImpl;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementClientException;
-import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementErrorCode;
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
-import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
+import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.ClaimConstraint;
-import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition.RequestedCredential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinitionSearchResult;
-import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
-import org.wso2.carbon.identity.openid4vc.template.management.util.Constants;
+import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionAuditLogger;
 import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionFilterUtil;
+import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionMgtExceptionHandler;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages.ERROR_CODE_DEFINITION_ALREADY_EXISTS;
+import static org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages.ERROR_CODE_DEFINITION_IN_USE;
+import static org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages.ERROR_CODE_DEFINITION_NOT_FOUND;
+import static org.wso2.carbon.identity.openid4vc.template.management.constant.PresentationDefinitionManagementConstants.ErrorMessages.ERROR_CODE_VALIDATION_ERROR;
+
 /**
- * Implementation of {@link PresentationDefinitionService} for managing presentation definitions.
+ * Implementation of {@link PresentationDefinitionManager} for managing presentation definitions.
  */
-public class PresentationDefinitionServiceImpl implements PresentationDefinitionService {
+@Capability(
+        namespace = "osgi.service",
+        attribute = {
+                "objectClass=org.wso2.carbon.identity.openid4vc.template.management.PresentationDefinitionManager",
+                "service.scope=singleton"
+        }
+)
+public class PresentationDefinitionManagerImpl implements PresentationDefinitionManager {
 
-    private final PresentationDefinitionDAO presentationDefinitionDAO;
+    private static final PresentationDefinitionManager INSTANCE = new PresentationDefinitionManagerImpl();
 
-    public PresentationDefinitionServiceImpl() {
+    private final PresentationDefinitionDAO presentationDefinitionDAO =
+            new CacheBackedPresentationDefinitionDAO(new PresentationDefinitionDAOImpl());
+    private static final PresentationDefinitionAuditLogger AUDIT_LOGGER =
+            PresentationDefinitionAuditLogger.getInstance();
 
-        this.presentationDefinitionDAO =
-                new CacheBackedPresentationDefinitionDAO(new PresentationDefinitionDAOImpl());
+    private PresentationDefinitionManagerImpl() {
+
     }
 
-    public PresentationDefinitionServiceImpl(PresentationDefinitionDAO presentationDefinitionDAO) {
+    public static PresentationDefinitionManager getInstance() {
 
-        this.presentationDefinitionDAO = presentationDefinitionDAO;
+        return INSTANCE;
     }
 
     @Override
@@ -68,23 +85,23 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
 
         String identifier = presentationDefinition.getIdentifier();
         if (presentationDefinitionDAO.presentationDefinitionIdentifierExists(identifier, tenantId)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS,
-                    "Presentation definition with identifier already exists: " + identifier);
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_DEFINITION_ALREADY_EXISTS, identifier);
         }
 
         String definitionId = UUID.randomUUID().toString();
 
         PresentationDefinition definitionToCreate = new PresentationDefinition.Builder()
-                .definitionId(definitionId)
+                .id(definitionId)
                 .identifier(identifier)
                 .displayName(presentationDefinition.getDisplayName())
                 .description(presentationDefinition.getDescription())
-                .requestedCredentials(presentationDefinition.getRequestedCredentials())
+                .credentials(presentationDefinition.getCredentials())
                 .tenantId(tenantId)
                 .build();
 
         presentationDefinitionDAO.createPresentationDefinition(definitionToCreate);
+        AUDIT_LOGGER.logCreatePresentationDefinition(definitionToCreate);
         return definitionToCreate;
     }
 
@@ -93,18 +110,16 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
             throws PresentationManagementException {
 
         if (StringUtils.isBlank(definitionId)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
-                    "Definition ID is required.");
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR, "Definition ID is required.");
         }
 
         PresentationDefinition definition =
                 presentationDefinitionDAO.getPresentationDefinitionById(definitionId, tenantId);
 
         if (definition == null) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.DEFINITION_NOT_FOUND,
-                    "Presentation definition not found: " + definitionId);
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_DEFINITION_NOT_FOUND, definitionId);
         }
 
         return definition;
@@ -122,18 +137,18 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
             PresentationDefinition presentationDefinition, int tenantId)
             throws PresentationManagementException {
 
-        String definitionId = presentationDefinition.getDefinitionId();
+        String definitionId = presentationDefinition.getId();
         PresentationDefinition existing = getPresentationDefinitionById(definitionId, tenantId);
 
-        List<RequestedCredential> updatedCredentials = presentationDefinition.getRequestedCredentials() != null
-                ? presentationDefinition.getRequestedCredentials()
-                : existing.getRequestedCredentials();
+        List<Credential> updatedCredentials = presentationDefinition.getCredentials() != null
+                ? presentationDefinition.getCredentials()
+                : existing.getCredentials();
         if (updatedCredentials != null && !updatedCredentials.isEmpty()) {
             validateCredentialIds(updatedCredentials);
         }
 
         PresentationDefinition definitionToUpdate = new PresentationDefinition.Builder()
-                .definitionId(definitionId)
+                .id(definitionId)
                 .identifier(existing.getIdentifier())
                 .displayName(StringUtils.isNotBlank(presentationDefinition.getDisplayName())
                         ? presentationDefinition.getDisplayName()
@@ -141,14 +156,14 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
                 .description(presentationDefinition.getDescription() != null
                         ? presentationDefinition.getDescription()
                         : existing.getDescription())
-                .requestedCredentials(updatedCredentials)
+                .credentials(updatedCredentials)
                 .tenantId(tenantId)
                 .build();
 
-        List<String> staleClaimPaths = computeStalePaths(existing.getRequestedCredentials(), updatedCredentials);
+        List<String> staleClaimPaths = computeStalePaths(existing.getCredentials(), updatedCredentials);
         presentationDefinitionDAO.updatePresentationDefinition(
                 definitionToUpdate, staleClaimPaths, tenantId);
-
+        AUDIT_LOGGER.logUpdatePresentationDefinition(definitionToUpdate);
         return definitionToUpdate;
     }
 
@@ -158,12 +173,11 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
 
         getPresentationDefinitionById(definitionId, tenantId);
         if (presentationDefinitionDAO.isDefinitionInUse(definitionId, tenantId)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.DEFINITION_IN_USE,
-                    "Presentation definition '" + definitionId +
-                            "' is referenced by one or more connections and cannot be deleted.");
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_DEFINITION_IN_USE, definitionId);
         }
         presentationDefinitionDAO.deletePresentationDefinition(definitionId, tenantId);
+        AUDIT_LOGGER.logDeletePresentationDefinition(definitionId);
     }
 
     @Override
@@ -178,9 +192,8 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
             throws PresentationManagementException {
 
         if (StringUtils.isBlank(identifier)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
-                    "Presentation definition identifier is required.");
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR, "Presentation definition identifier is required.");
         }
         return presentationDefinitionDAO.getPresentationDefinitionByIdentifier(identifier, tenantId);
     }
@@ -189,10 +202,10 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
     public PresentationDefinitionSearchResult listWithPagination(String after, String before, Integer limit,
             String filter, String sortOrder, int tenantId) throws PresentationManagementException {
 
-        if (sortOrder != null && !sortOrder.equalsIgnoreCase(Constants.ASC_SORT_ORDER)
-                && !sortOrder.equalsIgnoreCase(Constants.DESC_SORT_ORDER)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
+        if (sortOrder != null && !sortOrder.equalsIgnoreCase(PresentationDefinitionManagementConstants.ASC_SORT_ORDER)
+                && !sortOrder.equalsIgnoreCase(PresentationDefinitionManagementConstants.DESC_SORT_ORDER)) {
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR,
                     "Invalid sortOrder value '" + sortOrder + "'. Must be ASC or DESC.");
         }
         List<ExpressionNode> expressionNodes =
@@ -204,7 +217,7 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
     }
 
     @Override
-    public List<ConnectedIdpInfo> getConnectedIdps(String definitionId, int tenantId)
+    public Map<String, String> getConnectedIdps(String definitionId, int tenantId)
             throws PresentationManagementException {
 
         getPresentationDefinitionById(definitionId, tenantId);
@@ -213,22 +226,22 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
 
     @Override
     public void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<PresentationDefinition.IssuerConfig> issuerConfigs, int tenantId)
+            List<Issuer> issuers, int tenantId)
             throws PresentationManagementException {
 
-        if (issuerConfigs == null || issuerConfigs.isEmpty()) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
+        if (issuers == null || issuers.isEmpty()) {
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR,
                     "At least one issuer configuration must be provided for credential '" +
                             credentialIdentifier + "'.");
         }
         if (!presentationDefinitionDAO.presentationDefinitionExists(definitionId, tenantId)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.DEFINITION_NOT_FOUND,
-                    "Presentation definition not found: " + definitionId);
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_DEFINITION_NOT_FOUND, definitionId);
         }
         presentationDefinitionDAO.replaceIssuerConfigs(definitionId, credentialIdentifier,
-                issuerConfigs, tenantId);
+                issuers, tenantId);
+        AUDIT_LOGGER.logReplaceIssuerConfigs(definitionId, credentialIdentifier, issuers);
     }
 
     /**
@@ -241,8 +254,8 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
      * @param newCredentials the requested credentials after the update
      * @return the list of dot-joined claim paths that no longer exist after the update
      */
-    private List<String> computeStalePaths(List<RequestedCredential> oldCredentials,
-            List<RequestedCredential> newCredentials) {
+    private List<String> computeStalePaths(List<Credential> oldCredentials,
+            List<Credential> newCredentials) {
 
         Set<String> oldClaimPaths = extractClaimPaths(oldCredentials);
         Set<String> newClaimPaths = extractClaimPaths(newCredentials);
@@ -256,17 +269,17 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
      * @param requestedCredentials the list of requested credentials to extract paths from; may be null
      * @return the set of dot-joined claim paths across all credentials and their constraints
      */
-    private Set<String> extractClaimPaths(List<RequestedCredential> requestedCredentials) {
+    private Set<String> extractClaimPaths(List<Credential> requestedCredentials) {
 
         Set<String> claimPaths = new HashSet<>();
         if (requestedCredentials == null) {
             return claimPaths;
         }
-        for (RequestedCredential credential : requestedCredentials) {
+        for (Credential credential : requestedCredentials) {
             if (credential.getClaims() == null) {
                 continue;
             }
-            for (ClaimConstraint constraint : credential.getClaims()) {
+            for (PresentationClaim constraint : credential.getClaims()) {
                 if (constraint.getPath() != null && !constraint.getPath().isEmpty()) {
                     claimPaths.add(constraint.getPath());
                 }
@@ -287,27 +300,24 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
             throws PresentationManagementClientException {
 
         if (definition == null) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
-                    "Presentation definition cannot be null.");
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR, "Presentation definition cannot be null.");
         }
         if (StringUtils.isBlank(definition.getIdentifier())) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
-                    "Presentation definition identifier is required.");
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR, "Presentation definition identifier is required.");
         }
-        if (!definition.getIdentifier().matches(Constants.IDENTIFIER_PATTERN)) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
+        if (!definition.getIdentifier().matches(PresentationDefinitionManagementConstants.IDENTIFIER_PATTERN)) {
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR,
                     "Identifier '" + definition.getIdentifier() + "' is invalid. " +
                     "Only alphanumeric characters, underscores, and hyphens are allowed.");
         }
         if (StringUtils.isBlank(definition.getDisplayName())) {
-            throw new PresentationManagementClientException(
-                    PresentationManagementErrorCode.VALIDATION_ERROR,
-                    "Presentation definition display name is required.");
+            throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                    ERROR_CODE_VALIDATION_ERROR, "Presentation definition display name is required.");
         }
-        List<RequestedCredential> requestedCredentials = definition.getRequestedCredentials();
+        List<Credential> requestedCredentials = definition.getCredentials();
         if (requestedCredentials != null && !requestedCredentials.isEmpty()) {
             validateCredentialIds(requestedCredentials);
         }
@@ -321,23 +331,23 @@ public class PresentationDefinitionServiceImpl implements PresentationDefinition
      * @throws PresentationManagementClientException if any credential ID is blank or contains
      * invalid characters
      */
-    private void validateCredentialIds(List<RequestedCredential> requestedCredentials)
+    private void validateCredentialIds(List<Credential> requestedCredentials)
             throws PresentationManagementClientException {
 
-        for (RequestedCredential credential : requestedCredentials) {
+        for (Credential credential : requestedCredentials) {
             if (credential == null) {
                 continue;
             }
             String credentialId = credential.getIdentifier();
             if (StringUtils.isBlank(credentialId)) {
-                throw new PresentationManagementClientException(
-                        PresentationManagementErrorCode.VALIDATION_ERROR,
+                throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                        ERROR_CODE_VALIDATION_ERROR,
                         "A credential ID is required for each requested credential. "
                                 + "Use alphanumeric characters, underscores, or hyphens only.");
             }
-            if (!credentialId.matches(Constants.CREDENTIAL_ID_PATTERN)) {
-                throw new PresentationManagementClientException(
-                        PresentationManagementErrorCode.VALIDATION_ERROR,
+            if (!credentialId.matches(PresentationDefinitionManagementConstants.IDENTIFIER_PATTERN)) {
+                throw PresentationDefinitionMgtExceptionHandler.handleClientException(
+                        ERROR_CODE_VALIDATION_ERROR,
                         "Credential ID '" + credentialId + "' is invalid. "
                                 + "Only alphanumeric characters, underscores, and hyphens are allowed.");
             }
