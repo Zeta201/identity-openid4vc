@@ -136,33 +136,21 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.PRESENTATION_DEFINITION_NOT_FOUND, presentationDefinitionId);
         }
-        String baseUrl = PresentationCoreUtil.buildServerBaseUrl();
-//        TODO: use private methods
-//        Use a util method to build the response uri
-        String responseUri = baseUrl + PresentationCoreConstants.CONTEXT_OID4VP_RESPONSES;
-        VPTenantConfig vptenantConfig = PresentationCoreDataHolder.getInstance()
-                .getVpConfigService().getVPConfig(tenantDomain);
-        String scheme = StringUtils.defaultIfBlank(
-                vptenantConfig.getClientIdScheme(), Constants.DEFAULT_CLIENT_ID_SCHEME);
-        String responseMode = StringUtils.defaultIfBlank(
-                vptenantConfig.getResponseMode(), PresentationCoreConstants.RESPONSE_MODE_DIRECT_POST_JWT);
-        String clientId = PresentationCoreUtil.buildClientId(scheme, tenantDomain);
 
-        String ephemeralPrivateKeyJwk = null;
-        if (PresentationCoreConstants.RESPONSE_MODE_DIRECT_POST_JWT.equals(responseMode)) {
-            try {
-                ephemeralPrivateKeyJwk = new ECKeyGenerator(Curve.P_256).keyID(requestId).generate().toJSONString();
-            } catch (JOSEException e) {
-                throw PresentationCoreExceptionHandler.handleServerException(
-                        PresentationCoreErrorCode.EPHEMERAL_KEY_ERROR, e);
-            }
-        }
-//       TODO: use a build
-        String requestUri = baseUrl + PresentationCoreConstants.CONTEXT_OID4VP_REQUESTS + requestId;
-        String walletUrl = Constants.Protocol.OPENID4VP_SCHEME + "?"
-                + Constants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
-                + "&" + Constants.RequestParams.REQUEST_URI + "="
-                + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
+        VPTenantConfig vpTenantConfig = PresentationCoreDataHolder.getInstance()
+                .getVpConfigService().getVPConfig(tenantDomain);
+        String scheme = vpTenantConfig.getClientIdScheme();
+        String responseMode = vpTenantConfig.getResponseMode();
+        String clientId = PresentationCoreUtil.buildClientId(scheme, tenantDomain);
+        // EC P-256 key pair required only for direct_post.jwt to let the wallet ECDH-encrypt its response.
+        // Public half is embedded in the request JWT; private half is kept in the session for decryption.
+        String ephemeralPrivateKeyJwk = PresentationCoreConstants.RESPONSE_MODE_DIRECT_POST_JWT.equals(responseMode)
+                ? generateEphemeralKey(requestId)
+                : null;
+
+        String responseUri = PresentationCoreUtil.buildResponseUri(tenantDomain);
+        String requestUri = PresentationCoreUtil.buildRequestUri(tenantDomain, requestId);
+        String walletUrl = PresentationCoreUtil.buildWalletUrl(clientId, requestUri);
 
         VPSession session = new VPSession.Builder()
                 .presentationDefinition(presentationDefinition)
@@ -528,5 +516,25 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         verificationSessionResponse.setErrorDescription(session.getErrorDescription());
 
         return verificationSessionResponse;
+    }
+
+    /**
+     * Generates a one-time EC P-256 key pair for ECDH encryption of the wallet's VP token response.
+     *
+     * <p>The {@code requestId} is set as the key ID ({@code kid}) so the server can look up
+     * the matching private key from the session when the encrypted response arrives.
+     *
+     * @param requestId session request ID used as the key's {@code kid}.
+     * @return the generated private key serialized as a JWK JSON string.
+     * @throws PresentationCoreServerException if key generation fails.
+     */
+    private String generateEphemeralKey(String requestId) throws PresentationCoreServerException {
+
+        try {
+            return new ECKeyGenerator(Curve.P_256).keyID(requestId).generate().toJSONString();
+        } catch (JOSEException e) {
+            throw PresentationCoreExceptionHandler.handleServerException(
+                    PresentationCoreErrorCode.EPHEMERAL_KEY_ERROR, e);
+        }
     }
 }
