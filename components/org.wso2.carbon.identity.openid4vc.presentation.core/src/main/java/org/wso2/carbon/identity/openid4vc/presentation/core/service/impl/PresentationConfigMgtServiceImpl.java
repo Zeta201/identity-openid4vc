@@ -26,6 +26,7 @@ import org.wso2.carbon.identity.configuration.mgt.core.exception.ConfigurationMa
 import org.wso2.carbon.identity.configuration.mgt.core.model.Attribute;
 import org.wso2.carbon.identity.configuration.mgt.core.model.Resource;
 import org.wso2.carbon.identity.configuration.mgt.core.model.ResourceAdd;
+import org.wso2.carbon.identity.openid4vc.presentation.core.constant.PresentationCoreConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreExceptionHandler;
@@ -62,8 +63,9 @@ public class PresentationConfigMgtServiceImpl implements PresentationConfigMgtSe
         try {
             Resource resource = fetchVPConfigResource();
             if (resource == null || resource.getAttributes() == null) {
-//        TODO: return a default
-                return new VPTenantConfig();
+                return new VPTenantConfig(
+                    PresentationCoreConstants.DEFAULT_CLIENT_ID_SCHEME, 
+                    PresentationCoreConstants.RESPONSE_MODE_DIRECT_POST_JWT);
             }
             Map<String, String> attributeMap = resource.getAttributes().stream()
                     .collect(Collectors.toMap(Attribute::getKey, Attribute::getValue));

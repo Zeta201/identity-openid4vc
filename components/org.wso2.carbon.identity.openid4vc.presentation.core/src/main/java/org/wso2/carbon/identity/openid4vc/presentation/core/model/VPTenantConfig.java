@@ -19,12 +19,26 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.model;
 
 /**
- * Per-tenant VP configuration. Null fields indicate "not configured" — the server-level default applies.
+ * Tenant-level configuration for the OpenID4VP presentation flow.
+ * Loaded from the configuration store by
+ * {@link org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService}
+ * and applied when building presentation requests. Missing fields are filled with server
+ * defaults before the config is returned to the caller.
  */
 public class VPTenantConfig {
 
     private String clientIdScheme;
     private String responseMode;
+
+    public VPTenantConfig() {
+
+    }
+
+    public VPTenantConfig(String clientIdScheme, String responseMode) {
+
+        this.clientIdScheme = clientIdScheme;
+        this.responseMode = responseMode;
+    }
 
     public String getClientIdScheme() {
 
