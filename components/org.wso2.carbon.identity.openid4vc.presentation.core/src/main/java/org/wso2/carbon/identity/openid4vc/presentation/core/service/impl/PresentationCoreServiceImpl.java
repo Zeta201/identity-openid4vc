@@ -25,13 +25,10 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -76,8 +73,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -318,6 +313,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     public PresentationSubmissionDTO parsePresentationSubmission(Map<String, List<String>> formParams)
             throws PresentationCoreException {
 
+        // If `response` parameter exists: a direct_post.jwt (JWE-encrypted) response.
         String responseParam = PresentationCoreUtil.extractFirstFormParam(formParams, Constants.ResponseParams.RESPONSE);
         if (StringUtils.isNotBlank(responseParam)) {
             return parseDirectPostJwt(responseParam);
@@ -341,32 +337,27 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                         PresentationCoreErrorCode.INVALID_REQUEST);
             }
             validateResponseMode(session, requestId, true);
+            JWTClaimsSet claims = PresentationCoreUtil.decryptJweResponse(
+                    jweObject, session.getEphemeralPrivateKeyJwk());
 
-            jweObject.decrypt(new ECDHDecrypter(ECKey.parse(session.getEphemeralPrivateKeyJwk())));
-
-            SignedJWT innerJwt = jweObject.getPayload().toSignedJWT();
-            JWTClaimsSet claims = (innerJwt != null)
-                    ? innerJwt.getJWTClaimsSet()
-                    : JWTClaimsSet.parse(jweObject.getPayload().toJSONObject());
-
-            String state = claims.getStringClaim(Constants.ResponseParams.STATE);
-            String resolvedRequestId = state != null ? state : requestId;
             String error = claims.getStringClaim(Constants.ResponseParams.ERROR);
-
             if (StringUtils.isNotBlank(error)) {
                 return PresentationSubmissionDTO.builder()
-                        .requestId(resolvedRequestId)
+                        .requestId(requestId)
                         .error(error)
                         .errorDescription(claims.getStringClaim(Constants.ResponseParams.ERROR_DESCRIPTION))
                         .build();
-            }
+                }
 
             Map<String, Object> vpTokenMap = claims.getJSONObjectClaim(Constants.ResponseParams.VP_TOKEN);
             return PresentationSubmissionDTO.builder()
-                    .requestId(resolvedRequestId)
+                    .requestId(requestId)
                     .credentialTokens(vpTokenMap != null ? PresentationCoreUtil.flattenVpTokenMap(vpTokenMap) : null)
                     .build();
 
+        } catch (PresentationCoreException e) {
+            handleSessionFailed(requestId, e.getErrorType(), e.getDescription());
+            throw e;
         } catch (ParseException | JOSEException e) {
             handleSessionFailed(requestId,
                     PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR.getErrorType(),

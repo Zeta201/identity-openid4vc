@@ -18,6 +18,9 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.core.util;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWEObject;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.jwk.ECKey;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -44,6 +47,8 @@ import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -381,6 +386,31 @@ public class PresentationCoreUtil {
                 + Constants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
                 + "&" + Constants.RequestParams.REQUEST_URI + "="
                 + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Decrypts a {@code direct_post.jwt} JWE and extracts the inner JWT claims.
+     *
+     * <p>The JWE is decrypted with the session's ephemeral EC private key using ECDH-ES. The
+     * decrypted payload is treated as a signed JWT when possible; otherwise plain JSON claim
+     * parsing is used as a fallback.
+     *
+     * @param jweObject              the parsed JWE object received from the wallet
+     * @param ephemeralPrivateKeyJwk the ephemeral EC private key JWK stored on the session
+     * @return the decrypted {@link JWTClaimsSet}
+     * @throws ParseException if the ephemeral key or inner JWT cannot be parsed
+     * @throws JOSEException  if ECDH-ES decryption fails
+     */
+    public static JWTClaimsSet decryptJweResponse(JWEObject jweObject, String ephemeralPrivateKeyJwk)
+            throws ParseException, JOSEException {
+
+        // Decrypt the JWE using the session's ephemeral EC private key.
+        jweObject.decrypt(new ECDHDecrypter(ECKey.parse(ephemeralPrivateKeyJwk)));
+        // Prefer the inner signed JWT; fall back to plain JSON if the payload is unsigned.
+        SignedJWT innerJwt = jweObject.getPayload().toSignedJWT();
+        return innerJwt != null
+                ? innerJwt.getJWTClaimsSet()
+                : JWTClaimsSet.parse(jweObject.getPayload().toJSONObject());
     }
 
 }
