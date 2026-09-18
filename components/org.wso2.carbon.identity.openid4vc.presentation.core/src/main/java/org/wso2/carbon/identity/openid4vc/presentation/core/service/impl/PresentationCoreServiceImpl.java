@@ -545,11 +545,6 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         verificationSessionStatus.setStatus(status);
         verificationSessionStatus.setExpiresAt(session.getExpiresAt());
         verificationSessionStatus.setErrorType(session.getErrorType());
-        // TODO
-        if (status == VPSessionStatus.VERIFIED || status == VPSessionStatus.FAILED) {
-            VPSessionCache.getInstance().clearCacheEntry(
-                    new VPSessionCacheKey(requestId), MultitenantConstants.SUPER_TENANT_ID);
-        }
         return verificationSessionStatus;
     }
 
