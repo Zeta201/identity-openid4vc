@@ -49,6 +49,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCache
 import org.wso2.carbon.identity.openid4vc.presentation.core.constant.PresentationCoreConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationRequestResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionRespDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionStatusDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationSubmissionDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
@@ -483,23 +484,24 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     }
 
     @Override
-    public VerificationSessionRespDTO getPresentationSessionStatus(String requestId) {
+    public VerificationSessionStatusDTO getPresentationSessionStatus(String requestId) {
 
         VPSession session = getSessionFromCache(requestId);
         if (session == null) {
             return null;
         }
         VPSessionStatus status = session.getStatus();
-        VerificationSessionRespDTO verificationSessionResponse = new VerificationSessionRespDTO();
-        verificationSessionResponse.setStatus(status);
-        verificationSessionResponse.setVerificationResponse(session.getVerificationResponse());
-        verificationSessionResponse.setErrorType(session.getErrorType());
-        verificationSessionResponse.setErrorDescription(session.getErrorDescription());
-        verificationSessionResponse.setExpiresAt(session.getExpiresAt());
+        VerificationSessionStatusDTO verificationSessionStatus = new VerificationSessionStatusDTO();
+        verificationSessionStatus.setRequestId(session.getRequestId());
+        verificationSessionStatus.setStatus(session.getStatus());
+        verificationSessionStatus.setExpiresAt(session.getExpiresAt());
+        verificationSessionStatus.setErrorType(session.getErrorType());
+        verificationSessionStatus.setStatus(status);
+
         if (status == VPSessionStatus.VERIFIED || status == VPSessionStatus.FAILED) {
             VPSessionCache.getInstance().clearCacheEntry(
                     new VPSessionCacheKey(requestId), MultitenantConstants.SUPER_TENANT_ID);
         }
-        return verificationSessionResponse;
+        return verificationSessionStatus;
     }
 }
