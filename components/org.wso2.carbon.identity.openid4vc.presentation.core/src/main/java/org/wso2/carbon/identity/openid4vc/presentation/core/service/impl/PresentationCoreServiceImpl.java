@@ -163,23 +163,36 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                 .build();
 
         VPSessionCache.getInstance().addToCache(new VPSessionCacheKey(requestId),
-                new VPSessionCacheEntry(session), MultitenantConstants.SUPER_TENANT_ID);
+                new VPSessionCacheEntry(session), tenantId);
         AUDIT_LOGGER.logVPSessionInitiated(requestId, presentationDefinition, tenantDomain, responseMode);
 
         return new PresentationRequestResponseDTO(requestId, walletUrl, requestUri, clientId, expiresAt);
     }
 
     @Override
-    public String buildPresentationRequest(String requestId) throws PresentationCoreException {
+    public String buildPresentationRequest(String requestId, String tenantDomain) throws PresentationCoreException {
 
-        VPSession session = getSessionFromCache(requestId);
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
         }
 
-        String tenantDomain = session.getTenantDomain();
-        int tenantId = session.getTenantId();
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
+
+        // Mark the session failed and reject if the session is not active.
+        if (session.getStatus() != VPSessionStatus.ACTIVE) {
+            handleSessionFailed(requestId, tenantDomain, PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getErrorType(),
+                    PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getDescription());
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_EXPIRED);
+        }
+
         JWTClaimsSet claims = buildPresentationRequestClaims(session);
         return signWithTenantKey(claims, tenantDomain, tenantId);
     }
@@ -271,58 +284,65 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
      * @throws PresentationCoreServerException If the database read or secret decryption fails.
      */
     @Override
-    public VPSession getPresentationSession(String requestId) throws PresentationCoreException {
+    public VPSession getPresentationSession(String requestId, String tenantDomain) throws PresentationCoreException {
 
-        VPSession session = getSessionFromCache(requestId);
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
         }
         if (System.currentTimeMillis() > session.getExpiresAt()) {
             VPSessionCache.getInstance().clearCacheEntry(
-                    new VPSessionCacheKey(requestId), MultitenantConstants.SUPER_TENANT_ID);
+                    new VPSessionCacheKey(requestId), tenantId);
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.VP_REQUEST_EXPIRED);
         }
         return session;
     }
 
-    private VPSession getSessionFromCache(String requestId) {
+    private VPSession getSessionFromCache(String requestId, int tenantId) {
 
         VPSessionCacheEntry entry = VPSessionCache.getInstance().getValueFromCache(
-                new VPSessionCacheKey(requestId), MultitenantConstants.SUPER_TENANT_ID);
+                new VPSessionCacheKey(requestId), tenantId);
         return entry != null ? entry.getSession() : null;
     }
 
-
+    // TODO
     private void validateResponseMode(VPSession session, String requestId, boolean encryptedResponseExpected)
             throws PresentationCoreClientException {
 
         boolean isEncryptedResponseMode = PresentationCoreConstants.RESPONSE_MODE_DIRECT_POST_JWT
                 .equals(session.getResponseMode());
         if (isEncryptedResponseMode != encryptedResponseExpected) {
-            handleSessionFailed(requestId,
-                    PresentationCoreErrorCode.RESPONSE_MODE_MISMATCH.getErrorType(),
-                    PresentationCoreErrorCode.RESPONSE_MODE_MISMATCH.getDescription());
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.RESPONSE_MODE_MISMATCH);
         }
     }
 
     @Override
-    public PresentationSubmissionDTO parsePresentationSubmission(Map<String, List<String>> formParams)
+    public PresentationSubmissionDTO parsePresentationSubmission(Map<String, List<String>> formParams,
+                                                                 String tenantDomain)
             throws PresentationCoreException {
 
         // If `response` parameter exists: a direct_post.jwt (JWE-encrypted) response.
-        String responseParam = PresentationCoreUtil.extractFirstFormParam(formParams, Constants.ResponseParams.RESPONSE);
+        String responseParam = PresentationCoreUtil.
+                extractFirstFormParam(formParams, Constants.ResponseParams.RESPONSE);
         if (StringUtils.isNotBlank(responseParam)) {
-            return parseDirectPostJwt(responseParam);
+            return parseDirectPostJwt(responseParam, tenantDomain);
         }
-        return parseDirectPost(formParams);
+        return parseDirectPost(formParams, tenantDomain);
     }
 
-    private PresentationSubmissionDTO parseDirectPostJwt(String responseParam) throws PresentationCoreException {
+    private PresentationSubmissionDTO parseDirectPostJwt(String responseParam, String tenantDomain)
+            throws PresentationCoreException {
 
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
         String requestId = null;
         try {
             JWEObject jweObject = JWEObject.parse(responseParam);
@@ -331,7 +351,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                 throw PresentationCoreExceptionHandler.handleClientException(
                         PresentationCoreErrorCode.INVALID_REQUEST);
             }
-            VPSession session = getSessionFromCache(requestId);
+            VPSession session = getSessionFromCache(requestId, tenantId);
             if (session == null || StringUtils.isBlank(session.getEphemeralPrivateKeyJwk())) {
                 throw PresentationCoreExceptionHandler.handleClientException(
                         PresentationCoreErrorCode.INVALID_REQUEST);
@@ -356,10 +376,10 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                     .build();
 
         } catch (PresentationCoreException e) {
-            handleSessionFailed(requestId, e.getErrorType(), e.getDescription());
+            handleSessionFailed(requestId, tenantDomain, e.getErrorType(), e.getDescription());
             throw e;
         } catch (ParseException | JOSEException e) {
-            handleSessionFailed(requestId,
+            handleSessionFailed(requestId, tenantDomain,
                     PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR.getErrorType(),
                     PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR.getDescription());
             throw PresentationCoreExceptionHandler.handleServerException(
@@ -367,9 +387,10 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         }
     }
 
-    private PresentationSubmissionDTO parseDirectPost(Map<String, List<String>> formParams)
+    private PresentationSubmissionDTO parseDirectPost(Map<String, List<String>> formParams, String tenantDomain)
             throws PresentationCoreException {
 
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
         String requestId = PresentationCoreUtil.extractFirstFormParam(formParams, Constants.ResponseParams.STATE);
         String error = PresentationCoreUtil.extractFirstFormParam(formParams, Constants.ResponseParams.ERROR);
 
@@ -383,7 +404,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         }
 
         if (StringUtils.isNotBlank(requestId)) {
-            VPSession session = getSessionFromCache(requestId);
+            VPSession session = getSessionFromCache(requestId, tenantId);
             if (session != null) {
                 validateResponseMode(session, requestId, false);
             }
@@ -397,13 +418,16 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
                     .credentialTokens(PresentationCoreUtil.flattenVpTokenMap(rawMap))
                     .build();
         } catch (JsonSyntaxException e) {
+            handleSessionFailed(requestId, tenantDomain,
+                    PresentationCoreErrorCode.INVALID_VP_TOKEN.getErrorType(),
+                    PresentationCoreErrorCode.INVALID_VP_TOKEN.getDescription());
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.INVALID_VP_TOKEN);
         }
     }
 
     @Override
-    public VerificationRequestDTO buildVerificationRequest(PresentationSubmissionDTO submission)
+    public VerificationRequestDTO buildVerificationRequest(PresentationSubmissionDTO submission, String tenantDomain)
             throws PresentationCoreException {
 
         String requestId = submission.getRequestId();
@@ -416,9 +440,15 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.INVALID_VP_TOKEN);
         }
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
 
-        VPSession session = getSessionFromCache(requestId);
+        VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
         }
@@ -444,32 +474,45 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     }
 
     @Override
-    public void handleSessionVerified(String requestId, VerificationResponseDTO verificationResponse) {
-
-            VPSession session = getSessionFromCache(requestId);
-            if (session == null) {
-                LOG.warn("Session not found when finalizing as verified: " + requestId);
-                return;
-            }
-            session.setVerificationResponse(verificationResponse);
-            session.setStatus(VPSessionStatus.VERIFIED);
-            VPSessionCache.getInstance().addToCache(new VPSessionCacheKey(requestId),
-                    new VPSessionCacheEntry(session), MultitenantConstants.SUPER_TENANT_ID);
-            AUDIT_LOGGER.logVPCredentialVerified(requestId,
-                    verificationResponse != null ? verificationResponse.getCredentialId() : null,
-                    session.getTenantDomain());
+    public void handleSessionVerified(String requestId, VerificationResponseDTO verificationResponse, String tenantDomain)
+            throws PresentationCoreException {
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        VPSession session = getSessionFromCache(requestId, tenantId);
+        if (session == null) {
+            LOG.warn("Session not found when finalizing as verified: " + requestId);
+            return;
+        }
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
+        session.setVerificationResponse(verificationResponse);
+        session.setStatus(VPSessionStatus.VERIFIED);
+        VPSessionCache.getInstance().addToCache(new VPSessionCacheKey(requestId),
+                new VPSessionCacheEntry(session), tenantId);
+        AUDIT_LOGGER.logVPCredentialVerified(requestId,
+                verificationResponse != null ? verificationResponse.getCredentialId() : null,
+                session.getTenantDomain());
     }
 
     @Override
-    public void handleSessionFailed(String requestId, String errorType, String errorDescription) {
+    public void handleSessionFailed(String requestId, String errorType, String errorDescription, String tenantDomain)
+            throws PresentationCoreException {
 
         if (StringUtils.isBlank(requestId)) {
             return;
         }
-        VPSession session = getSessionFromCache(requestId);
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {
             LOG.warn("Session not found when finalizing as failed: " + requestId);
             return;
+        }
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
         }
         if (session.getStatus() == VPSessionStatus.VERIFIED || session.getStatus() == VPSessionStatus.FAILED) {
             return;
@@ -478,26 +521,32 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         session.setErrorType(errorType);
         session.setErrorDescription(errorDescription);
         VPSessionCache.getInstance().addToCache(new VPSessionCacheKey(requestId),
-                new VPSessionCacheEntry(session), MultitenantConstants.SUPER_TENANT_ID);
+                new VPSessionCacheEntry(session), tenantId);
         AUDIT_LOGGER.logVPCredentialVerificationFailed(requestId, errorType, errorDescription,
                 session.getTenantDomain());
     }
 
     @Override
-    public VerificationSessionStatusDTO getPresentationSessionStatus(String requestId) {
+    public VerificationSessionStatusDTO getPresentationSessionStatus(String requestId, String tenantDomain)
+            throws PresentationCoreException {
 
-        VPSession session = getSessionFromCache(requestId);
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {
             return null;
+        }
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
         }
         VPSessionStatus status = session.getStatus();
         VerificationSessionStatusDTO verificationSessionStatus = new VerificationSessionStatusDTO();
         verificationSessionStatus.setRequestId(session.getRequestId());
-        verificationSessionStatus.setStatus(session.getStatus());
+        verificationSessionStatus.setStatus(status);
         verificationSessionStatus.setExpiresAt(session.getExpiresAt());
         verificationSessionStatus.setErrorType(session.getErrorType());
-        verificationSessionStatus.setStatus(status);
-
+        // TODO
         if (status == VPSessionStatus.VERIFIED || status == VPSessionStatus.FAILED) {
             VPSessionCache.getInstance().clearCacheEntry(
                     new VPSessionCacheKey(requestId), MultitenantConstants.SUPER_TENANT_ID);
@@ -506,14 +555,19 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     }
 
     @Override
-    public VerificationSessionRespDTO getPresentationSessionResult(String requestId)
+    public VerificationSessionRespDTO getPresentationSessionResult(String requestId, String tenantDomain)
             throws PresentationCoreException {
 
-        VPSession session = getSessionFromCache(requestId);
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        VPSession session = getSessionFromCache(requestId, tenantId);
         if (session == null) {
             return null;
         }
-
+        // Return NOT_FOUND to avoid cross-tenant attacks.
+        if (tenantId != session.getTenantId()) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
         VPSessionStatus status = session.getStatus();
         // Block callers from consuming the result endpoint while verification is still in progress.
         if (status == VPSessionStatus.ACTIVE) {

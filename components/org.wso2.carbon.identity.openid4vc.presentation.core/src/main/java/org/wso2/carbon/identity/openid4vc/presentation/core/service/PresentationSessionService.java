@@ -50,13 +50,15 @@ public interface PresentationSessionService {
             throws PresentationCoreException;
 
     /**
-     * Looks up a VP flow session by its transaction ID.
+     * Looks up a VP flow session by its transaction ID, scoped to the given tenant.
      *
-     * @param requestId the transaction ID of the VP session
-     * @return the session for the given request ID, or {@code null} if not found
-     * @throws PresentationCoreException if the session has expired or the database read fails
+     * @param requestId    the transaction ID of the VP session
+     * @param tenantDomain the tenant domain of the caller
+     * @return the session
+     * @throws PresentationCoreException if the session is not found, has expired, belongs to a different
+     *                                   tenant, or the database read fails
      */
-    VPSession getPresentationSession(String requestId) throws PresentationCoreException;
+    VPSession getPresentationSession(String requestId, String tenantDomain) throws PresentationCoreException;
 
     /**
      * Parses the wallet's form submission into a {@link PresentationSubmissionDTO}.
@@ -70,13 +72,14 @@ public interface PresentationSessionService {
      * empty — the caller must call {@link #handleSessionFailed} and return HTTP 200 without
      * proceeding to verification.
      *
-     * @param formParams raw form parameters from the wallet submission
+     * @param formParams   raw form parameters from the wallet submission
+     * @param tenantDomain the tenant domain resolved from the request URL
      * @return the parsed submission
      * @throws PresentationCoreClientException if the request is malformed or the response mode is mismatched
      * @throws PresentationCoreException       if a server-side failure occurs during decryption or parsing
      */
-    PresentationSubmissionDTO parsePresentationSubmission(Map<String, List<String>> formParams)
-            throws PresentationCoreException;
+    PresentationSubmissionDTO parsePresentationSubmission(Map<String, List<String>> formParams, String tenantDomain)
+            throws PresentationCoreClientException, PresentationCoreException;
 
     /**
      * Validates the session state and builds a {@link VerificationRequestDTO} ready for the
@@ -86,47 +89,53 @@ public interface PresentationSessionService {
      * Throws if the session is missing, inactive, or the submission does not contain a token
      * for the expected credential.
      *
-     * @param submission the parsed wallet submission from {@link #parsePresentationSubmission}
+     * @param submission   the parsed wallet submission from {@link #parsePresentationSubmission}
+     * @param tenantDomain the tenant domain of the caller
      * @return a fully populated {@link VerificationRequestDTO}
      * @throws PresentationCoreClientException if the session is missing/inactive or a required token is absent
      * @throws PresentationCoreException       if a server-side failure occurs during session lookup
      */
-    VerificationRequestDTO buildVerificationRequest(PresentationSubmissionDTO submission)
-            throws PresentationCoreException;
+    VerificationRequestDTO buildVerificationRequest(PresentationSubmissionDTO submission, String tenantDomain)
+            throws PresentationCoreClientException, PresentationCoreException;
 
     /**
      * Transitions the VP session to {@code VERIFIED}, stores the verification result, and emits
      * an audit log event. No-ops silently if the session is no longer present.
      *
      * @param requestId            the VP session identifier
+     * @param tenantDomain         the tenant domain of the caller
      * @param verificationResponse the outcome returned by the verification pipeline
      */
-    void handleSessionVerified(String requestId, VerificationResponseDTO verificationResponse);
+    void handleSessionVerified(String requestId, VerificationResponseDTO verificationResponse, String tenantDomain)
+            throws PresentationCoreException;
 
     /**
      * Transitions the VP session to {@code FAILED}, records the error details, and emits an
      * audit log event. No-ops silently if the session is no longer present.
      *
      * @param requestId        the VP session identifier
+     * @param tenantDomain     the tenant domain of the caller
      * @param errorType        machine-readable error type
      * @param errorDescription human-readable description of the failure reason
      */
-    void handleSessionFailed(String requestId, String errorType, String errorDescription);
+    void handleSessionFailed(String requestId, String errorType, String errorDescription, String tenantDomain)
+            throws PresentationCoreException;
+
+    /**
+     * Returns the current status of a VP session for polling without evicting it from the cache.
+     * Safe to call repeatedly while the session is active.
+     *
+     * @param requestId    the VP session identifier
+     * @param tenantDomain the tenant domain of the caller
+     * @return the session status DTO, or {@code null} if no session exists for the given request ID
+     * @throws PresentationCoreException if the session lookup fails
+     */
+    VerificationSessionStatusDTO getPresentationSessionStatus(String requestId, String tenantDomain)
+            throws PresentationCoreException;
 
     /**
      * Atomically reads the session state and, for terminal states (VERIFIED or FAILED), removes the session
      * from the cache before returning. Callers receive a clean {@link VerificationSessionRespDTO} instead of
-     * a raw {@link VPSession} — session lifecycle is fully encapsulated here.
-     *
-     * @param requestId the VP session identifier
-     * @return the result, or {@code null} if no session exists for the given request ID
-     * @throws PresentationCoreException if the session lookup fails
-     */
-    VerificationSessionStatusDTO getPresentationSessionStatus(String requestId) throws PresentationCoreException;
-
-    /**
-     * Atomically reads the session state and, for terminal states (VERIFIED or FAILED), removes the session
-     * from the cache before returning. Callers receive a clean {@link VPVerificationResultDTO} instead of
      * a raw {@link VPSession} — session lifecycle is fully encapsulated here.
      *
      * @param requestId    the VP session identifier
@@ -134,7 +143,8 @@ public interface PresentationSessionService {
      * @return the result, or {@code null} if no session exists for the given request ID
      * @throws PresentationCoreException if the session lookup fails
      */
-    VerificationSessionRespDTO getPresentationSessionResult(String requestId)
+    VerificationSessionRespDTO getPresentationSessionResult(String requestId, String tenantDomain)
             throws PresentationCoreException;
 
 }
+
