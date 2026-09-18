@@ -29,12 +29,14 @@ import org.wso2.carbon.core.util.KeyStoreManager;
 import org.wso2.carbon.core.util.KeyStoreUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
 import org.wso2.carbon.identity.core.IdentityKeyStoreResolver;
+import org.wso2.carbon.identity.core.ServiceURL;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.InboundProtocol;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverException;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.core.constant.PresentationCoreConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreServerException;
@@ -43,6 +45,8 @@ import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.text.ParseException;
@@ -269,5 +273,87 @@ public class PresentationCoreUtil {
             throw PresentationCoreExceptionHandler.handleServerException(
                     PresentationCoreErrorCode.EPHEMERAL_KEY_ERROR, e);
         }
+    }
+
+    /**
+     * Builds the tenant-scoped {@code request_uri} at which the wallet fetches the signed
+     * authorization request JWT.
+     *
+     * @param tenantDomain the tenant domain to scope the URL to
+     * @param requestId    the VP session ID used as the final path segment
+     * @return the absolute public URL string
+     * @throws PresentationCoreServerException if the base URL cannot be resolved
+     */
+    public static String buildRequestUri(String tenantDomain, String requestId)
+            throws PresentationCoreServerException {
+
+        try {
+            // Build the URL under the OID4VP requests context path and append the request ID.
+            return buildServiceUrl(tenantDomain,
+                    PresentationCoreConstants.CONTEXT_OID4VP_REQUESTS, requestId)
+                    .getAbsolutePublicURL();
+        } catch (URLBuilderException e) {
+            throw PresentationCoreExceptionHandler.handleServerException(
+                    PresentationCoreErrorCode.BASE_URL_RESOLUTION_ERROR, e);
+        }
+    }
+
+    /**
+     * Builds the tenant-scoped {@code response_uri} where the wallet POST the VP token.
+     *
+     * @param tenantDomain the tenant domain to scope the URL to
+     * @return the absolute public URL string
+     * @throws PresentationCoreServerException if the base URL cannot be resolved
+     */
+    public static String buildResponseUri(String tenantDomain) throws PresentationCoreServerException {
+
+        try {
+            // Build the URL under the OID4VP responses context path.
+            return buildServiceUrl(tenantDomain, PresentationCoreConstants.CONTEXT_OID4VP_RESPONSES)
+                    .getAbsolutePublicURL();
+        } catch (URLBuilderException e) {
+            throw PresentationCoreExceptionHandler.handleServerException(
+                    PresentationCoreErrorCode.BASE_URL_RESOLUTION_ERROR, e);
+        }
+    }
+
+    /**
+     * Constructs a {@link ServiceURL} for the given tenant and path segments.
+     *
+     * <p>Omits the tenant qualifier for the super-tenant so the URL does not include
+     * an unnecessary {@code /t/carbon.super} segment.
+     *
+     * @param tenantDomain the tenant domain; super-tenant is left unqualified
+     * @param pathSegments one or more path segments appended after the context root
+     * @return the built {@link ServiceURL}
+     * @throws URLBuilderException if the URL cannot be assembled
+     */
+    public static ServiceURL buildServiceUrl(String tenantDomain, String... pathSegments) throws URLBuilderException {
+
+        // Append all path segments to the builder.
+        ServiceURLBuilder builder = ServiceURLBuilder.create().addPath(pathSegments);
+        // Qualify the URL with the tenant only for non-super tenants.
+        if (!MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equals(tenantDomain)) {
+            builder.setTenant(tenantDomain);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Builds the wallet deep-link URL used to invoke the wallet application.
+     *
+     * <p>Produces {@code openid4vp://?client_id=<encoded>&request_uri=<encoded>}.
+     *
+     * @param clientId   the {@code client_id} to embed in the URL
+     * @param requestUri the {@code request_uri} the wallet will fetch for the signed request object
+     * @return the percent-encoded wallet deep-link URL string
+     */
+    public static String buildWalletUrl(String clientId, String requestUri) {
+
+        // Encode both parameters to ensure reserved characters do not break URL parsing.
+        return Constants.Protocol.OPENID4VP_SCHEME + "?"
+                + Constants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+                + "&" + Constants.RequestParams.REQUEST_URI + "="
+                + URLEncoder.encode(requestUri, StandardCharsets.UTF_8);
     }
 }
