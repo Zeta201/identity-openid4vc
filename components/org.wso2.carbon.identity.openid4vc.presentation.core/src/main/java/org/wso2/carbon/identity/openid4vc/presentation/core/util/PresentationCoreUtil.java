@@ -398,7 +398,6 @@ public class PresentationCoreUtil {
             throws PresentationCoreServerException {
 
         try {
-            // Build the URL under the OID4VP requests context path and append the request ID.
             return buildServiceUrl(tenantDomain,
                     PresentationCoreConstants.CONTEXT_OID4VP_REQUESTS, requestId)
                     .getAbsolutePublicURL();
@@ -418,7 +417,6 @@ public class PresentationCoreUtil {
     public static String buildResponseUri(String tenantDomain) throws PresentationCoreServerException {
 
         try {
-            // Build the URL under the OID4VP responses context path.
             return buildServiceUrl(tenantDomain, PresentationCoreConstants.CONTEXT_OID4VP_RESPONSES)
                     .getAbsolutePublicURL();
         } catch (URLBuilderException e) {
@@ -440,9 +438,7 @@ public class PresentationCoreUtil {
      */
     public static ServiceURL buildServiceUrl(String tenantDomain, String... pathSegments) throws URLBuilderException {
 
-        // Append all path segments to the builder.
         ServiceURLBuilder builder = ServiceURLBuilder.create().addPath(pathSegments);
-        // Qualify the URL with the tenant only for non-super tenants.
         if (!MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equals(tenantDomain)) {
             builder.setTenant(tenantDomain);
         }
@@ -460,7 +456,6 @@ public class PresentationCoreUtil {
      */
     public static String buildWalletUrl(String clientId, String requestUri) {
 
-        // Encode both parameters to ensure reserved characters do not break URL parsing.
         return Constants.Protocol.OPENID4VP_SCHEME + "?"
                 + Constants.RequestParams.CLIENT_ID + "=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
                 + "&" + Constants.RequestParams.REQUEST_URI + "="
@@ -485,7 +480,6 @@ public class PresentationCoreUtil {
 
         // Decrypt the JWE using the session's ephemeral EC private key.
         jweObject.decrypt(new ECDHDecrypter(ECKey.parse(ephemeralPrivateKeyJwk)));
-        // Prefer the inner signed JWT; fall back to plain JSON if the payload is unsigned.
         SignedJWT innerJwt = jweObject.getPayload().toSignedJWT();
         return innerJwt != null
                 ? innerJwt.getJWTClaimsSet()
