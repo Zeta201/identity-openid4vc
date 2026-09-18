@@ -25,14 +25,24 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatu
  */
 public class VerificationSessionRespDTO {
 
+    private String requestId;
     private VPSessionStatus status;
     private VerificationResponseDTO verificationResponse;
     private String errorType;
     private String errorDescription;
-    private long expiresAt;
 
     public VerificationSessionRespDTO() {
 
+    }
+
+    public String getRequestId() {
+
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+
+        this.requestId = requestId;
     }
 
     public VPSessionStatus getStatus() {
@@ -73,15 +83,5 @@ public class VerificationSessionRespDTO {
     public void setErrorDescription(String errorDescription) {
 
         this.errorDescription = errorDescription;
-    }
-
-    public long getExpiresAt() {
-
-        return expiresAt;
-    }
-
-    public void setExpiresAt(long expiresAt) {
-
-        this.expiresAt = expiresAt;
     }
 }

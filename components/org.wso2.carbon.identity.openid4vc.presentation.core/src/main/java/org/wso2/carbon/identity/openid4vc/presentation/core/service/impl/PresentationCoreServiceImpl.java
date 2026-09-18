@@ -504,4 +504,29 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         }
         return verificationSessionStatus;
     }
+
+    @Override
+    public VerificationSessionRespDTO getPresentationSessionResult(String requestId)
+            throws PresentationCoreException {
+
+        VPSession session = getSessionFromCache(requestId);
+        if (session == null) {
+            return null;
+        }
+
+        VPSessionStatus status = session.getStatus();
+        // Block callers from consuming the result endpoint while verification is still in progress.
+        if (status == VPSessionStatus.ACTIVE) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_SESSION_PENDING);
+        }
+        VerificationSessionRespDTO verificationSessionResponse = new VerificationSessionRespDTO();
+        verificationSessionResponse.setRequestId(requestId);
+        verificationSessionResponse.setStatus(status);
+        verificationSessionResponse.setVerificationResponse(session.getVerificationResponse());
+        verificationSessionResponse.setErrorType(session.getErrorType());
+        verificationSessionResponse.setErrorDescription(session.getErrorDescription());
+
+        return verificationSessionResponse;
+    }
 }

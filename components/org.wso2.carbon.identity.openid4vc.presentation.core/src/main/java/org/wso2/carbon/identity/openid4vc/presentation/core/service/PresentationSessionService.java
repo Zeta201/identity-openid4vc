@@ -124,4 +124,17 @@ public interface PresentationSessionService {
      */
     VerificationSessionStatusDTO getPresentationSessionStatus(String requestId) throws PresentationCoreException;
 
+    /**
+     * Atomically reads the session state and, for terminal states (VERIFIED or FAILED), removes the session
+     * from the cache before returning. Callers receive a clean {@link VPVerificationResultDTO} instead of
+     * a raw {@link VPSession} — session lifecycle is fully encapsulated here.
+     *
+     * @param requestId    the VP session identifier
+     * @param tenantDomain the tenant domain of the caller
+     * @return the result, or {@code null} if no session exists for the given request ID
+     * @throws PresentationCoreException if the session lookup fails
+     */
+    VerificationSessionRespDTO getPresentationSessionResult(String requestId)
+            throws PresentationCoreException;
+
 }
