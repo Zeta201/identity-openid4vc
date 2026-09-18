@@ -26,10 +26,10 @@ public final class PresentationCoreConstants {
     public static final String AUTHENTICATOR_NAME = "PresentationAuthenticator";
 
     public static final String RESPONSE_MODE_DIRECT_POST_JWT = "direct_post.jwt";
+    public static final String DEFAULT_CLIENT_ID_SCHEME = "x509_san_dns";
 
     public static final String CONTEXT_OID4VP_REQUESTS = "/oid4vp/requests";
     public static final String CONTEXT_OID4VP_RESPONSES = "/oid4vp/responses";
-
     public static final String CLAIM_CLIENT_METADATA = "client_metadata";
     public static final String METADATA_CLIENT_NAME = "client_name";
     public static final String METADATA_VP_FORMATS = "vp_formats";
