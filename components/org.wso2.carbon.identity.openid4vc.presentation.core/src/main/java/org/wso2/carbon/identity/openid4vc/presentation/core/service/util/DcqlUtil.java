@@ -22,7 +22,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.constant.PresentationCoreConstants;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
@@ -42,7 +42,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
-import static org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants.VC_SD_JWT_FORMAT;
+import static org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants.VC_SD_JWT_FORMAT;
 
 /**
  * Builds the DCQL (Digital Credentials Query Language) query for an OpenID4VP authorization request.

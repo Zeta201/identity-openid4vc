@@ -42,7 +42,7 @@ import org.wso2.carbon.identity.core.IdentityKeyStoreResolver;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverConstants.InboundProtocol;
 import org.wso2.carbon.identity.core.util.IdentityKeyStoreResolverException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
-import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCacheEntry;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCacheKey;
