@@ -23,7 +23,6 @@ import org.wso2.carbon.identity.configuration.mgt.core.ConfigurationManager;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
 import org.wso2.carbon.identity.openid4vc.template.management.PresentationDefinitionManager;
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
 /**
@@ -37,7 +36,6 @@ public class PresentationCoreDataHolder {
     private PresentationConfigMgtService vpConfigService;
     private RealmService realmService;
     private ApplicationManagementService applicationManagementService;
-    private OrganizationManager organizationManager;
     private PresentationDefinitionManager presentationDefinitionManager;
     private ConfigurationManager configurationManager;
 
@@ -88,16 +86,6 @@ public class PresentationCoreDataHolder {
     public void setApplicationManagementService(ApplicationManagementService applicationManagementService) {
 
         this.applicationManagementService = applicationManagementService;
-    }
-
-    public OrganizationManager getOrganizationManager() {
-
-        return organizationManager;
-    }
-
-    public void setOrganizationManager(OrganizationManager organizationManager) {
-
-        this.organizationManager = organizationManager;
     }
 
     public PresentationDefinitionManager getPresentationDefinitionManager() {

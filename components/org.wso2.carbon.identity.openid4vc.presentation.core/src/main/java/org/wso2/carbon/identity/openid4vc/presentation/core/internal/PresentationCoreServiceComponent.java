@@ -35,7 +35,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.service.Presentation
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.impl.PresentationConfigMgtServiceImpl;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.impl.PresentationCoreServiceImpl;
 import org.wso2.carbon.identity.openid4vc.template.management.PresentationDefinitionManager;
-import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.idp.mgt.listener.IdentityProviderMgtListener;
 import org.wso2.carbon.user.core.service.RealmService;
 
@@ -124,29 +123,6 @@ public class PresentationCoreServiceComponent {
             LOG.debug("Unsetting the Application Management Service.");
         }
         PresentationCoreDataHolder.getInstance().setApplicationManagementService(null);
-    }
-
-    @Reference(
-            name = "org.wso2.carbon.identity.organization.management.service.OrganizationManager",
-            service = OrganizationManager.class,
-            cardinality = ReferenceCardinality.OPTIONAL,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetOrganizationManager"
-    )
-    protected void setOrganizationManager(OrganizationManager organizationManager) {
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Setting the Organization Manager.");
-        }
-        PresentationCoreDataHolder.getInstance().setOrganizationManager(organizationManager);
-    }
-
-    protected void unsetOrganizationManager(OrganizationManager organizationManager) {
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Unsetting the Organization Manager.");
-        }
-        PresentationCoreDataHolder.getInstance().setOrganizationManager(null);
     }
 
     @Reference(
