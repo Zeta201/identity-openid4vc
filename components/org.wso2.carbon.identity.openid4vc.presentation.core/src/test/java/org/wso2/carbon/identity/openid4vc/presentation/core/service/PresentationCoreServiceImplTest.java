@@ -23,11 +23,14 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.wso2.carbon.identity.common.testng.WithCarbonHome;
+import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCache;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCacheEntry;
 import org.wso2.carbon.identity.openid4vc.presentation.core.cache.VPSessionCacheKey;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionRespDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionStatusDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
@@ -47,14 +50,21 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link PresentationCoreServiceImpl}.
  */
+@WithCarbonHome
 public class PresentationCoreServiceImplTest {
 
     private static final String REQUEST_ID = "req-test-001";
-    private static final int SUPER_TENANT_ID = MultitenantConstants.SUPER_TENANT_ID;
+    private static final String TENANT_DOMAIN = MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
+    private static final int TENANT_ID = MultitenantConstants.SUPER_TENANT_ID;
+
+    // Attacker operates in a different tenant from the one that created the session.
+    private static final String ATTACKER_TENANT_DOMAIN = "attacker.example.com";
+    private static final int ATTACKER_TENANT_ID = 9999;
 
     private PresentationCoreServiceImpl service;
     private VPSessionCache mockCache;
     private MockedStatic<VPSessionCache> vpSessionCacheMockedStatic;
+    private MockedStatic<IdentityTenantUtil> identityTenantUtilMockedStatic;
 
     @BeforeMethod
     public void setUp() {
@@ -63,6 +73,8 @@ public class PresentationCoreServiceImplTest {
         mockCache = mock(VPSessionCache.class);
         vpSessionCacheMockedStatic = mockStatic(VPSessionCache.class);
         vpSessionCacheMockedStatic.when(VPSessionCache::getInstance).thenReturn(mockCache);
+        identityTenantUtilMockedStatic = mockStatic(IdentityTenantUtil.class);
+        identityTenantUtilMockedStatic.when(() -> IdentityTenantUtil.getTenantId(TENANT_DOMAIN)).thenReturn(TENANT_ID);
     }
 
     @AfterMethod
@@ -70,6 +82,9 @@ public class PresentationCoreServiceImplTest {
 
         if (vpSessionCacheMockedStatic != null) {
             vpSessionCacheMockedStatic.close();
+        }
+        if (identityTenantUtilMockedStatic != null) {
+            identityTenantUtilMockedStatic.close();
         }
     }
 
@@ -80,11 +95,11 @@ public class PresentationCoreServiceImplTest {
     @Test(priority = 1, description = "Test getPresentationSession throws VP_REQUEST_NOT_FOUND when session absent")
     public void testGetPresentationSessionNotFound() {
 
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(null);
 
         try {
-            service.getPresentationSession(REQUEST_ID);
+            service.getPresentationSession(REQUEST_ID, TENANT_DOMAIN);
             Assert.fail("Expected PresentationCoreClientException");
         } catch (PresentationCoreClientException e) {
             Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND.getCode(),
@@ -99,19 +114,20 @@ public class PresentationCoreServiceImplTest {
 
         VPSession expiredSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.ACTIVE)
                 .expiresAt(System.currentTimeMillis() - 1000) // already expired
                 .build();
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(expiredSession));
 
         try {
-            service.getPresentationSession(REQUEST_ID);
+            service.getPresentationSession(REQUEST_ID, TENANT_DOMAIN);
             Assert.fail("Expected PresentationCoreClientException");
         } catch (PresentationCoreClientException e) {
             Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getCode(),
                     "Error code should be VP_REQUEST_EXPIRED");
-            verify(mockCache).clearCacheEntry(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID));
+            verify(mockCache).clearCacheEntry(any(VPSessionCacheKey.class), eq(TENANT_ID));
         } catch (PresentationCoreException e) {
             Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
         }
@@ -122,13 +138,14 @@ public class PresentationCoreServiceImplTest {
 
         VPSession activeSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.ACTIVE)
                 .expiresAt(System.currentTimeMillis() + 120_000)
                 .build();
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(activeSession));
 
-        VPSession result = service.getPresentationSession(REQUEST_ID);
+        VPSession result = service.getPresentationSession(REQUEST_ID, TENANT_DOMAIN);
 
         Assert.assertNotNull(result, "Session should be returned");
         Assert.assertEquals(result.getRequestId(), REQUEST_ID);
@@ -141,50 +158,52 @@ public class PresentationCoreServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test(priority = 4, description = "Test handleSessionFailed sets FAILED status and persists to cache")
-    public void testHandleSessionFailedSetsStatusAndPersists() {
+    public void testHandleSessionFailedSetsStatusAndPersists() throws PresentationCoreException {
 
         VPSession activeSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.ACTIVE)
                 .expiresAt(System.currentTimeMillis() + 120_000)
-                .tenantDomain("carbon.super")
+                .tenantDomain(TENANT_DOMAIN)
                 .build();
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(activeSession));
 
-        service.handleSessionFailed(REQUEST_ID, "invalid_request", "Something went wrong.");
+        service.handleSessionFailed(REQUEST_ID, "invalid_request", "Something went wrong.", TENANT_DOMAIN);
 
         Assert.assertEquals(activeSession.getStatus(), VPSessionStatus.FAILED,
                 "Session status should be FAILED");
         Assert.assertEquals(activeSession.getErrorType(), "invalid_request");
         Assert.assertEquals(activeSession.getErrorDescription(), "Something went wrong.");
         verify(mockCache).addToCache(any(VPSessionCacheKey.class), any(VPSessionCacheEntry.class),
-                eq(SUPER_TENANT_ID));
+                eq(TENANT_ID));
     }
 
     @Test(priority = 5, description = "Test handleSessionFailed is a no-op when session is not found")
-    public void testHandleSessionFailedSessionNotFound() {
+    public void testHandleSessionFailedSessionNotFound() throws PresentationCoreException {
 
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(null);
 
-        service.handleSessionFailed(REQUEST_ID, "server_error", "Internal error.");
+        service.handleSessionFailed(REQUEST_ID, "server_error", "Internal error.", TENANT_DOMAIN);
 
         verify(mockCache, never()).addToCache(any(), any(), any(int.class));
     }
 
     @Test(priority = 6, description = "Test handleSessionFailed is a no-op when session already VERIFIED")
-    public void testHandleSessionFailedNoOpWhenAlreadyVerified() {
+    public void testHandleSessionFailedNoOpWhenAlreadyVerified() throws PresentationCoreException {
 
         VPSession verifiedSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.VERIFIED)
                 .expiresAt(System.currentTimeMillis() + 120_000)
                 .build();
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(verifiedSession));
 
-        service.handleSessionFailed(REQUEST_ID, "server_error", "Late error.");
+        service.handleSessionFailed(REQUEST_ID, "server_error", "Late error.", TENANT_DOMAIN);
 
         Assert.assertEquals(verifiedSession.getStatus(), VPSessionStatus.VERIFIED,
                 "Already-verified session should not be overwritten");
@@ -192,9 +211,9 @@ public class PresentationCoreServiceImplTest {
     }
 
     @Test(priority = 7, description = "Test handleSessionFailed is a no-op for blank requestId")
-    public void testHandleSessionFailedBlankRequestId() {
+    public void testHandleSessionFailedBlankRequestId() throws PresentationCoreException {
 
-        service.handleSessionFailed("", "server_error", "Error.");
+        service.handleSessionFailed("", "server_error", "Error.", TENANT_DOMAIN);
 
         verify(mockCache, never()).getValueFromCache(any(), any(int.class));
     }
@@ -204,37 +223,38 @@ public class PresentationCoreServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test(priority = 8, description = "Test handleSessionVerified sets VERIFIED status and persists to cache")
-    public void testHandleSessionVerifiedSetsStatusAndPersists() {
+    public void testHandleSessionVerifiedSetsStatusAndPersists() throws PresentationCoreException {
 
         VPSession activeSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.ACTIVE)
                 .expiresAt(System.currentTimeMillis() + 120_000)
-                .tenantDomain("carbon.super")
+                .tenantDomain(TENANT_DOMAIN)
                 .build();
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(activeSession));
 
         VerificationResponseDTO verificationResponse = mock(VerificationResponseDTO.class);
         when(verificationResponse.getCredentialId()).thenReturn("cred-001");
 
-        service.handleSessionVerified(REQUEST_ID, verificationResponse);
+        service.handleSessionVerified(REQUEST_ID, verificationResponse, TENANT_DOMAIN);
 
         Assert.assertEquals(activeSession.getStatus(), VPSessionStatus.VERIFIED,
                 "Session status should be VERIFIED");
         Assert.assertEquals(activeSession.getVerificationResponse(), verificationResponse,
                 "Verification response should be stored on session");
         verify(mockCache).addToCache(any(VPSessionCacheKey.class), any(VPSessionCacheEntry.class),
-                eq(SUPER_TENANT_ID));
+                eq(TENANT_ID));
     }
 
     @Test(priority = 9, description = "Test handleSessionVerified is a no-op when session is not found")
-    public void testHandleSessionVerifiedSessionNotFound() {
+    public void testHandleSessionVerifiedSessionNotFound() throws PresentationCoreException {
 
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(null);
 
-        service.handleSessionVerified(REQUEST_ID, mock(VerificationResponseDTO.class));
+        service.handleSessionVerified(REQUEST_ID, mock(VerificationResponseDTO.class), TENANT_DOMAIN);
 
         verify(mockCache, never()).addToCache(any(), any(), any(int.class));
     }
@@ -244,72 +264,299 @@ public class PresentationCoreServiceImplTest {
     // -------------------------------------------------------------------------
 
     @Test(priority = 10, description = "Test getPresentationSessionStatus returns null when session absent")
-    public void testGetPresentationSessionResultNotFound() {
+    public void testGetPresentationSessionStatusNotFound() throws PresentationCoreException {
 
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(null);
 
-        VerificationSessionRespDTO result = service.getPresentationSessionStatus(REQUEST_ID);
+        VerificationSessionStatusDTO result = service.getPresentationSessionStatus(REQUEST_ID, TENANT_DOMAIN);
 
         Assert.assertNull(result, "Should return null when no session exists");
     }
 
     @Test(priority = 11,
             description = "Test getPresentationSessionStatus returns ACTIVE status without removing session")
-    public void testGetPresentationSessionResultActiveSession() {
+    public void testGetPresentationSessionStatusActiveSession() throws PresentationCoreException {
 
         VPSession activeSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.ACTIVE)
                 .expiresAt(System.currentTimeMillis() + 120_000)
                 .build();
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(activeSession));
 
-        VerificationSessionRespDTO result = service.getPresentationSessionStatus(REQUEST_ID);
+        VerificationSessionStatusDTO result = service.getPresentationSessionStatus(REQUEST_ID, TENANT_DOMAIN);
 
         Assert.assertNotNull(result, "Result should not be null");
         Assert.assertEquals(result.getStatus(), VPSessionStatus.ACTIVE);
         verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
     }
 
-    @Test(priority = 12, description = "Test getPresentationSessionStatus removes session when status is VERIFIED")
-    public void testGetPresentationSessionResultVerifiedRemovesSession() {
+    @Test(priority = 12,
+            description = "Test getPresentationSessionStatus does not evict the session even when VERIFIED")
+    public void testGetPresentationSessionStatusVerifiedDoesNotEvict() throws PresentationCoreException {
+
+        VPSession verifiedSession = new VPSession.Builder()
+                .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
+                .status(VPSessionStatus.VERIFIED)
+                .expiresAt(System.currentTimeMillis() + 120_000)
+                .build();
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(verifiedSession));
+
+        VerificationSessionStatusDTO result = service.getPresentationSessionStatus(REQUEST_ID, TENANT_DOMAIN);
+
+        Assert.assertEquals(result.getStatus(), VPSessionStatus.VERIFIED);
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
+    }
+
+    @Test(priority = 13,
+            description = "Test getPresentationSessionStatus does not evict the session even when FAILED")
+    public void testGetPresentationSessionStatusFailedDoesNotEvict() throws PresentationCoreException {
+
+        VPSession failedSession = new VPSession.Builder()
+                .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
+                .status(VPSessionStatus.FAILED)
+                .expiresAt(System.currentTimeMillis() + 120_000)
+                .build();
+        failedSession.setErrorType("server_error");
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(failedSession));
+
+        VerificationSessionStatusDTO result = service.getPresentationSessionStatus(REQUEST_ID, TENANT_DOMAIN);
+
+        Assert.assertEquals(result.getStatus(), VPSessionStatus.FAILED);
+        Assert.assertEquals(result.getErrorType(), "server_error");
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
+    }
+
+    // -------------------------------------------------------------------------
+    // getPresentationSessionResult
+    // -------------------------------------------------------------------------
+
+    @Test(priority = 14, description = "Test getPresentationSessionResult returns null when session absent")
+    public void testGetPresentationSessionResultNotFound() throws PresentationCoreException {
+
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
+                .thenReturn(null);
+
+        VerificationSessionRespDTO result = service.getPresentationSessionResult(REQUEST_ID, TENANT_DOMAIN);
+
+        Assert.assertNull(result, "Should return null when no session exists");
+    }
+
+    @Test(priority = 15, description = "Test getPresentationSessionResult throws VP_SESSION_PENDING when ACTIVE")
+    public void testGetPresentationSessionResultActiveSessionThrowsPending() {
+
+        VPSession activeSession = new VPSession.Builder()
+                .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
+                .status(VPSessionStatus.ACTIVE)
+                .expiresAt(System.currentTimeMillis() + 120_000)
+                .build();
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(activeSession));
+
+        try {
+            service.getPresentationSessionResult(REQUEST_ID, TENANT_DOMAIN);
+            Assert.fail("Expected PresentationCoreClientException");
+        } catch (PresentationCoreClientException e) {
+            Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_SESSION_PENDING.getCode(),
+                    "Error code should be VP_SESSION_PENDING");
+        } catch (PresentationCoreException e) {
+            Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
+        }
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
+    }
+
+    @Test(priority = 16,
+            description = "Test getPresentationSessionResult does not evict the session when status is VERIFIED")
+    public void testGetPresentationSessionResultVerifiedDoesNotEvict() throws PresentationCoreException {
 
         VerificationResponseDTO verificationResponse = mock(VerificationResponseDTO.class);
         VPSession verifiedSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.VERIFIED)
                 .expiresAt(System.currentTimeMillis() + 120_000)
                 .build();
         verifiedSession.setVerificationResponse(verificationResponse);
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(verifiedSession));
 
-        VerificationSessionRespDTO result = service.getPresentationSessionStatus(REQUEST_ID);
+        VerificationSessionRespDTO result = service.getPresentationSessionResult(REQUEST_ID, TENANT_DOMAIN);
 
         Assert.assertEquals(result.getStatus(), VPSessionStatus.VERIFIED);
         Assert.assertEquals(result.getVerificationResponse(), verificationResponse);
-        verify(mockCache).clearCacheEntry(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID));
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
     }
 
-    @Test(priority = 13, description = "Test getPresentationSessionStatus removes session when status is FAILED")
-    public void testGetPresentationSessionResultFailedRemovesSession() {
+    @Test(priority = 17,
+            description = "Test getPresentationSessionResult does not evict the session when status is FAILED")
+    public void testGetPresentationSessionResultFailedDoesNotEvict() throws PresentationCoreException {
 
         VPSession failedSession = new VPSession.Builder()
                 .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)
                 .status(VPSessionStatus.FAILED)
                 .expiresAt(System.currentTimeMillis() + 120_000)
                 .build();
         failedSession.setErrorType("server_error");
         failedSession.setErrorDescription("Something failed.");
-        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID)))
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(TENANT_ID)))
                 .thenReturn(new VPSessionCacheEntry(failedSession));
 
-        VerificationSessionRespDTO result = service.getPresentationSessionStatus(REQUEST_ID);
+        VerificationSessionRespDTO result = service.getPresentationSessionResult(REQUEST_ID, TENANT_DOMAIN);
 
         Assert.assertEquals(result.getStatus(), VPSessionStatus.FAILED);
         Assert.assertEquals(result.getErrorType(), "server_error");
-        verify(mockCache).clearCacheEntry(any(VPSessionCacheKey.class), eq(SUPER_TENANT_ID));
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
+    }
+
+    // -------------------------------------------------------------------------
+    // Cross-tenant attack scenarios
+    //
+    // Tenant A generates a VP session (QR code). An attacker operating in
+    // Tenant B obtains the requestId (e.g. from a leaked QR scan) and tries
+    // every public API surface using their own tenant context. The cache is
+    // mocked to simulate a cache-key collision so the attacker's lookup
+    // actually returns Tenant A's session — the tenantId guard on the session
+    // object itself is the last line of defence.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Builds a session that belongs to Tenant A and mocks the cache so that
+     * a lookup keyed by ATTACKER_TENANT_ID still finds it (collision scenario).
+     */
+    private VPSession buildTenantASession(VPSessionStatus status) {
+
+        return new VPSession.Builder()
+                .requestId(REQUEST_ID)
+                .tenantId(TENANT_ID)           // owned by Tenant A
+                .tenantDomain(TENANT_DOMAIN)
+                .status(status)
+                .expiresAt(System.currentTimeMillis() + 120_000)
+                .build();
+    }
+
+    private void mockAttackerTenantId() {
+
+        identityTenantUtilMockedStatic.when(
+                () -> IdentityTenantUtil.getTenantId(ATTACKER_TENANT_DOMAIN))
+                .thenReturn(ATTACKER_TENANT_ID);
+    }
+
+    @Test(priority = 18,
+            description = "Cross-tenant: attacker from Tenant B cannot scan Tenant A's QR (getPresentationSession)")
+    public void testGetPresentationSessionCrossTenantAttackBlocked() {
+
+        mockAttackerTenantId();
+        VPSession tenantASession = buildTenantASession(VPSessionStatus.ACTIVE);
+        // Simulate a cache collision: attacker's lookup returns Tenant A's session object.
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(ATTACKER_TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(tenantASession));
+
+        try {
+            service.getPresentationSession(REQUEST_ID, ATTACKER_TENANT_DOMAIN);
+            Assert.fail("Expected VP_REQUEST_NOT_FOUND for cross-tenant access");
+        } catch (PresentationCoreClientException e) {
+            Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND.getCode(),
+                    "Cross-tenant access must surface as NOT_FOUND to avoid leaking session existence");
+        } catch (PresentationCoreException e) {
+            Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
+        }
+        // Session must not be evicted — Tenant A's session must remain intact.
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
+    }
+
+    @Test(priority = 19,
+            description = "Cross-tenant: attacker from Tenant B cannot poll Tenant A's session status")
+    public void testGetPresentationSessionStatusCrossTenantAttackBlocked() {
+
+        mockAttackerTenantId();
+        VPSession tenantASession = buildTenantASession(VPSessionStatus.ACTIVE);
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(ATTACKER_TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(tenantASession));
+
+        try {
+            service.getPresentationSessionStatus(REQUEST_ID, ATTACKER_TENANT_DOMAIN);
+            Assert.fail("Expected VP_REQUEST_NOT_FOUND for cross-tenant access");
+        } catch (PresentationCoreClientException e) {
+            Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND.getCode());
+        } catch (PresentationCoreException e) {
+            Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
+        }
+    }
+
+    @Test(priority = 20,
+            description = "Cross-tenant: attacker from Tenant B cannot read Tenant A's verification result")
+    public void testGetPresentationSessionResultCrossTenantAttackBlocked() {
+
+        mockAttackerTenantId();
+        VPSession tenantASession = buildTenantASession(VPSessionStatus.VERIFIED);
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(ATTACKER_TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(tenantASession));
+
+        try {
+            service.getPresentationSessionResult(REQUEST_ID, ATTACKER_TENANT_DOMAIN);
+            Assert.fail("Expected VP_REQUEST_NOT_FOUND for cross-tenant access");
+        } catch (PresentationCoreClientException e) {
+            Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND.getCode(),
+                    "Attacker must not be able to read Tenant A's verified credential data");
+        } catch (PresentationCoreException e) {
+            Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
+        }
+        // Session must not be evicted by the attacker's request.
+        verify(mockCache, never()).clearCacheEntry(any(), any(int.class));
+    }
+
+    @Test(priority = 21,
+            description = "Cross-tenant: attacker from Tenant B cannot poison Tenant A's session as failed")
+    public void testHandleSessionFailedCrossTenantAttackBlocked() {
+
+        mockAttackerTenantId();
+        VPSession tenantASession = buildTenantASession(VPSessionStatus.ACTIVE);
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(ATTACKER_TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(tenantASession));
+
+        try {
+            service.handleSessionFailed(REQUEST_ID, "poisoned", "Injected failure.", ATTACKER_TENANT_DOMAIN);
+            Assert.fail("Expected VP_REQUEST_NOT_FOUND for cross-tenant access");
+        } catch (PresentationCoreClientException e) {
+            Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND.getCode());
+        } catch (PresentationCoreException e) {
+            Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
+        }
+        // Tenant A's session status must be unchanged and must not be written back.
+        Assert.assertEquals(tenantASession.getStatus(), VPSessionStatus.ACTIVE,
+                "Attacker must not be able to transition Tenant A's session to FAILED");
+        verify(mockCache, never()).addToCache(any(), any(), any(int.class));
+    }
+
+    @Test(priority = 22,
+            description = "Cross-tenant: attacker from Tenant B cannot forge a verified result on Tenant A's session")
+    public void testHandleSessionVerifiedCrossTenantAttackBlocked() {
+
+        mockAttackerTenantId();
+        VPSession tenantASession = buildTenantASession(VPSessionStatus.ACTIVE);
+        when(mockCache.getValueFromCache(any(VPSessionCacheKey.class), eq(ATTACKER_TENANT_ID)))
+                .thenReturn(new VPSessionCacheEntry(tenantASession));
+
+        try {
+            service.handleSessionVerified(REQUEST_ID, mock(VerificationResponseDTO.class), ATTACKER_TENANT_DOMAIN);
+            Assert.fail("Expected VP_REQUEST_NOT_FOUND for cross-tenant access");
+        } catch (PresentationCoreClientException e) {
+            Assert.assertEquals(e.getCode(), PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND.getCode());
+        } catch (PresentationCoreException e) {
+            Assert.fail("Expected PresentationCoreClientException, got: " + e.getClass().getSimpleName());
+        }
+        // Tenant A's session must remain ACTIVE — attacker cannot forge a successful verification.
+        Assert.assertEquals(tenantASession.getStatus(), VPSessionStatus.ACTIVE,
+                "Attacker must not be able to forge VERIFIED status on Tenant A's session");
+        verify(mockCache, never()).addToCache(any(), any(), any(int.class));
     }
 }
