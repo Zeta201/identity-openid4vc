@@ -110,11 +110,6 @@
             <version>${carbon.identity.framework.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.wso2.carbon.identity.organization.management.core</groupId>
-            <artifactId>org.wso2.carbon.identity.organization.management.service</artifactId>
-            <version>${identity.organization.management.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <scope>test</scope>
@@ -172,12 +167,10 @@
                         <Import-Package>
                             org.wso2.carbon.identity.openid4vc.template.management.*;version="${identity.oid4vc.pkg.version}",
                             org.wso2.carbon.utils;version="${carbon.kernel.imp.pkg.version.range}",
-                            org.wso2.carbon.identity.organization.management.service.*;resolution:=optional,
                             org.osgi.service.component; version="[1.2.0, 2.0.0)",
                             *;resolution:=optional
                         </Import-Package>
                         <Embed-Transitive>true</Embed-Transitive>
-                        <DynamicImport-Package>*</DynamicImport-Package>
                         <_dsannotations-options>version;minimum=1.2.0</_dsannotations-options>
                         <_dsannotations>*</_dsannotations>
                         <_removeheaders>Require-Capability</_removeheaders>

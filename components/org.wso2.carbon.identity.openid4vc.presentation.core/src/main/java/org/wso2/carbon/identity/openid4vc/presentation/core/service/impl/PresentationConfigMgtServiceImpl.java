@@ -43,8 +43,6 @@ import static org.wso2.carbon.identity.configuration.mgt.core.constant.Configura
 
 /**
  * {@link ConfigurationManager}-backed implementation of {@link PresentationConfigMgtService}.
- * Reads with {@code inherited=true} so sub-organizations automatically fall back
- * to the root organization's configuration when no explicit configuration has been saved.
  */
 public class PresentationConfigMgtServiceImpl implements PresentationConfigMgtService {
 
