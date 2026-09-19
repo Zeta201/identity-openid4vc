@@ -23,16 +23,16 @@ import com.google.gson.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.openid4vc.issuance.common.util.CommonUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationRequestResponseDTO;
-import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VPSessionStatusRespDTO;
-import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VPVerificationResultDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionRespDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationSessionStatusDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
-import org.wso2.carbon.identity.openid4vc.presentation.core.response.VPSessionStatusResponse;
-import org.wso2.carbon.identity.openid4vc.presentation.core.response.VPStartSessionResponse;
-import org.wso2.carbon.identity.openid4vc.presentation.core.response.VPVerificationResultResponse;
-import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.core.response.PresentationRequestResponse;
+import org.wso2.carbon.identity.openid4vc.presentation.core.response.VerificationSessionResultResponse;
+import org.wso2.carbon.identity.openid4vc.presentation.core.response.VerificationSessionStatusResponse;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.VerifierErrorResponse;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationSessionServiceFactory;
 
@@ -97,18 +97,7 @@ public class VerificationSessionsEndpoint {
             return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
         }
 
-        String tenantDomain;
-        try {
-            tenantDomain = PresentationCoreUtil.resolveClientTenantDomain();
-        } catch (PresentationCoreException e) {
-            LOG.error("Failed to resolve tenant domain.", e);
-            String error = VerifierErrorResponse.builder()
-                    .code(PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getCode())
-                    .message(PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getMessage())
-                    .build()
-                    .toJson();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
-        }
+        String tenantDomain = CommonUtil.resolveTenantDomain();
 
         PresentationRequestResponseDTO initiateResponse;
         try {
@@ -152,20 +141,9 @@ public class VerificationSessionsEndpoint {
                                           @Context HttpServletResponse response,
                                           @PathParam("id") String id) {
 
-        String tenantDomain;
-        try {
-            tenantDomain = PresentationCoreUtil.resolveClientTenantDomain();
-        } catch (PresentationCoreException e) {
-            LOG.error("Failed to resolve tenant domain.", e);
-            String error = VerifierErrorResponse.builder()
-                    .code(PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getCode())
-                    .message(PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getMessage())
-                    .build()
-                    .toJson();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
-        }
+        String tenantDomain = CommonUtil.resolveTenantDomain();
 
-        VPVerificationResultDTO verificationResult;
+        VerificationSessionRespDTO verificationResult;
         try {
             verificationResult = PresentationSessionServiceFactory.getPresentationSessionService()
                     .getPresentationSessionResult(id, tenantDomain);
@@ -221,23 +199,12 @@ public class VerificationSessionsEndpoint {
                                                  @Context HttpServletResponse response,
                                                  @PathParam("id") String id) {
 
-        String tenantDomain;
-        try {
-            tenantDomain = PresentationCoreUtil.resolveClientTenantDomain();
-        } catch (PresentationCoreException e) {
-            LOG.error("Failed to resolve tenant domain.", e);
-            String error = VerifierErrorResponse.builder()
-                    .code(PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getCode())
-                    .message(PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getMessage())
-                    .build()
-                    .toJson();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
-        }
+        String tenantDomain = CommonUtil.resolveTenantDomain();
 
-        VPSessionStatusRespDTO sessionStatus;
+        VerificationSessionStatusDTO sessionStatus;
         try {
             sessionStatus = PresentationSessionServiceFactory.getPresentationSessionService()
-                    .getVerificationSessionStatus(id, tenantDomain);
+                    .getPresentationSessionStatus(id, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug(String.format("Client error fetching verification session for id: %s", id), e);
@@ -271,9 +238,9 @@ public class VerificationSessionsEndpoint {
         return buildSessionStatusResponse(sessionStatus);
     }
 
-    private Response buildVerificationResultResponse(VPVerificationResultDTO dto) {
+    private Response buildVerificationResultResponse(VerificationSessionRespDTO dto) {
 
-        String payload = VPVerificationResultResponse.builder()
+        String payload = VerificationSessionResultResponse.builder()
                 .status(dto.getStatus())
                 .errorType(dto.getErrorType())
                 .errorDescription(dto.getErrorDescription())
@@ -285,7 +252,7 @@ public class VerificationSessionsEndpoint {
 
     private Response buildStartSessionResponse(PresentationRequestResponseDTO dto) {
 
-        String payload = VPStartSessionResponse.builder()
+        String payload = PresentationRequestResponse.builder()
                 .requestId(dto.getRequestId())
                 .requestUri(dto.getRequestUri())
                 .expiresAt(dto.getExpiresAt())
@@ -296,9 +263,9 @@ public class VerificationSessionsEndpoint {
                 .build();
     }
 
-    private Response buildSessionStatusResponse(VPSessionStatusRespDTO dto) {
+    private Response buildSessionStatusResponse(VerificationSessionStatusDTO dto) {
 
-        String payload = VPSessionStatusResponse.builder()
+        String payload = VerificationSessionStatusResponse.builder()
                 .requestId(dto.getRequestId())
                 .status(dto.getStatus())
                 .expiresAt(dto.getExpiresAt())

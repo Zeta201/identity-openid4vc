@@ -20,10 +20,10 @@ package org.wso2.carbon.identity.openid4vc.presentation.endpoint.request;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.openid4vc.issuance.common.util.CommonUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
-import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.PresentationErrorResponse;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationRequestServiceFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationSessionServiceFactory;
@@ -50,7 +50,7 @@ public class PresentationRequestEndpoint {
     @Produces(CONTENT_TYPE_AUTHZ_REQ)
     public Response getPresentationRequest(@PathParam("id") String id) {
 
-        String tenantDomain = PresentationCoreUtil.resolveTenantDomain();
+        String tenantDomain = CommonUtil.resolveTenantDomain();
         try {
             String requestJwt = PresentationRequestServiceFactory.getPresentationRequestService()
                     .buildPresentationRequest(id, tenantDomain);
