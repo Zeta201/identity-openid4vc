@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.core.service;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.wso2.carbon.identity.common.testng.WithCarbonHome;
 import org.wso2.carbon.identity.configuration.mgt.core.ConfigurationManager;
 import org.wso2.carbon.identity.configuration.mgt.core.exception.ConfigurationManagementException;
 import org.wso2.carbon.identity.configuration.mgt.core.model.Attribute;
@@ -46,6 +47,7 @@ import static org.wso2.carbon.identity.configuration.mgt.core.constant.Configura
 /**
  * Unit tests for {@link PresentationConfigMgtServiceImpl}.
  */
+@WithCarbonHome
 public class PresentationConfigMgtServiceImplTest {
 
     private static final String TENANT_DOMAIN = "carbon.super";
@@ -94,13 +96,14 @@ public class PresentationConfigMgtServiceImplTest {
 
         VPTenantConfig result = service.getVPConfig(TENANT_DOMAIN);
 
-        Assert.assertNotNull(result, "Should return an empty config, not null");
-        Assert.assertNull(result.getClientIdScheme(), "clientIdScheme should be null for empty config");
-        Assert.assertNull(result.getResponseMode(), "responseMode should be null for empty config");
+        Assert.assertNotNull(result, "Should return a config with defaults, not null");
+        Assert.assertEquals(result.getClientIdScheme(), "x509_san_dns",
+                "clientIdScheme should fall back to the server default");
+        Assert.assertEquals(result.getResponseMode(), "direct_post.jwt",
+                "responseMode should fall back to the server default");
     }
 
-    @Test(priority = 3,
-            description = "Test getVPConfig returns empty config when resource exists but has no attributes")
+    @Test(priority = 3, description = "getVPConfig returns empty config for null attributes")
     public void testGetVPConfigNullAttributes() throws Exception {
 
         Resource resource = new Resource();
@@ -109,9 +112,9 @@ public class PresentationConfigMgtServiceImplTest {
 
         VPTenantConfig result = service.getVPConfig(TENANT_DOMAIN);
 
-        Assert.assertNotNull(result, "Should return an empty config");
-        Assert.assertNull(result.getClientIdScheme());
-        Assert.assertNull(result.getResponseMode());
+        Assert.assertNotNull(result, "Should return a config with defaults");
+        Assert.assertEquals(result.getClientIdScheme(), "x509_san_dns");
+        Assert.assertEquals(result.getResponseMode(), "direct_post.jwt");
     }
 
     @Test(priority = 4,

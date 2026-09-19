@@ -39,8 +39,6 @@ import java.util.Map;
 @SuppressWarnings("unchecked")
 public class DcqlUtilTest {
 
-    private static final String FORMAT_VC_SD_JWT = "vc+sd-jwt";
-
     @Test(priority = 1, description = "Test buildDcqlQuery with null definition returns empty credentials list")
     public void testBuildDcqlQueryNullDefinition() {
 
@@ -73,7 +71,7 @@ public class DcqlUtilTest {
 
         Credential cred = new Credential();
         cred.setIdentifier("employee_badge");
-        cred.setFormat(FORMAT_VC_SD_JWT);
+        cred.setFormat(Constants.VC_SD_JWT_FORMAT);
         cred.setType("EmployeeBadgeCredential");
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
@@ -88,7 +86,7 @@ public class DcqlUtilTest {
 
         Map<String, Object> credEntry = credentials.get(0);
         Assert.assertEquals(credEntry.get(Constants.DCQL.ID), "employee_badge");
-        Assert.assertEquals(credEntry.get(Constants.DCQL.FORMAT), FORMAT_VC_SD_JWT);
+        Assert.assertEquals(credEntry.get(Constants.DCQL.FORMAT), Constants.VC_SD_JWT_FORMAT);
 
         Map<String, Object> meta = (Map<String, Object>) credEntry.get(Constants.DCQL.META);
         Assert.assertNotNull(meta, "meta should be present when credential type is set");
@@ -102,7 +100,7 @@ public class DcqlUtilTest {
 
         Credential cred = new Credential();
         cred.setIdentifier("untyped_cred");
-        cred.setFormat(FORMAT_VC_SD_JWT);
+        cred.setFormat(Constants.VC_SD_JWT_FORMAT);
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
                 .id("def-no-type")
@@ -119,7 +117,7 @@ public class DcqlUtilTest {
     @Test(priority = 5, description = "Test buildDcqlQuery serializes claims with path and id")
     public void testBuildDcqlQueryClaims() {
 
-        Credential cred = buildCredentialWithClaims("cred-with-claims", FORMAT_VC_SD_JWT,
+        Credential cred = buildCredentialWithClaims("cred-with-claims", Constants.VC_SD_JWT_FORMAT,
                 claim("given_name", true), claim("address.street", false));
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
@@ -150,7 +148,7 @@ public class DcqlUtilTest {
     @Test(priority = 6, description = "Test buildDcqlQuery adds claim_sets when mandatory and optional claims mixed")
     public void testBuildDcqlQueryClaimSetsWhenMixedMandatory() {
 
-        Credential cred = buildCredentialWithClaims("mixed-cred", FORMAT_VC_SD_JWT,
+        Credential cred = buildCredentialWithClaims("mixed-cred", Constants.VC_SD_JWT_FORMAT,
                 claim("sub", true),
                 claim("email", false));
 
@@ -175,7 +173,7 @@ public class DcqlUtilTest {
     @Test(priority = 7, description = "Test buildDcqlQuery omits claim_sets when all claims are mandatory")
     public void testBuildDcqlQueryNoClaimSetsWhenAllMandatory() {
 
-        Credential cred = buildCredentialWithClaims("all-mandatory", FORMAT_VC_SD_JWT,
+        Credential cred = buildCredentialWithClaims("all-mandatory", Constants.VC_SD_JWT_FORMAT,
                 claim("sub", true), claim("email", true));
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
@@ -192,7 +190,7 @@ public class DcqlUtilTest {
     @Test(priority = 8, description = "Test buildDcqlQuery omits claim_sets when all claims are optional")
     public void testBuildDcqlQueryNoClaimSetsWhenAllOptional() {
 
-        Credential cred = buildCredentialWithClaims("all-optional", FORMAT_VC_SD_JWT,
+        Credential cred = buildCredentialWithClaims("all-optional", Constants.VC_SD_JWT_FORMAT,
                 claim("email", false), claim("phone", false));
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
@@ -211,10 +209,10 @@ public class DcqlUtilTest {
 
         Credential cred1 = new Credential();
         cred1.setIdentifier("id_card");
-        cred1.setFormat(FORMAT_VC_SD_JWT);
+        cred1.setFormat(Constants.VC_SD_JWT_FORMAT);
         Credential cred2 = new Credential();
         cred2.setIdentifier("driver_license");
-        cred2.setFormat(FORMAT_VC_SD_JWT);
+        cred2.setFormat(Constants.VC_SD_JWT_FORMAT);
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
                 .id("def-two-creds")
@@ -243,7 +241,7 @@ public class DcqlUtilTest {
 
         Credential cred = new Credential();
         cred.setIdentifier("cred-jwks");
-        cred.setFormat(FORMAT_VC_SD_JWT);
+        cred.setFormat(Constants.VC_SD_JWT_FORMAT);
         cred.setIssuers(Collections.singletonList(issuer));
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
@@ -266,7 +264,7 @@ public class DcqlUtilTest {
 
         Credential cred = new Credential();
         cred.setIdentifier("cred-x5c-no-cert");
-        cred.setFormat(FORMAT_VC_SD_JWT);
+        cred.setFormat(Constants.VC_SD_JWT_FORMAT);
         cred.setIssuers(Collections.singletonList(issuer));
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
