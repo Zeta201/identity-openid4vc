@@ -24,8 +24,10 @@ package org.wso2.carbon.identity.openid4vc.presentation.common.constant;
 public class Constants {
 
     public static final String DEFAULT_CLIENT_ID_SCHEME = "x509_san_dns";
+    public static final String CLIENT_ID_SCHEME_X509_HASH = "x509_hash";
     public static final String DEFAULT_RESPONSE_MODE = "direct_post.jwt";
     public static final String DEFAULT_KEY_SOURCE_TYPE = "X5C";
+    public static final String VC_SD_JWT_FORMAT = "dc+sd-jwt";
 
     private Constants() {
 
