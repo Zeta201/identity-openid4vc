@@ -21,13 +21,13 @@ package org.wso2.carbon.identity.openid4vc.presentation.endpoint.response;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.openid4vc.issuance.common.util.CommonUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationSubmissionDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
-import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.PresentationErrorResponse;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationSessionServiceFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.VerificationServiceFactory;
@@ -66,7 +66,7 @@ public class PresentationResponseEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public Response handlePresentationSubmission(MultivaluedMap<String, String> formParams) {
 
-        String tenantDomain = PresentationCoreUtil.resolveTenantDomain();
+        String tenantDomain = CommonUtil.resolveTenantDomain();
         PresentationSubmissionDTO presentationSubmission;
         try {
             presentationSubmission = PresentationSessionServiceFactory.getPresentationSessionService()
@@ -100,8 +100,8 @@ public class PresentationResponseEndpoint {
             }
             try {
                 PresentationSessionServiceFactory.getPresentationSessionService()
-                        .handleSessionFailed(requestId, tenantDomain, presentationSubmission.getError(),
-                                presentationSubmission.getErrorDescription());
+                        .handleSessionFailed(requestId, presentationSubmission.getError(),
+                                presentationSubmission.getErrorDescription(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
             }
@@ -118,7 +118,7 @@ public class PresentationResponseEndpoint {
             }
             try {
                 PresentationSessionServiceFactory.getPresentationSessionService()
-                        .handleSessionFailed(requestId, tenantDomain, e.getErrorType(), e.getMessage());
+                        .handleSessionFailed(requestId, e.getErrorType(), e.getMessage(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
             }
@@ -132,9 +132,9 @@ public class PresentationResponseEndpoint {
             LOG.error(String.format("Server error building verification request for requestId: %s", requestId), e);
             try {
                 PresentationSessionServiceFactory.getPresentationSessionService()
-                        .handleSessionFailed(requestId, tenantDomain,
+                        .handleSessionFailed(requestId,
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
-                                PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription());
+                                PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
             }
@@ -150,7 +150,7 @@ public class PresentationResponseEndpoint {
         try {
             VerificationResponseDTO result = verificationService.verifyPresentation(verificationRequest);
             PresentationSessionServiceFactory.getPresentationSessionService()
-                    .handleSessionVerified(requestId, tenantDomain, result);
+                    .handleSessionVerified(requestId, result, tenantDomain);
         } catch (PresentationCoreException e) {
             LOG.error(String.format("Failed to mark session as verified for requestId: %s", requestId), e);
         } catch (VerificationClientException e) {
@@ -159,9 +159,9 @@ public class PresentationResponseEndpoint {
             }
             try {
                 PresentationSessionServiceFactory.getPresentationSessionService()
-                        .handleSessionFailed(requestId, tenantDomain,
+                        .handleSessionFailed(requestId,
                                 PresentationCoreErrorCode.VERIFICATION_FAILED.getErrorType(),
-                                e.getErrorCode().getDescription());
+                                e.getErrorCode().getDescription(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
             }
@@ -169,9 +169,9 @@ public class PresentationResponseEndpoint {
             LOG.error(String.format("Unexpected error during verification for requestId: %s", requestId), e);
             try {
                 PresentationSessionServiceFactory.getPresentationSessionService()
-                        .handleSessionFailed(requestId, tenantDomain,
+                        .handleSessionFailed(requestId,
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
-                                PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription());
+                                PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
             }
