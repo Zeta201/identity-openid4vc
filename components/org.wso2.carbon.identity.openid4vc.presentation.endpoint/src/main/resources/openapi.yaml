@@ -1,0 +1,665 @@
+openapi: 3.0.0
+info:
+  version: "v1"
+  title: WSO2 Identity Server - OpenID4VP Presentation API
+  description: >-
+    RESTful API for the OpenID for Verifiable Presentations (OpenID4VP) presentation flow
+    in WSO2 Identity Server.
+
+
+    **Error formats**: Two distinct error conventions are used depending on the audience.
+    Verifier-facing endpoints (`/verification-sessions`) follow the WSO2 IS REST API convention
+    (`code`, `message`, `description`, `traceId`) since they are consumed by relying party
+    applications that integrate with the IS management plane. Wallet-facing endpoints
+    (`/requests`, `/responses`) use the OAuth 2.0 / OpenID4VP convention (`error`,
+    `error_description`) as mandated by the protocol specification.
+
+
+    The API is divided into two audiences:
+
+
+    - **Verifier** (`/verification-sessions`): Used by relying party applications to initiate
+      VP verification sessions, poll their status, and retrieve the final verification result.
+
+    - **Wallet** (`/requests`, `/responses`): Used by the holder's digital wallet during the
+      OpenID4VP authorization protocol flow. The wallet fetches the signed authorization
+      request object and submits the VP token response.
+  contact:
+    name: WSO2 Identity Server
+    url: 'https://wso2.com/identity-and-access-management/'
+    email: architecture@wso2.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: Verifier
+    description: >-
+      Endpoints consumed by the relying party application. These manage the full lifecycle
+      of a VP verification session — from initiation through result retrieval.
+  - name: Wallet
+    description: >-
+      Endpoints consumed by the holder's digital wallet during the OpenID4VP protocol flow.
+      These endpoints are unauthenticated; the one-time request URI and session-bound nonce
+      provide the necessary binding.
+security:
+  - OAuth2: []
+  - BasicAuth: []
+paths:
+  /verification-sessions:
+    post:
+      tags:
+        - Verifier
+      summary: Start a new VP verification session.
+      operationId: startVerificationSession
+      description: |
+        Initiates a new VP verification session for the specified presentation definition.
+
+        Returns a `requestUri` to embed in the QR code or deep link shown to the wallet holder,
+        a `requestId` used to track the session, and an `expiresAt` timestamp indicating when the
+        QR code becomes invalid.
+
+        The session remains `ACTIVE` until the wallet submits a VP token or the session expires.
+
+        <b>Permission required:</b> <br>
+        * /permission/admin/manage/identity/openid4vp/start
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSessionRequest'
+        description: Presentation definition identifier for the session.
+      responses:
+        '201':
+          description: Session created successfully.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/StartSessionResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /verification-sessions/{id}/status:
+    get:
+      tags:
+        - Verifier
+      summary: Poll the current status of a VP verification session.
+      operationId: getVerificationSessionStatus
+      description: |
+        Returns the current status of a VP verification session without consuming it.
+        Safe to call repeatedly — the session is **not** evicted from cache on this call.
+
+        Designed for the front-end JSP to poll until the session transitions to a terminal
+        state (`VERIFIED` or `FAILED`).
+
+        **`errorType` for i18n**: When `status` is `FAILED`, the response includes an `errorType`
+        field. This is a stable, machine-readable key that the front-end JSP maps to a localized
+        message via i18n — allowing users to see clear, actionable error messages. No personally
+        identifiable information is ever included in this response.
+
+        | `errorType` | Cause | Suggested user-facing action |
+        |---|---|---|
+        | `vp_request_not_found` | Session not found | Ask user to scan a new QR code |
+        | `vp_request_expired` | Session TTL elapsed before wallet responded | Ask user to scan a new QR code |
+        | `verification_failed` | Credential presented but did not pass verification | Show failure; user may retry |
+        | `invalid_request` | Wallet submitted a malformed or mismatched response | Show generic failure |
+        | `server_error` | Unexpected server-side failure | Ask user to contact support |
+
+        <b>Permission required:</b> <br>
+        * /permission/admin/manage/identity/openid4vp/view
+      parameters:
+        - $ref: '#/components/parameters/requestIdPathParam'
+      responses:
+        '200':
+          description: Session status retrieved successfully.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/SessionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /verification-sessions/{id}:
+    get:
+      tags:
+        - Verifier
+      summary: Retrieve the final result of a completed VP verification session.
+      operationId: getVerificationResult
+      description: |
+        Returns the final outcome of a VP verification session once it has reached a terminal
+        state (`VERIFIED` or `FAILED`).
+
+        **Session still active (HTTP 400)**: If the session has not yet left the `ACTIVE` state,
+        the endpoint returns HTTP 400 with `error: verification_pending`. The caller should
+        continue polling `/verification-sessions/{id}/status` and retry once the status is terminal.
+
+        On `VERIFIED`, the full `verificationResponse` object is included, containing credential
+        metadata and the subject claims extracted from the holder's disclosed SD-JWT payload.
+        On `FAILED`, `errorType` and `errorDescription` describe the failure.
+
+        <b>Permission required:</b> <br>
+        * /permission/admin/manage/identity/openid4vp/view
+      parameters:
+        - $ref: '#/components/parameters/requestIdPathParam'
+      responses:
+        '200':
+          description: Terminal session result retrieved successfully.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/VerificationResultResponse'
+        '400':
+          description: |
+            The request is invalid or the session is not yet in a terminal state.
+
+            Possible `code` values:
+            - `VPC-60008` — Session is still `ACTIVE` (`verification_pending`). Poll `/status` and retry.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /requests/{id}:
+    get:
+      tags:
+        - Wallet
+      summary: Fetch the signed OpenID4VP authorization request object.
+      operationId: getPresentationRequest
+      description: |
+        Returns the signed OpenID4VP authorization request as a compact JWS
+        (`application/oauth-authz-req+jwt`).
+
+        The wallet fetches this URL after reading the `request_uri` encoded in the QR code or
+        deep link presented by the verifier front-end. The JWT is signed with the server's
+        configured signing key and contains the presentation definition, nonce, client metadata,
+        and the response URI the wallet must POST the VP token to.
+
+        If the session is not found, has expired, or the ID is tampered, an error is returned
+        and the session is marked `FAILED` so the polling endpoint reflects the correct state.
+
+        This endpoint does not require authentication — the one-time request URI is the access
+        control mechanism.
+
+        The URL is always tenant-qualified (`/t/{tenant-domain}/oid4vp/requests/{id}`) because
+        it is generated by the server from the resolved parent tenant domain. Sub-organization
+        `/o/` paths are never used here.
+      security: []
+      servers:
+        - url: 'https://localhost:9443/t/{tenant-domain}/oid4vp'
+          description: Named-tenant wallet URL (most common case, including sub-org sessions).
+          variables:
+            tenant-domain:
+              default: demo.com
+              description: WSO2 Identity Server tenant domain.
+        - url: 'https://localhost:9443/oid4vp'
+          description: Super-tenant wallet URL.
+      parameters:
+        - $ref: '#/components/parameters/requestIdPathParam'
+      responses:
+        '200':
+          description: Signed authorization request JWT.
+          content:
+            application/oauth-authz-req+jwt:
+              schema:
+                type: string
+                description: >-
+                  Compact JWS (three base64url parts separated by `.`) carrying the
+                  OpenID4VP authorization request claims as defined in OpenID4VP Section 5.
+                example: >-
+                  eyJhbGciOiJFZERTQSIsImtpZCI6InNpZ25pbmcta2V5In0.eyJyZXNwb25zZV90eXBlIjoidnBfdG9rZW4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+        '500':
+          $ref: '#/components/responses/WalletServerError'
+
+  /responses:
+    post:
+      tags:
+        - Wallet
+      summary: Submit a VP token response.
+      operationId: handlePresentationSubmission
+      description: |
+        Receives the wallet's VP token submission.
+
+        Supports two response modes as agreed in the original authorization request:
+
+        - **`direct_post`**: Plain form fields — `vp_token` (the SD-JWT VP token) and `state`.
+        - **`direct_post.jwt`**: A single `response` field containing a JWE-encrypted
+          authorization response object. The server decrypts it with the ephemeral key
+          embedded in the authorization request.
+
+        The wallet may also report an error by sending an `error` field (and optionally
+        `error_description`) in place of a VP token.
+
+        **HTTP 200 always for parseable submissions**: Per OpenID4VP Section 8.2, this endpoint
+        always returns HTTP 200 for any submission that can be parsed at the protocol level,
+        regardless of credential verification outcome. Verification result is recorded on the
+        session and retrieved separately via `/verification-sessions/{id}`. Non-200 responses
+        are only returned for protocol-level failures (malformed form body, decryption error,
+        unknown session).
+
+        This endpoint does not require authentication — it is part of the OpenID4VP protocol
+        flow and is called directly by the wallet.
+
+        The URL is always tenant-qualified (`/t/{tenant-domain}/oid4vp/responses`) because
+        it is embedded in the signed authorization request JWT using the resolved parent tenant
+        domain. Sub-organization `/o/` paths are never used here.
+      security: []
+      servers:
+        - url: 'https://localhost:9443/t/{tenant-domain}/oid4vp'
+          description: Named-tenant wallet URL (most common case, including sub-org sessions).
+          variables:
+            tenant-domain:
+              default: demo.com
+              description: WSO2 Identity Server tenant domain.
+        - url: 'https://localhost:9443/oid4vp'
+          description: Super-tenant wallet URL.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PresentationSubmissionForm'
+        description: >-
+          VP token submission or wallet-reported error, submitted as form-encoded parameters.
+      responses:
+        '200':
+          description: |
+            Submission accepted at the protocol level. This does not indicate whether credential
+            verification succeeded — the verifier must poll `/verification-sessions/{id}/status`
+            or call `/verification-sessions/{id}` to determine the outcome.
+          content:
+            'application/json':
+              schema:
+                type: object
+                description: Empty JSON object.
+                example: {}
+        '400':
+          description: |
+            Protocol-level failure — the submission cannot be parsed or is structurally invalid.
+
+            Possible `error` values:
+            - `invalid_request` — Form fields are missing, malformed, or the response mode
+              does not match what was agreed in the session.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+        '500':
+          $ref: '#/components/responses/WalletServerError'
+
+servers:
+  - url: 'https://localhost:9443/t/{tenant-domain}/oid4vp'
+    description: Named-tenant context. Replace `{tenant-domain}` with the tenant domain (e.g. `demo.com`).
+    variables:
+      tenant-domain:
+        default: demo.com
+        description: WSO2 Identity Server tenant domain.
+  - url: 'https://localhost:9443/oid4vp'
+    description: >-
+      Super-tenant (`carbon.super`) context. No tenant qualifier in the path.
+  - url: 'https://localhost:9443/t/{tenant-domain}/o/{org-id}/oid4vp'
+    description: >-
+      Sub-organization context where the parent organization is a named tenant. The verifier
+      calls this URL using the parent tenant domain and the sub-org's organization ID.
+      The `requestUri` and `responseUri` returned to the wallet always use the parent tenant's
+      `/t/{tenant-domain}/oid4vp/...` URLs — never the `/o/` path — because they are built
+      from the resolved parent tenant domain.
+    variables:
+      tenant-domain:
+        default: demo.com
+        description: Parent tenant domain.
+      org-id:
+        default: 3c4d5e6f-7890-abcd-ef12-34567890abcd
+        description: Sub-organization ID (UUID) assigned by WSO2 Identity Server.
+  - url: 'https://localhost:9443/o/{org-id}/oid4vp'
+    description: >-
+      Sub-organization context where the parent organization is the super-tenant (`carbon.super`).
+    variables:
+      org-id:
+        default: 3c4d5e6f-7890-abcd-ef12-34567890abcd
+        description: Sub-organization ID (UUID) assigned by WSO2 Identity Server.
+
+components:
+  parameters:
+    requestIdPathParam:
+      in: path
+      name: id
+      required: true
+      description: The VP session request ID.
+      schema:
+        type: string
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+  responses:
+    NotFound:
+      description: The specified resource is not found.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized.
+    Forbidden:
+      description: Forbidden.
+    ServerError:
+      description: Internal Server Error.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/Error'
+    InvalidInput:
+      description: Invalid input request.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/Error'
+    WalletNotFound:
+      description: The specified resource is not found.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/OAuthError'
+    WalletServerError:
+      description: Internal Server Error.
+      content:
+        'application/json':
+          schema:
+            $ref: '#/components/schemas/OAuthError'
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: 'https://localhost:9443/oauth2/authorize'
+          tokenUrl: 'https://localhost:9443/oauth2/token'
+          scopes: {}
+
+  schemas:
+
+    StartSessionRequest:
+      type: object
+      required:
+        - presentationDefinitionIdentifier
+      properties:
+        presentationDefinitionIdentifier:
+          type: string
+          description: >-
+            Identifier of the presentation definition configured in WSO2 IS that specifies
+            which credential type(s) to request from the holder.
+          example: national-id-basic
+
+    StartSessionResponse:
+      type: object
+      required:
+        - requestId
+        - requestUri
+        - expiresAt
+      properties:
+        requestId:
+          type: string
+          description: >-
+            Unique identifier for this VP session. Used to poll status or retrieve the final result.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        requestUri:
+          type: string
+          description: >-
+            The `request_uri` value to encode into the QR code or deep link shown to the wallet
+            holder. The wallet fetches this URI to retrieve the signed authorization request object.
+          example: 'https://localhost:9443/t/demo.com/oid4vp/requests/a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        expiresAt:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds after which the session expires and the QR code is invalid.
+          example: 1735689600000
+
+    SessionStatusResponse:
+      type: object
+      description: >-
+        Lightweight status snapshot for the polling endpoint. Contains no personally
+        identifiable information — subject claims are never included here.
+      required:
+        - requestId
+        - status
+        - expiresAt
+      properties:
+        requestId:
+          type: string
+          description: The VP session identifier.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        status:
+          $ref: '#/components/schemas/VPSessionStatus'
+        expiresAt:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds at which the session expires.
+          example: 1735689600000
+        errorType:
+          type: string
+          description: >-
+            Present only when `status` is `FAILED`. A stable, machine-readable key intended
+            for i18n lookup on the client side. The front-end JSP maps this value to a localized
+            message so the user sees a clear, actionable error. No PII is ever exposed through
+            this field.
+
+
+            Possible values:
+
+            `vp_request_not_found` — Session not found. Ask the user to scan a new QR code.
+
+            `vp_request_expired` — Session TTL elapsed. Ask the user to scan a new QR code.
+
+            `verification_failed` — Credential did not pass verification. The user may retry with a valid credential.
+
+            `invalid_request` — Wallet submitted a malformed or mismatched response. Show a generic failure.
+
+            `server_error` — Unexpected server-side failure. Ask the user to contact support.
+          example: verification_failed
+
+    VerificationResultResponse:
+      type: object
+      description: >-
+        Final outcome of the VP session. Returned once the session is in a terminal state
+        (`VERIFIED` or `FAILED`).
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/VPSessionStatus'
+        errorType:
+          type: string
+          description: >-
+            Present only when `status` is `FAILED`. Machine-readable error type string.
+          example: verification_failed
+        errorDescription:
+          type: string
+          description: >-
+            Present only when `status` is `FAILED`. Human-readable description of the failure.
+            Not intended for direct display to end users.
+          example: The verifiable presentation verification failed.
+        verificationResponse:
+          $ref: '#/components/schemas/VerificationResponse'
+
+    VerificationResponse:
+      type: object
+      description: >-
+        Detailed outcome of a successful credential verification. Present only when
+        `status` is `VERIFIED`. Contains credential metadata and the subject claims
+        disclosed by the holder from the SD-JWT VC.
+      properties:
+        credentialId:
+          type: string
+          description: Identifier of the presentation definition that was requested and satisfied.
+          example: national-id-basic
+        vct:
+          type: string
+          description: Verifiable Credential Type (`vct`) claim from the SD-JWT VC.
+          example: 'https://credentials.example.com/national-id'
+        credentialFormat:
+          type: string
+          description: Credential format string reported by the verifier.
+          example: dc+sd-jwt
+        signingAlgorithm:
+          type: string
+          description: JWS algorithm used to sign the credential (e.g. `ES256`, `EdDSA`).
+          example: EdDSA
+        issuer:
+          type: string
+          description: '`iss` claim from the credential — identifies the credential issuer.'
+          example: 'https://issuer.example.com'
+        issuedAt:
+          type: integer
+          format: int64
+          description: '`iat` claim from the credential. Unix timestamp in seconds when the credential was issued.'
+          example: 1700000000
+        expiresAt:
+          type: integer
+          format: int64
+          description: '`exp` claim from the credential. Unix timestamp in seconds after which the credential is invalid.'
+          example: 1800000000
+        kbJwtVerified:
+          type: boolean
+          description: >-
+            Whether the key-binding JWT (`kb+jwt`) in the VP token was successfully verified,
+            confirming the holder possesses the private key bound to the credential.
+          example: true
+        nonce:
+          type: string
+          description: >-
+            Nonce extracted from the key-binding JWT. Must match the nonce from the original
+            authorization request to confirm freshness.
+          example: n-0S6_WzA2Mj
+        verifiedAt:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds at which this server completed verification.
+          example: 1735689590000
+        subjectClaims:
+          type: object
+          additionalProperties: true
+          description: >-
+            Subject claims extracted from the credential's disclosed payload, keyed by claim name.
+            Contents depend on which selective disclosures the holder chose to reveal.
+          example:
+            given_name: Jane
+            family_name: Doe
+            birthdate: '1990-01-01'
+
+    PresentationSubmissionForm:
+      type: object
+      description: |
+        Form parameters for the wallet's VP token submission.
+
+        Exactly one of the following combinations must be present:
+        - `vp_token` + `state` — for `direct_post` response mode.
+        - `response` — for `direct_post.jwt` response mode (JWE-encrypted response object).
+        - `error` + optional `error_description` — for a wallet-reported error (user declined, etc.).
+      properties:
+        vp_token:
+          type: string
+          description: >-
+            The VP token presented by the wallet (`direct_post` mode). Contains the SD-JWT
+            Verifiable Presentation with key-binding proof.
+        state:
+          type: string
+          description: >-
+            Session state value. Must match the `state` parameter from the original
+            authorization request to bind the response to the session.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        response:
+          type: string
+          description: >-
+            JWE-encrypted authorization response object (`direct_post.jwt` mode). The server
+            decrypts it with the ephemeral key embedded in the original authorization request.
+        error:
+          type: string
+          description: Error code reported by the wallet when the user declined or an error occurred.
+          example: user_cancelled
+        error_description:
+          type: string
+          description: Human-readable description of the wallet-reported error.
+          example: The user declined the presentation request.
+
+    VPSessionStatus:
+      type: string
+      description: |
+        Lifecycle state of a VP verification session.
+
+        - `ACTIVE` — Waiting for the wallet to submit a VP token.
+        - `VERIFIED` — The wallet submitted a token and the credential passed verification.
+        - `FAILED` — The session ended without successful verification (wallet error, verification failure, expiry, or server error).
+      enum:
+        - ACTIVE
+        - VERIFIED
+        - FAILED
+      example: ACTIVE
+
+    Error:
+      type: object
+      description: >-
+        Error response for verifier-facing endpoints, following the WSO2 IS REST API convention.
+      required:
+        - code
+        - message
+        - traceId
+      properties:
+        code:
+          type: string
+          description: Internal error code from the presentation core (e.g. VPC-60002).
+          example: VPC-60002
+        message:
+          type: string
+          description: Short, developer-facing error label.
+          example: VP request not found.
+        description:
+          type: string
+          description: >-
+            Longer description of the error. Present when additional context is available.
+          example: The VP request was not found.
+        traceId:
+          type: string
+          description: Unique identifier for this error occurrence, for log correlation.
+          example: 3f2a1b4c-9e8d-7f6e-5c4b-3a2190fe8d7c
+
+    OAuthError:
+      type: object
+      description: >-
+        Error response for wallet-facing endpoints, following the OAuth 2.0 / OpenID4VP
+        protocol convention as required by the specification.
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code per OAuth 2.0 / OpenID4VP conventions.
+          example: vp_request_not_found
+        error_description:
+          type: string
+          description: >-
+            Human-readable description of the error. Intended for developers, not for
+            direct display to end users.
+          example: The VP request was not found.
