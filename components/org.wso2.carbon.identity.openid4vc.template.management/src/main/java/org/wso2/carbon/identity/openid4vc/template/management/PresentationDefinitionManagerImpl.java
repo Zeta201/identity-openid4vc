@@ -16,9 +16,10 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.openid4vc.template.management.service.impl;
+package org.wso2.carbon.identity.openid4vc.template.management;
 
 import org.apache.commons.lang3.StringUtils;
+import org.osgi.annotation.bundle.Capability;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.PresentationDefinitionDAO;
 import org.wso2.carbon.identity.openid4vc.template.management.dao.impl.CacheBackedPresentationDefinitionDAO;
@@ -32,7 +33,6 @@ import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinitionSearchResult;
-import org.wso2.carbon.identity.openid4vc.template.management.service.PresentationDefinitionService;
 import org.wso2.carbon.identity.openid4vc.template.management.util.Constants;
 import org.wso2.carbon.identity.openid4vc.template.management.util.PresentationDefinitionFilterUtil;
 
@@ -43,21 +43,29 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Implementation of {@link PresentationDefinitionService} for managing presentation definitions.
+ * Implementation of {@link PresentationDefinitionManager} for managing presentation definitions.
  */
-public class PresentationDefinitionServiceImpl implements PresentationDefinitionService {
+@Capability(
+        namespace = "osgi.service",
+        attribute = {
+                "objectClass=org.wso2.carbon.identity.openid4vc.template.management.PresentationDefinitionManager",
+                "service.scope=singleton"
+        }
+)
+public class PresentationDefinitionManagerImpl implements PresentationDefinitionManager {
 
-    private final PresentationDefinitionDAO presentationDefinitionDAO;
+    private static final PresentationDefinitionManager INSTANCE = new PresentationDefinitionManagerImpl();
 
-    public PresentationDefinitionServiceImpl() {
+    private final PresentationDefinitionDAO presentationDefinitionDAO =
+            new CacheBackedPresentationDefinitionDAO(new PresentationDefinitionDAOImpl());
 
-        this.presentationDefinitionDAO =
-                new CacheBackedPresentationDefinitionDAO(new PresentationDefinitionDAOImpl());
+    private PresentationDefinitionManagerImpl() {
+
     }
 
-    public PresentationDefinitionServiceImpl(PresentationDefinitionDAO presentationDefinitionDAO) {
+    public static PresentationDefinitionManager getInstance() {
 
-        this.presentationDefinitionDAO = presentationDefinitionDAO;
+        return INSTANCE;
     }
 
     @Override

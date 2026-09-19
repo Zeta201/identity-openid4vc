@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.openid4vc.template.management.service;
+package org.wso2.carbon.identity.openid4vc.template.management;
 
 import org.wso2.carbon.identity.openid4vc.template.management.exception.PresentationManagementException;
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
@@ -27,10 +27,10 @@ import org.wso2.carbon.identity.openid4vc.template.management.model.Presentation
 import java.util.List;
 
 /**
- * Service interface for managing presentation definitions.
+ * Manager interface for managing presentation definitions.
  * Presentation definitions specify what credentials are required for a verifier's use case.
  */
-public interface PresentationDefinitionService {
+public interface PresentationDefinitionManager {
 
     /**
      * Creates a new presentation definition for the given tenant.
@@ -142,17 +142,17 @@ public interface PresentationDefinitionService {
     /**
      * Replaces all issuer configurations for a specific credential within a presentation definition.
      * The replacement is atomic: existing configs are deleted and the new list is inserted in one
-     * transaction. At least one {@link PresentationDefinition.IssuerConfig} must be provided.
+     * transaction. At least one {@link Issuer} must be provided.
      *
      * @param definitionId         the UUID of the parent presentation definition
      * @param credentialIdentifier the user-facing identifier of the target credential
-     * @param issuerConfigs        the replacement list of issuer configurations; must not be empty
+     * @param issuers        the replacement list of issuer configurations; must not be empty
      * @param tenantId             the tenant ID scoping the update
      * @throws PresentationManagementException if the definition or credential is not found,
      *                                         issuerConfigs is empty, or a database error occurs
      */
     void replaceIssuerConfigs(String definitionId, String credentialIdentifier,
-            List<Issuer> issuerConfigs, int tenantId)
+            List<Issuer> issuers, int tenantId)
             throws PresentationManagementException;
 
 }

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.openid4vc.template.management.service.impl;
+package org.wso2.carbon.identity.openid4vc.template.management;
 
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -28,6 +28,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.exception.Presenta
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,13 +40,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link PresentationDefinitionServiceImpl}.
+ * Unit tests for {@link PresentationDefinitionManagerImpl}.
  *
- * <p>All DAO interactions are mocked via Mockito. Cache invalidation is handled inside
+ * <p>All DAO interactions are mocked via Mockito. The singleton DAO field is replaced with a mock
+ * before each test via reflection. Cache invalidation is handled inside
  * {@link org.wso2.carbon.identity.openid4vc.template.management.dao.impl.CacheBackedPresentationDefinitionDAO}
  * and is not exercised here.</p>
  */
-public class PresentationDefinitionServiceImplTest {
+public class PresentationDefinitionManagerImplTest {
 
     private static final int TENANT_ID = 1;
     private static final String DEFINITION_ID = "test-def-id";
@@ -53,13 +55,17 @@ public class PresentationDefinitionServiceImplTest {
     private static final String DEFINITION_DISPLAY_NAME = "Test Definition";
 
     private PresentationDefinitionDAO mockDao;
-    private PresentationDefinitionServiceImpl service;
+    private PresentationDefinitionManager manager;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
 
         mockDao = Mockito.mock(PresentationDefinitionDAO.class);
-        service = new PresentationDefinitionServiceImpl(mockDao);
+        manager = PresentationDefinitionManagerImpl.getInstance();
+
+        Field daoField = PresentationDefinitionManagerImpl.class.getDeclaredField("presentationDefinitionDAO");
+        daoField.setAccessible(true);
+        daoField.set(manager, mockDao);
     }
 
     @Test(priority = 1,
@@ -68,7 +74,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test — null input should fail validation
-            service.createPresentationDefinition(null, TENANT_ID);
+            manager.createPresentationDefinition(null, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -90,7 +96,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.createPresentationDefinition(pd, TENANT_ID);
+            manager.createPresentationDefinition(pd, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -116,7 +122,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.createPresentationDefinition(pd, TENANT_ID);
+            manager.createPresentationDefinition(pd, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -142,7 +148,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.createPresentationDefinition(pd, TENANT_ID);
+            manager.createPresentationDefinition(pd, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -164,7 +170,7 @@ public class PresentationDefinitionServiceImplTest {
                 .build();
 
         // Execute test
-        PresentationDefinition result = service.createPresentationDefinition(pd, TENANT_ID);
+        PresentationDefinition result = manager.createPresentationDefinition(pd, TENANT_ID);
 
         // Verify a UUID was generated
         Assert.assertNotNull(result.getId(),
@@ -187,7 +193,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.createPresentationDefinition(pd, TENANT_ID);
+            manager.createPresentationDefinition(pd, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.DEFINITION_ALREADY_EXISTS,
@@ -211,7 +217,7 @@ public class PresentationDefinitionServiceImplTest {
                 .build();
 
         // Execute test
-        PresentationDefinition result = service.createPresentationDefinition(pd, TENANT_ID);
+        PresentationDefinition result = manager.createPresentationDefinition(pd, TENANT_ID);
 
         // Verify
         Assert.assertNotNull(result.getId(),
@@ -231,7 +237,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test — blank ID should fail validation
-            service.getPresentationDefinitionById("  ", TENANT_ID);
+            manager.getPresentationDefinitionById("  ", TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -250,7 +256,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID);
+            manager.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.DEFINITION_NOT_FOUND,
@@ -269,7 +275,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID)).thenReturn(expected);
 
         // Execute test
-        PresentationDefinition result = service.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID);
+        PresentationDefinition result = manager.getPresentationDefinitionById(DEFINITION_ID, TENANT_ID);
 
         // Verify
         Assert.assertEquals(result.getId(), DEFINITION_ID,
@@ -286,7 +292,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.getAllPresentationDefinitions(TENANT_ID)).thenReturn(defs);
 
         // Execute test
-        List<PresentationDefinition> result = service.getAllPresentationDefinitions(TENANT_ID);
+        List<PresentationDefinition> result = manager.getAllPresentationDefinitions(TENANT_ID);
 
         // Verify
         Assert.assertEquals(result.size(), 1,
@@ -303,7 +309,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.presentationDefinitionExists(DEFINITION_ID, TENANT_ID)).thenReturn(true);
 
         // Execute test and verify
-        Assert.assertTrue(service.presentationDefinitionExists(DEFINITION_ID, TENANT_ID),
+        Assert.assertTrue(manager.presentationDefinitionExists(DEFINITION_ID, TENANT_ID),
                 "presentationDefinitionExists should return true when DAO reports the definition exists");
     }
 
@@ -313,7 +319,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test — blank identifier should fail validation
-            service.getPresentationDefinitionByIdentifier("   ", TENANT_ID);
+            manager.getPresentationDefinitionByIdentifier("   ", TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -333,7 +339,7 @@ public class PresentationDefinitionServiceImplTest {
 
         // Execute test
         PresentationDefinition result =
-                service.getPresentationDefinitionByIdentifier(DEFINITION_IDENTIFIER, TENANT_ID);
+                manager.getPresentationDefinitionByIdentifier(DEFINITION_IDENTIFIER, TENANT_ID);
 
         // Verify
         Assert.assertEquals(result.getIdentifier(), DEFINITION_IDENTIFIER,
@@ -354,7 +360,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.updatePresentationDefinition(pd, TENANT_ID);
+            manager.updatePresentationDefinition(pd, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.DEFINITION_NOT_FOUND,
@@ -383,7 +389,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.updatePresentationDefinition(pd, TENANT_ID);
+            manager.updatePresentationDefinition(pd, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.VALIDATION_ERROR,
@@ -407,7 +413,7 @@ public class PresentationDefinitionServiceImplTest {
                 .build();
 
         // Execute test
-        PresentationDefinition result = service.updatePresentationDefinition(update, TENANT_ID);
+        PresentationDefinition result = manager.updatePresentationDefinition(update, TENANT_ID);
 
         // Verify
         Assert.assertEquals(result.getDisplayName(), "Updated Display Name",
@@ -432,7 +438,7 @@ public class PresentationDefinitionServiceImplTest {
                 .build();
 
         // Execute test
-        PresentationDefinition result = service.updatePresentationDefinition(update, TENANT_ID);
+        PresentationDefinition result = manager.updatePresentationDefinition(update, TENANT_ID);
 
         // Verify the existing display name was preserved
         Assert.assertEquals(result.getDisplayName(), DEFINITION_DISPLAY_NAME,
@@ -448,7 +454,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
+            manager.deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.DEFINITION_NOT_FOUND,
@@ -469,7 +475,7 @@ public class PresentationDefinitionServiceImplTest {
 
         try {
             // Execute test
-            service.deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
+            manager.deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
         } catch (PresentationManagementClientException e) {
             // Verify
             Assert.assertEquals(e.getErrorCode(), PresentationManagementErrorCode.DEFINITION_IN_USE,
@@ -489,7 +495,7 @@ public class PresentationDefinitionServiceImplTest {
         when(mockDao.isDefinitionInUse(DEFINITION_ID, TENANT_ID)).thenReturn(false);
 
         // Execute test
-        service.deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
+        manager.deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
 
         // Verify the definition was deleted
         verify(mockDao).deletePresentationDefinition(DEFINITION_ID, TENANT_ID);
