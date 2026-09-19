@@ -67,7 +67,6 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.component.annotations</artifactId>
-            <version>${osgi.service.component.annotations.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -202,7 +201,6 @@
     <properties>
         <mavan.spotbugsplugin.exclude.file>../../spotbugs-exclude-filter.xml</mavan.spotbugsplugin.exclude.file>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <osgi.service.component.annotations.version>1.3.0</osgi.service.component.annotations.version>
         <osgi.service.component.annotations.imp.pkg.version.range>[1.2.0,2.0.0)</osgi.service.component.annotations.imp.pkg.version.range>
         <commons-lang.wso2.osgi.version.range>[2.6,3)</commons-lang.wso2.osgi.version.range>
     </properties>
