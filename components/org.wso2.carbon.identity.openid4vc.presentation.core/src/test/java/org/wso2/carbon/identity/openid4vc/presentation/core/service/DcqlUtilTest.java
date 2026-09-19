@@ -20,7 +20,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.core.service;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
+import org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.util.DcqlUtil;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
