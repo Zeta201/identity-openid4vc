@@ -177,7 +177,7 @@ public class PresentationDefinitionDAOTest {
         Credential cred = new Credential();
         cred.setIdentifier("cred-1");
         cred.setType("VerifiableId");
-        cred.setFormat("vc+sd-jwt");
+        cred.setFormat("dc+sd-jwt");
         cred.setClaims(Collections.singletonList(claim));
 
         PresentationDefinition def = new PresentationDefinition.Builder()
