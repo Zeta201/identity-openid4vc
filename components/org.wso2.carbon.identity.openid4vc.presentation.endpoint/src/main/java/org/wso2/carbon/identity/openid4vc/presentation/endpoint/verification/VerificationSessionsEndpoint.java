@@ -64,7 +64,8 @@ public class VerificationSessionsEndpoint {
      * @param request  the HTTP servlet request
      * @param response the HTTP servlet response
      * @param body     JSON body containing {@code presentationDefinitionIdentifier}
-     * @return 201 with {@code requestId}, {@code requestUri}, and {@code expiresAt}
+     * @return 201 with {@code requestId}, {@code walletUrl}, {@code requestUri}, {@code clientId},
+     *         and {@code expiresAt}
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -102,7 +103,7 @@ public class VerificationSessionsEndpoint {
         PresentationRequestResponseDTO initiateResponse;
         try {
             initiateResponse = PresentationSessionServiceFactory.getPresentationSessionService()
-                    .startPresentationSession(presentationDefinitionIdentifier, tenantDomain);
+                    .startPresentationSessionByIdentifier(presentationDefinitionIdentifier, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Client error starting verification session.", e);
@@ -241,6 +242,7 @@ public class VerificationSessionsEndpoint {
     private Response buildVerificationResultResponse(VerificationSessionRespDTO dto) {
 
         String payload = VerificationSessionResultResponse.builder()
+                .requestId(dto.getRequestId())
                 .status(dto.getStatus())
                 .errorType(dto.getErrorType())
                 .errorDescription(dto.getErrorDescription())
@@ -254,7 +256,9 @@ public class VerificationSessionsEndpoint {
 
         String payload = PresentationRequestResponse.builder()
                 .requestId(dto.getRequestId())
+                .walletUrl(dto.getWalletUrl())
                 .requestUri(dto.getRequestUri())
+                .clientId(dto.getClientId())
                 .expiresAt(dto.getExpiresAt())
                 .build()
                 .toJson();
