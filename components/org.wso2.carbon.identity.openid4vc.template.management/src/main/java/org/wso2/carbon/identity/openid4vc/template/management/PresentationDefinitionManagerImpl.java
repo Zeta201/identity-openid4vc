@@ -260,10 +260,10 @@ public class PresentationDefinitionManagerImpl implements PresentationDefinition
     }
 
     /**
-     * Extracts the set of dot-joined claim paths from the given requested credentials.
+     * Extracts the set of claim paths from the given requested credentials.
      *
      * @param credentials the list of requested credentials to extract paths from; may be null
-     * @return the set of dot-joined claim paths across all credentials and their constraints
+     * @return the set of claim paths across all credentials and their constraints
      */
     private Set<String> extractClaimPaths(List<Credential> credentials) {
 
