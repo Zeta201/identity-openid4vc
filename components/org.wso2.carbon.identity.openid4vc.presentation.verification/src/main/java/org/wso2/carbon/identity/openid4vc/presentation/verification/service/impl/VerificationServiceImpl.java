@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.service.impl;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
@@ -31,8 +32,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.verifier.For
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,7 +64,6 @@ public class VerificationServiceImpl implements VerificationService {
 
     /**
      * Enforces claim constraints using per-claim {@code mandatory} enforcement.
-     * Nested claim paths are looked up via {@link #getValueAtClaimPath(Map, List)}.
      */
     private void verifyRequiredClaims(Map<String, Object> subjectClaims,
             Credential credential) throws VerificationException {
@@ -75,40 +73,16 @@ public class VerificationServiceImpl implements VerificationService {
         }
 
         for (PresentationClaim claim : credential.getClaims()) {
-            String claimPath = claim.getPath();
-            if (claimPath == null || claimPath.isEmpty()) {
+            String path = claim.getPath();
+            if (StringUtils.isBlank(path)) {
                 continue;
             }
-            List<String> path = Arrays.asList(claimPath.split("\\."));
-            Object value = getValueAtClaimPath(subjectClaims, path);
+            Object value = subjectClaims.get(path);
 
             if (claim.isMandatory() && value == null) {
                 throw VerificationExceptionHandler.handleClientException(
                         VerificationErrorCode.INVALID_VP_SUBMISSION);
             }
         }
-    }
-
-    /**
-     * Resolves a path array against a claim map, supporting nested objects.
-     * Returns {@code null} when any segment in the path is missing or not a Map.
-     *
-     * <p>Example: {@code ["address", "street_address"]} traverses
-     * {@code subjectClaims["address"]["street_address"]}.</p>
-     */
-    @SuppressWarnings("unchecked")
-    private static Object getValueAtClaimPath(Map<String, Object> subjectClaims, List<String> path) {
-
-        if (CollectionUtils.isEmpty(path)) {
-            return null;
-        }
-        Object currentNode = subjectClaims;
-        for (String segment : path) {
-            if (!(currentNode instanceof Map)) {
-                return null;
-            }
-            currentNode = ((Map<String, Object>) currentNode).get(segment);
-        }
-        return currentNode;
     }
 }
