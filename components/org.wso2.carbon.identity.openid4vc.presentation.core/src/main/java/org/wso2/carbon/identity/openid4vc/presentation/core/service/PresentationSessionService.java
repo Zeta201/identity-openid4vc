@@ -50,6 +50,21 @@ public interface PresentationSessionService {
             throws PresentationCoreException;
 
     /**
+     * Initiates a new VP flow session for a presentation definition looked up by its human-readable
+     * identifier. A random request ID is generated internally and returned
+     * via the initiation result.
+     *
+     * @param presentationDefinitionIdentifier the identifier of the presentation definition to request
+     * @param tenantDomain                     the tenant domain for the request
+     * @return initiation result containing the request ID, wallet URL, request URI, and expiry timestamp
+     * @throws PresentationCoreException if inputs are blank, the presentation definition is not found,
+     *                                  or the configuration lookup fails
+     */
+    PresentationRequestResponseDTO startPresentationSessionByIdentifier(String presentationDefinitionIdentifier,
+                                                                        String tenantDomain)
+            throws PresentationCoreException;
+
+    /**
      * Looks up a VP flow session by its transaction ID, scoped to the given tenant.
      *
      * @param requestId    the transaction ID of the VP session

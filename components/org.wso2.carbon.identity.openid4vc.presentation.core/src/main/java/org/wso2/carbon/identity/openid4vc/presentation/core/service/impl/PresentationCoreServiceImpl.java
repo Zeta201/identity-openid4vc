@@ -102,20 +102,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     public PresentationRequestResponseDTO startPresentationSession(String presentationDefinitionId, String tenantDomain)
             throws PresentationCoreException {
 
-        String requestId = UUID.randomUUID().toString();
-
-        if (StringUtils.isBlank(presentationDefinitionId)) {
-            throw PresentationCoreExceptionHandler.handleClientException(
-                    PresentationCoreErrorCode.INVALID_REQUEST);
-        }
-        if (StringUtils.isBlank(tenantDomain)) {
-            throw PresentationCoreExceptionHandler.handleClientException(
-                    PresentationCoreErrorCode.INVALID_REQUEST);
-        }
-
-        String nonce = UUID.randomUUID().toString();
-        long expiresAt = System.currentTimeMillis() + SESSION_TIMEOUT_MS;
-
+        validateStartSessionInputs(presentationDefinitionId, tenantDomain);
         int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
 
         PresentationDefinition presentationDefinition;
@@ -130,6 +117,53 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.PRESENTATION_DEFINITION_NOT_FOUND, presentationDefinitionId);
         }
+
+        return buildAndCacheSession(presentationDefinition, tenantDomain, tenantId);
+    }
+
+    @Override
+    public PresentationRequestResponseDTO startPresentationSessionByIdentifier(
+            String presentationDefinitionIdentifier, String tenantDomain) throws PresentationCoreException {
+
+        validateStartSessionInputs(presentationDefinitionIdentifier, tenantDomain);
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+
+        PresentationDefinition presentationDefinition;
+        try {
+            presentationDefinition = PresentationCoreDataHolder.getInstance().getPresentationDefinitionManager()
+                    .getPresentationDefinitionByIdentifier(presentationDefinitionIdentifier, tenantId);
+        } catch (PresentationManagementException e) {
+            throw PresentationCoreExceptionHandler.handleServerException(
+                    PresentationCoreErrorCode.PRESENTATION_DEFINITION_ERROR, e);
+        }
+        if (presentationDefinition == null) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.PRESENTATION_DEFINITION_NOT_FOUND, presentationDefinitionIdentifier);
+        }
+
+        return buildAndCacheSession(presentationDefinition, tenantDomain, tenantId);
+    }
+
+    private void validateStartSessionInputs(String presentationDefinitionId, String tenantDomain)
+            throws PresentationCoreClientException {
+
+        if (StringUtils.isBlank(presentationDefinitionId)) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.INVALID_REQUEST);
+        }
+        if (StringUtils.isBlank(tenantDomain)) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.INVALID_REQUEST);
+        }
+    }
+
+    private PresentationRequestResponseDTO buildAndCacheSession(PresentationDefinition presentationDefinition,
+                                                                 String tenantDomain, int tenantId)
+            throws PresentationCoreException {
+
+        String requestId = UUID.randomUUID().toString();
+        String nonce = UUID.randomUUID().toString();
+        long expiresAt = System.currentTimeMillis() + SESSION_TIMEOUT_MS;
 
         VPTenantConfig vpTenantConfig = PresentationCoreDataHolder.getInstance()
                 .getVpConfigService().getVPConfig(tenantDomain);
@@ -147,6 +181,7 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
         String walletUrl = PresentationCoreUtil.buildWalletUrl(clientId, requestUri);
 
         VPSession session = new VPSession.Builder()
+                .requestId(requestId)
                 .presentationDefinition(presentationDefinition)
                 .tenantDomain(tenantDomain)
                 .tenantId(tenantId)
