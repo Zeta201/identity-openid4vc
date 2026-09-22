@@ -53,6 +53,7 @@
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.core</module>
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.endpoint</module>
         <module>components/org.wso2.carbon.identity.openid4vc.presentation.verification</module>
+        <module>components/org.wso2.carbon.identity.openid4vc.presentation.authenticator</module>
         <module>features/org.wso2.carbon.identity.openid4vc.template.management.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.issuance.common.server.feature</module>
         <module>features/org.wso2.carbon.identity.sdjwt.server.feature</module>
@@ -87,6 +88,11 @@
             <dependency>
                 <groupId>org.wso2.carbon.identity.framework</groupId>
                 <artifactId>org.wso2.carbon.identity.core</artifactId>
+                <version>${carbon.identity.framework.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.framework</groupId>
+                <artifactId>org.wso2.carbon.identity.flow.execution.engine</artifactId>
                 <version>${carbon.identity.framework.version}</version>
             </dependency>
             <dependency>
@@ -438,7 +444,7 @@
         <identity.oid4vc.pkg.version>${project.version}</identity.oid4vc.pkg.version>
 
         <!-- Carbon Identity Framework version -->
-        <carbon.identity.framework.version>7.8.643</carbon.identity.framework.version>
+        <carbon.identity.framework.version>7.11.196</carbon.identity.framework.version>
         <carbon.identity.framework.imp.pkg.version.range>[5.25.234, 8.0.0)
         </carbon.identity.framework.imp.pkg.version.range>
 
