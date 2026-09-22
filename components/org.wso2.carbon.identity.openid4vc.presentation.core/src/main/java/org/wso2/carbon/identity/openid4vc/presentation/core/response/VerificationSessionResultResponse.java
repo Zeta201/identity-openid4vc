@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -55,6 +57,12 @@ public class VerificationSessionResultResponse {
 
         private final Map<String, Object> payload = new LinkedHashMap<>();
 
+        public Builder requestId(String requestId) {
+
+            payload.put("requestId", requestId);
+            return this;
+        }
+
         public Builder status(VPSessionStatus status) {
 
             if (status != null) {
@@ -82,7 +90,22 @@ public class VerificationSessionResultResponse {
         public Builder verificationResponse(VerificationResponseDTO verificationResponse) {
 
             if (verificationResponse != null) {
-                payload.put("verificationResponse", verificationResponse);
+                Map<String, Object> credential = new LinkedHashMap<>();
+                credential.put("vct", verificationResponse.getVct());
+                credential.put("format", verificationResponse.getCredentialFormat());
+                credential.put("issuer", verificationResponse.getIssuer());
+                credential.put("signingAlgorithm", verificationResponse.getSigningAlgorithm());
+                credential.put("issuedAt", toIso8601(verificationResponse.getIssuedAt()));
+                credential.put("expiresAt", toIso8601(verificationResponse.getExpiresAt()));
+                credential.put("claims", verificationResponse.getSubjectClaims());
+                payload.put("credential", credential);
+
+                Map<String, Object> keyBinding = new LinkedHashMap<>();
+                keyBinding.put("verified", verificationResponse.isKbJwtVerified());
+                keyBinding.put("nonce", verificationResponse.getNonce());
+                payload.put("keyBinding", keyBinding);
+
+                payload.put("verifiedAt", toIso8601(verificationResponse.getVerifiedAt()));
             }
             return this;
         }
@@ -90,6 +113,12 @@ public class VerificationSessionResultResponse {
         public VerificationSessionResultResponse build() {
 
             return new VerificationSessionResultResponse(payload);
+        }
+
+        private static String toIso8601(Long epochMillis) {
+
+            return epochMillis == null ? null
+                    : Instant.ofEpochMilli(epochMillis).truncatedTo(ChronoUnit.SECONDS).toString();
         }
     }
 }
