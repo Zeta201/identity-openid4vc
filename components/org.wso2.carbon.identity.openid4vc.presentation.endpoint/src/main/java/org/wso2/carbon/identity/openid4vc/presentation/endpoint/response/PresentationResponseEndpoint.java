@@ -160,7 +160,7 @@ public class PresentationResponseEndpoint {
             try {
                 PresentationSessionServiceFactory.getPresentationSessionService()
                         .handleSessionFailed(requestId,
-                                PresentationCoreErrorCode.VERIFICATION_FAILED.getErrorType(),
+                                e.getErrorCode().getCode(),
                                 e.getErrorCode().getDescription(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
