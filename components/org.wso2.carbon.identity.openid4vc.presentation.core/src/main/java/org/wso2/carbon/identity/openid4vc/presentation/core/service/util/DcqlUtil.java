@@ -103,12 +103,11 @@ public class DcqlUtil {
                 if (claim == null || StringUtils.isBlank(claim.getPath())) {
                     continue;
                 }
-                String[] pathSegments = claim.getPath().split("\\.");
-                String claimId = String.join("_", pathSegments);
+                String claimId = claim.getPath();
 
                 Map<String, Object> claimEntry = new HashMap<>();
                 claimEntry.put(Constants.DCQL.ID, claimId);
-                claimEntry.put(Constants.DCQL.PATH, Arrays.asList(pathSegments));
+                claimEntry.put(Constants.DCQL.PATH, Collections.singletonList(claim.getPath()));
                 claimsList.add(claimEntry);
 
                 if (claim.isMandatory()) {

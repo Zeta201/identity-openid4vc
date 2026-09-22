@@ -118,7 +118,7 @@ public class DcqlUtilTest {
     public void testBuildDcqlQueryClaims() {
 
         Credential cred = buildCredentialWithClaims("cred-with-claims", Constants.VC_SD_JWT_FORMAT,
-                claim("given_name", true), claim("address.street", false));
+                claim("given_name", true));
 
         PresentationDefinition definition = new PresentationDefinition.Builder()
                 .id("def-claims")
@@ -130,22 +130,36 @@ public class DcqlUtilTest {
         List<Map<String, Object>> claims = (List<Map<String, Object>>) credentials.get(0).get(Constants.DCQL.CLAIMS);
 
         Assert.assertNotNull(claims, "Claims should be present");
-        Assert.assertEquals(claims.size(), 2, "Should have two claim entries");
+        Assert.assertEquals(claims.size(), 1, "Should have one claim entry");
 
         Map<String, Object> givenNameClaim = claims.get(0);
         Assert.assertEquals(givenNameClaim.get(Constants.DCQL.ID), "given_name");
         Assert.assertEquals(givenNameClaim.get(Constants.DCQL.PATH),
                 Collections.singletonList("given_name"));
-
-        Map<String, Object> streetClaim = claims.get(1);
-        Assert.assertEquals(streetClaim.get(Constants.DCQL.ID), "address_street",
-                "Dot-separated path should be joined with underscores for the id");
-        Assert.assertEquals(streetClaim.get(Constants.DCQL.PATH),
-                Arrays.asList("address", "street"),
-                "Dot-separated path should be split into path segments");
     }
 
-    @Test(priority = 6, description = "Test buildDcqlQuery adds claim_sets when mandatory and optional claims mixed")
+    @Test(priority = 6, description = "Test buildDcqlQuery does not split a claim name containing a literal dot")
+    public void testBuildDcqlQueryClaimWithDotInPath() {
+
+        Credential cred = buildCredentialWithClaims("cred-uri-claim", Constants.VC_SD_JWT_FORMAT,
+                claim("http://wso2.org/vc/claim/ibm", true));
+
+        PresentationDefinition definition = new PresentationDefinition.Builder()
+                .id("def-uri-claim")
+                .credentials(Collections.singletonList(cred))
+                .build();
+
+        Map<String, Object> result = DcqlUtil.buildDcqlQuery(definition);
+        List<Map<String, Object>> credentials = (List<Map<String, Object>>) result.get(Constants.DCQL.CREDENTIALS);
+        List<Map<String, Object>> claims = (List<Map<String, Object>>) credentials.get(0).get(Constants.DCQL.CLAIMS);
+
+        Assert.assertEquals(claims.size(), 1, "Should have one claim entry");
+        Assert.assertEquals(claims.get(0).get(Constants.DCQL.PATH),
+                Collections.singletonList("http://wso2.org/vc/claim/ibm"),
+                "A claim name containing a dot must remain a single path segment");
+    }
+
+    @Test(priority = 7, description = "Test buildDcqlQuery adds claim_sets when mandatory and optional claims mixed")
     public void testBuildDcqlQueryClaimSetsWhenMixedMandatory() {
 
         Credential cred = buildCredentialWithClaims("mixed-cred", Constants.VC_SD_JWT_FORMAT,
@@ -170,7 +184,7 @@ public class DcqlUtilTest {
                 "Second set should contain only mandatory claim ids");
     }
 
-    @Test(priority = 7, description = "Test buildDcqlQuery omits claim_sets when all claims are mandatory")
+    @Test(priority = 8, description = "Test buildDcqlQuery omits claim_sets when all claims are mandatory")
     public void testBuildDcqlQueryNoClaimSetsWhenAllMandatory() {
 
         Credential cred = buildCredentialWithClaims("all-mandatory", Constants.VC_SD_JWT_FORMAT,
@@ -187,7 +201,7 @@ public class DcqlUtilTest {
                 "claim_sets should be absent when all claims are mandatory");
     }
 
-    @Test(priority = 8, description = "Test buildDcqlQuery omits claim_sets when all claims are optional")
+    @Test(priority = 9, description = "Test buildDcqlQuery omits claim_sets when all claims are optional")
     public void testBuildDcqlQueryNoClaimSetsWhenAllOptional() {
 
         Credential cred = buildCredentialWithClaims("all-optional", Constants.VC_SD_JWT_FORMAT,
@@ -204,7 +218,7 @@ public class DcqlUtilTest {
                 "claim_sets should be absent when all claims are optional");
     }
 
-    @Test(priority = 9, description = "Test buildDcqlQuery adds credential_sets with all credential ids")
+    @Test(priority = 10, description = "Test buildDcqlQuery adds credential_sets with all credential ids")
     public void testBuildDcqlQueryCredentialSets() {
 
         Credential cred1 = new Credential();
@@ -232,7 +246,7 @@ public class DcqlUtilTest {
                 "options should list all credential ids");
     }
 
-    @Test(priority = 10, description = "Test buildDcqlQuery omits trusted_authorities for non-x5c issuers")
+    @Test(priority = 11, description = "Test buildDcqlQuery omits trusted_authorities for non-x5c issuers")
     public void testBuildDcqlQueryNoTrustedAuthoritiesForNonX5c() {
 
         Issuer issuer = new Issuer();
@@ -255,7 +269,7 @@ public class DcqlUtilTest {
                 "trusted_authorities should be absent for non-x5c issuers");
     }
 
-    @Test(priority = 11, description = "Test buildDcqlQuery omits trusted_authorities for x5c issuer with blank cert")
+    @Test(priority = 12, description = "Test buildDcqlQuery omits trusted_authorities for x5c issuer with blank cert")
     public void testBuildDcqlQueryTrustedAuthoritiesBlankCert() {
 
         Issuer issuer = new Issuer();
