@@ -59,9 +59,21 @@ public class PresentationRequestResponse {
             return this;
         }
 
+        public Builder walletUrl(String walletUrl) {
+
+            payload.put("walletUrl", walletUrl);
+            return this;
+        }
+
         public Builder requestUri(String requestUri) {
 
             payload.put("requestUri", requestUri);
+            return this;
+        }
+
+        public Builder clientId(String clientId) {
+
+            payload.put("clientId", clientId);
             return this;
         }
 
