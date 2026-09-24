@@ -24,7 +24,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.util.DcqlUtil;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
-import org.wso2.carbon.identity.openid4vc.template.management.model.KeyResolutionMethod;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer.KeyResolutionMethod;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 
