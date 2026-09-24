@@ -44,6 +44,16 @@ public class Issuer implements Serializable {
 
     }
 
+    /**
+     * Supported methods for resolving an issuer's public key during credential verification.
+     */
+    public enum KeyResolutionMethod {
+
+        JWKS_URI,   // Public key fetched at runtime from a JWKS endpoint URI.
+        PEM,        // Public key derived from a PEM-encoded X.509 certificate.
+        X5C         // Root CA certificate trust anchored to an issuer.
+    }
+
     public KeyResolutionMethod getKeyResolutionMethod() {
 
         return keyResolutionMethod;

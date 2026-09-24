@@ -31,7 +31,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.exception.Presenta
 import org.wso2.carbon.identity.openid4vc.template.management.model.ConnectedIdpInfo;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
-import org.wso2.carbon.identity.openid4vc.template.management.model.KeyResolutionMethod;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer.KeyResolutionMethod;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationClaim;
 import org.wso2.carbon.identity.openid4vc.template.management.model.PresentationDefinition;
 import org.wso2.carbon.identity.openid4vc.template.management.util.Constants;
