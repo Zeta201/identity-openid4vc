@@ -42,7 +42,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.util.JwsUtil
 import org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationExceptionHandler;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.verifier.FormatVerifier;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
-import org.wso2.carbon.identity.openid4vc.template.management.model.KeyResolutionMethod;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer.KeyResolutionMethod;
 import org.wso2.carbon.identity.sdjwt.Disclosure;
 import org.wso2.carbon.identity.sdjwt.SDJWT;
 import org.wso2.carbon.identity.sdjwt.constant.SDJWTConstants;

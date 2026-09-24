@@ -44,7 +44,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.signature.Cr
 import org.wso2.carbon.identity.openid4vc.presentation.verification.signature.SignatureValidationContext;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
-import org.wso2.carbon.identity.openid4vc.template.management.model.KeyResolutionMethod;
+import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer.KeyResolutionMethod;
 import org.wso2.carbon.identity.sdjwt.SDJWT;
 
 import java.nio.charset.StandardCharsets;
