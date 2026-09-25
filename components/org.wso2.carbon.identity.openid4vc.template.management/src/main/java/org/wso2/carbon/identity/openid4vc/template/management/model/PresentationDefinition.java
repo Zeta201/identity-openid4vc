@@ -18,8 +18,6 @@
 
 package org.wso2.carbon.identity.openid4vc.template.management.model;
 
-import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,41 +25,34 @@ import java.util.List;
 /**
  * Model class representing a Presentation Definition.
  * This defines the credential requirements for a Verifiable Presentation request.
+ * Use {@link Builder} to construct instances.
  */
 public class PresentationDefinition implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String definitionId;
+    private String id;
     private Integer cursorKey;
     private String identifier;
     private String displayName;
     private String description;
     private int tenantId;
-    private List<RequestedCredential> requestedCredentials;
-
-    public PresentationDefinition() {
-
-    }
+    private List<Credential> credentials;
 
     private PresentationDefinition(Builder builder) {
 
-        this.definitionId = builder.definitionId;
+        this.id = builder.id;
+        this.cursorKey = builder.cursorKey;
         this.identifier = builder.identifier;
         this.displayName = builder.displayName;
         this.description = builder.description;
         this.tenantId = builder.tenantId;
-        this.requestedCredentials = builder.requestedCredentials;
+        this.credentials = builder.credentials;
     }
 
-    public String getDefinitionId() {
+    public String getId() {
 
-        return definitionId;
-    }
-
-    public void setDefinitionId(String definitionId) {
-
-        this.definitionId = definitionId;
+        return id;
     }
 
     public Integer getCursorKey() {
@@ -69,19 +60,9 @@ public class PresentationDefinition implements Serializable {
         return cursorKey;
     }
 
-    public void setCursorKey(Integer cursorKey) {
-
-        this.cursorKey = cursorKey;
-    }
-
     public String getIdentifier() {
 
         return identifier;
-    }
-
-    public void setIdentifier(String identifier) {
-
-        this.identifier = identifier;
     }
 
     public String getDisplayName() {
@@ -89,19 +70,9 @@ public class PresentationDefinition implements Serializable {
         return displayName;
     }
 
-    public void setDisplayName(String displayName) {
-
-        this.displayName = displayName;
-    }
-
     public String getDescription() {
 
         return description;
-    }
-
-    public void setDescription(String description) {
-
-        this.description = description;
     }
 
     public int getTenantId() {
@@ -109,36 +80,33 @@ public class PresentationDefinition implements Serializable {
         return tenantId;
     }
 
-    public void setTenantId(int tenantId) {
+    public List<Credential> getCredentials() {
 
-        this.tenantId = tenantId;
-    }
-
-    public List<RequestedCredential> getRequestedCredentials() {
-
-        return requestedCredentials != null ? new ArrayList<>(requestedCredentials) : null;
-    }
-
-    public void setRequestedCredentials(List<RequestedCredential> requestedCredentials) {
-
-        this.requestedCredentials = requestedCredentials != null ? new ArrayList<>(requestedCredentials) : null;
+        return credentials != null ? new ArrayList<>(credentials) : null;
     }
 
     /**
-     * Builder class for PresentationDefinition.
+     * Builder for {@link PresentationDefinition}.
      */
     public static class Builder {
 
-        private String definitionId;
+        private String id;
+        private Integer cursorKey;
         private String identifier;
         private String displayName;
         private String description;
         private int tenantId;
-        private List<RequestedCredential> requestedCredentials;
+        private List<Credential> credentials;
 
-        public Builder definitionId(String definitionId) {
+        public Builder id(String id) {
 
-            this.definitionId = definitionId;
+            this.id = id;
+            return this;
+        }
+
+        public Builder cursorKey(Integer cursorKey) {
+
+            this.cursorKey = cursorKey;
             return this;
         }
 
@@ -166,9 +134,9 @@ public class PresentationDefinition implements Serializable {
             return this;
         }
 
-        public Builder requestedCredentials(List<RequestedCredential> requestedCredentials) {
+        public Builder credentials(List<Credential> credentials) {
 
-            this.requestedCredentials = requestedCredentials != null ? new ArrayList<>(requestedCredentials) : null;
+            this.credentials = credentials != null ? new ArrayList<>(credentials) : null;
             return this;
         }
 
@@ -178,164 +146,11 @@ public class PresentationDefinition implements Serializable {
         }
     }
 
-    /**
-     * Inner model class representing a single requested credential within a Presentation Definition.
-     */
-    public static class RequestedCredential implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-
-        private String identifier;
-        private String format = Constants.VC_SD_JWT_FORMAT;
-        private String type;
-        private List<IssuerConfig> issuerConfigs;
-        private List<ClaimConstraint> claims;
-
-        public RequestedCredential() {
-
-        }
-
-        public String getIdentifier() {
-
-            return identifier;
-        }
-
-        public void setIdentifier(String identifier) {
-
-            this.identifier = identifier;
-        }
-
-        public String getFormat() {
-
-            return format;
-        }
-
-        public void setFormat(String format) {
-
-            this.format = format;
-        }
-
-        public String getType() {
-
-            return type;
-        }
-
-        public void setType(String type) {
-
-            this.type = type;
-        }
-
-        public List<IssuerConfig> getIssuerConfigs() {
-
-            return issuerConfigs != null ? new ArrayList<>(issuerConfigs) : null;
-        }
-
-        public void setIssuerConfigs(List<IssuerConfig> issuerConfigs) {
-
-            this.issuerConfigs = issuerConfigs != null ? new ArrayList<>(issuerConfigs) : null;
-        }
-
-        public List<ClaimConstraint> getClaims() {
-
-            return claims != null ? new ArrayList<>(claims) : null;
-        }
-
-        public void setClaims(List<ClaimConstraint> claims) {
-
-            this.claims = claims != null ? new ArrayList<>(claims) : null;
-        }
-
-    }
-
-    /**
-     * Represents the issuer trust configuration for a single trusted issuer within a credential.
-     * One row per trusted issuer; each row specifies one key resolution method.
-     */
-    public static class IssuerConfig implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-
-        private String keySourceType;
-        private String issuerUrl;
-        private String keySource;
-
-        public IssuerConfig() {
-
-        }
-
-        public String getKeySourceType() {
-
-            return keySourceType;
-        }
-
-        public void setKeySourceType(String keySourceType) {
-
-            this.keySourceType = keySourceType;
-        }
-
-        public String getIssuerUrl() {
-
-            return issuerUrl;
-        }
-
-        public void setIssuerUrl(String issuerUrl) {
-
-            this.issuerUrl = issuerUrl;
-        }
-
-        public String getKeySource() {
-
-            return keySource;
-        }
-
-        public void setKeySource(String keySource) {
-
-            this.keySource = keySource;
-        }
-
-    }
-
-    /**
-     * Represents a single claim constraint within a requested credential.
-     */
-    public static class ClaimConstraint implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-
-        private String path;
-        private boolean mandatory = true;
-
-        public ClaimConstraint() {
-
-        }
-
-        public String getPath() {
-
-            return path;
-        }
-
-        public void setPath(String path) {
-
-            this.path = path;
-        }
-
-        public boolean isMandatory() {
-
-            return mandatory;
-        }
-
-        public void setMandatory(boolean mandatory) {
-
-            this.mandatory = mandatory;
-        }
-
-    }
-
     @Override
     public String toString() {
 
         return "PresentationDefinition{" +
-                "definitionId='" + definitionId + '\'' +
+                "id='" + id + '\'' +
                 ", identifier='" + identifier + '\'' +
                 ", tenantId=" + tenantId +
                 '}';
