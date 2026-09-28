@@ -76,7 +76,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
     private static final String PARAM_SESSION_DATA_KEY = "sessionDataKey";
     private static final String PARAM_REQUEST_ID = "requestId";
     private static final String PARAM_TENANT_DOMAIN = "tenantDomain";
-    private static final String PARAM_ORG_ID = "orgId";
     private static final String PARAM_ROOT_TENANT_DOMAIN = "rootTenantDomain";
     private static final String PARAM_STATUS = "status";
     private static final String PARAM_ERROR_TYPE = "error_type";
@@ -140,7 +139,7 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
 
             String redirectUrl = createRedirectUrl(presentationRequestResponse, context.getContextIdentifier(),
-                    tenantDomain, StringUtils.EMPTY);
+                    tenantDomain);
 
             response.sendRedirect(redirectUrl);
 
@@ -245,11 +244,10 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
      * @param presentationRequestResponse the result from the VP flow service containing the request ID and wallet URL
      * @param sessionDataKey   the IS authentication context identifier (distinct from the VP requestId)
      * @param tenantDomain     the resolved tenant domain for the current authentication
-     * @param organizationId   the organization ID, or empty string if not in an org context
      * @return the fully constructed redirect URL
      */
     private String createRedirectUrl(PresentationRequestResponseDTO presentationRequestResponse, String sessionDataKey,
-                                     String tenantDomain, String organizationId) {
+                                     String tenantDomain) {
 
         String rootTenantDomain = StringUtils.defaultIfBlank(
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain(), tenantDomain);
@@ -265,8 +263,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
                         StandardCharsets.UTF_8) +
                 '&' + PARAM_TENANT_DOMAIN + '=' +
                 URLEncoder.encode(StringUtils.defaultString(tenantDomain), StandardCharsets.UTF_8) +
-                '&' + PARAM_ORG_ID + '=' +
-                URLEncoder.encode(StringUtils.defaultString(organizationId), StandardCharsets.UTF_8) +
                 '&' + PARAM_ROOT_TENANT_DOMAIN + '=' + URLEncoder.encode(rootTenantDomain, StandardCharsets.UTF_8) +
                 '&' + SESSION_TTL_MS + '=' + sessionTtlMs;
     }
