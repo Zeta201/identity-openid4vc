@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.constant;
 
 /**
- * Constants and general constraints for the OpenID4VP presentation verification component.
+ * This class represents the constants for the credential verification module.
  */
 public class VerificationConstants {
 

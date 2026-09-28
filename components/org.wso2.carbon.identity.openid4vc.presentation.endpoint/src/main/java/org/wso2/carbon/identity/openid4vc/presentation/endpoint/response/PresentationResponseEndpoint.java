@@ -44,15 +44,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 /**
- * Wallet-facing endpoint that receives VP token submissions from the wallet.
- *
- * <p>Accepts both {@code direct_post} (plain fields: {@code vp_token}, {@code state}) and
- * {@code direct_post.jwt} (single {@code response} JWE parameter), delivered as
- * {@code application/x-www-form-urlencoded}.</p>
- *
- * <p>Per OpenID4VP Section 8.2, always responds HTTP 200 for parseable submissions.
- * Credential verification failures are recorded in the session and do not cause non-200
- * responses. Non-200 is returned only for protocol-level failures.</p>
+ * This class represents the wallet-facing endpoint that receives VP token submissions.
  */
 @Path("/responses")
 @Consumes(MediaType.APPLICATION_FORM_URLENCODED)

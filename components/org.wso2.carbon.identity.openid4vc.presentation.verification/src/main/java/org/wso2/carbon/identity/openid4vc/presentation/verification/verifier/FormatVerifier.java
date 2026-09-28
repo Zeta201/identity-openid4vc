@@ -23,28 +23,23 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResp
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
 /**
- * Pluggable handler for a single credential presentation format.
- *
- * <p>Each implementation owns all format-specific logic end-to-end:
- * token parsing, signature validation, claim extraction, holder binding,
- * type enforcement, metadata extraction, and technical claim stripping.
- * The service layer only routes to the right handler and enforces
- * format-agnostic policy (claim constraints).
+ * This interface handles a single credential presentation format.
  */
 public interface FormatVerifier {
 
     /**
-     * Returns the credential format identifier this verifier handles
-     * (e.g. {@code dc+sd-jwt}).
+     * Returns the credential format identifier this verifier handles.
+     *
+     * @return Credential format identifier.
      */
     String getFormat();
 
     /**
      * Verifies the credential token in the given context end-to-end.
      *
-     * @param requestDTO verification context carrying the raw token, request config, tenant, and nonce
-     * @return {@link VerificationResponseDTO} carrying the verified credential metadata and subject claims
-     * @throws VerificationException if verification fails for any reason
+     * @param requestDTO Verification context carrying the raw token, request config, tenant, and nonce.
+     * @return Verification response DTO carrying the verified credential metadata and subject claims.
+     * @throws VerificationException If verification fails for any reason.
      */
     VerificationResponseDTO verifyCredential(VerificationRequestDTO requestDTO) throws VerificationException;
 }

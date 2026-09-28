@@ -34,8 +34,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
 /**
- * Wallet-facing endpoint that serves the signed OpenID4VP authorization request JWT.
- * The wallet fetches this after scanning the QR code that embeds the {@code request_uri}.
+ * This class represents the wallet-facing endpoint that serves the signed authorization request JWT.
  */
 @Path("/requests")
 @Produces("application/oauth-authz-req+jwt")

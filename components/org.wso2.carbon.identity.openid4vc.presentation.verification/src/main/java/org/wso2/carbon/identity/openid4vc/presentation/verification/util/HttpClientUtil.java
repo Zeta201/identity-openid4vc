@@ -51,12 +51,9 @@ public class HttpClientUtil {
     /**
      * Fetches a URL response body as a UTF-8 string.
      *
-     * <p>Security checks include protocol validation, host validation, redirect
-     * disabling, and response-size bounds enforcement.</p>
-     *
-     * @param urlString the URL to fetch
-     * @return the response body when HTTP status is {@code 200}; otherwise {@code null}
-     * @throws VerificationException if URL validation or network processing fails
+     * @param urlString URL to fetch.
+     * @return Response body.
+     * @throws VerificationException If URL validation or network processing fails.
      */
     public static String fetchContent(String urlString)
             throws VerificationException {

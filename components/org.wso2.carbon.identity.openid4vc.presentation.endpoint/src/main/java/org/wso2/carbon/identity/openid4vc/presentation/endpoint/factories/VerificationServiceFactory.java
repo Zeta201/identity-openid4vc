@@ -22,8 +22,7 @@ import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.service.VerificationService;
 
 /**
- * Factory for retrieving the {@link VerificationService} OSGi service instance
- * from the Carbon runtime. Loaded once at WAR startup.
+ * This class retrieves the VerificationService OSGi service instance.
  */
 public class VerificationServiceFactory {
 

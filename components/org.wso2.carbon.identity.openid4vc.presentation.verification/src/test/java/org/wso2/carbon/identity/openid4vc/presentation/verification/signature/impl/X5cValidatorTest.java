@@ -47,13 +47,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Unit tests for {@link X5cValidator}.
- *
- * <p>The embedded PKCS12 constant holds a self-signed EC test certificate used to verify that
- * the self-signed leaf check fires correctly. The PKCS12 was generated with:
- * {@code keytool -genkeypair -alias testissuer -keyalg EC -keysize 256 -sigalg SHA256withECDSA
- * -dname "CN=Test Issuer,O=Test Org,C=US" -validity 3650 -keystore test.jks -storepass changeit}
- * and then converted to PKCS12. For test use only.</p>
+ * This class tests X5cValidator.
  */
 public class X5cValidatorTest {
 

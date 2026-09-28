@@ -61,11 +61,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Unit tests for {@link SdJwtVcVerifier}.
- *
- * <p>Tests that require processing beyond SD-JWT parsing (expiry, vct, KB-JWT checks) stub
- * {@link PresentationVerificationDataHolder} via {@link MockedStatic} so that signature
- * validation passes without touching the real singleton or requiring a certificate chain.</p>
+ * This class tests SdJwtVcVerifier.
  */
 public class SdJwtVcVerifierTest {
 
@@ -279,9 +275,7 @@ public class SdJwtVcVerifierTest {
     }
 
     /**
-     * Builds a minimal SD-JWT presentation string: {@code <issuer-jwt>~}
-     * (zero disclosures, no KB-JWT). The issuer JWT is signed with an RSA key;
-     * the no-op validator registered in setUp() bypasses actual signature verification.
+     * Builds a minimal SD-JWT presentation string with zero disclosures and no KB-JWT.
      */
     private String buildMinimalSdJwt(JWTClaimsSet claims) throws Exception {
 
@@ -295,11 +289,7 @@ public class SdJwtVcVerifierTest {
     }
 
     /**
-     * Builds an SD-JWT presentation string with zero disclosures and a valid KB-JWT:
-     * {@code <issuer-jwt>~<kb-jwt>}. The KB-JWT's {@code sd_hash} is computed the same way
-     * {@code SdJwtVcVerifier} computes it, and it is signed with {@code holderPrivateKey}
-     * (whose matching public key must be present as the issuer JWT's {@code cnf.jwk}) so that
-     * {@code verifyKeyBinding()} accepts it and processing reaches the checks beyond it.
+     * Builds an SD-JWT presentation string with zero disclosures and a valid KB-JWT.
      */
     private String buildSdJwtWithKeyBinding(JWTClaimsSet claims, PrivateKey holderPrivateKey) throws Exception {
 

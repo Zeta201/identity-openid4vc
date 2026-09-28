@@ -38,7 +38,7 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 
 /**
- * Resolves the issuer's public key from a PEM-encoded certificate configured on the {@link Issuer}.
+ * This class validates a credential signature against an issuer's PEM-encoded certificate.
  */
 public class PemValidator implements CredentialSignatureValidator {
 

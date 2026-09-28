@@ -35,10 +35,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.model.Presentation
 import java.util.Map;
 
 /**
- * Implementation of the {@link VerificationService} for OpenID4VC presentations.
- *
- * <p>Handles format-agnostic orchestration: verifier routing and claim constraint enforcement.
- * All format-specific logic lives in the format-specific {@link FormatVerifier} implementation.
+ * This class represents the verification service for OpenID4VC presentations.
  */
 public class VerificationServiceImpl implements VerificationService {
 

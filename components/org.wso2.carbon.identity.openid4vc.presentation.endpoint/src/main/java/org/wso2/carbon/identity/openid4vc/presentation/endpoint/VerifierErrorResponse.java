@@ -24,11 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Error response for verifier-facing REST endpoints, following the WSO2 IS API error convention.
- * Produces {@code { "code", "message", "description", "traceId" }}.
- *
- * <p>Wallet-facing endpoints use {@link PresentationErrorResponse} instead, which follows the
- * OAuth 2.0 / OpenID4VP convention required by the protocol.</p>
+ * This class represents the error response for verifier-facing REST endpoints.
  */
 public class VerifierErrorResponse {
 

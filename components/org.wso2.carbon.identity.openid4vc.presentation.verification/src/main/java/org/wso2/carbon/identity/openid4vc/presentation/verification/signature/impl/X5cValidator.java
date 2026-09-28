@@ -49,16 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Resolves the issuer's public key from the {@code x5c} certificate chain embedded in the
- * SD-JWT VC JOSE header, as required by HAIP §6.1.1.
- *
- * <p>Validation steps:
- * <ol>
- *   <li>Extracts and decodes the {@code x5c} header from the issuer-signed JWT.</li>
- *   <li>Rejects self-signed leaf certificates (HAIP §6.1.1 MUST NOT).</li>
- *   <li>Validates the chain against the trusted CA cert in the {@link Issuer} using AKI/SKI matching.</li>
- *   <li>Verifies the JWT signature using the leaf certificate's public key.</li>
- * </ol>
+ * This class validates a credential signature against an issuer's x5c certificate chain.
  */
 public class X5cValidator implements CredentialSignatureValidator {
 

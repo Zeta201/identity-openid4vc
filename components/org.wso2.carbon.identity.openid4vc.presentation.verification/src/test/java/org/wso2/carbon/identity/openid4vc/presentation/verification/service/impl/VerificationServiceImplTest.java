@@ -43,8 +43,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link VerificationServiceImpl}.
- * Tests format-handler routing and claim constraint enforcement via {@code verifyPresentation}.
+ * This class tests format-handler routing and claim constraint enforcement in VerificationServiceImpl.
  */
 public class VerificationServiceImplTest {
 

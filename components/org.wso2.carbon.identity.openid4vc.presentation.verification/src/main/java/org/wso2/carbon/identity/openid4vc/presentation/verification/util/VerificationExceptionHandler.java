@@ -24,11 +24,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.Ve
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationServerException;
 
 /**
- * Factory for {@link VerificationClientException} and {@link VerificationServerException}.
- *
- * <p>All throw sites in the verification module must go through this handler rather than
- * constructing exceptions directly. This ensures every exception carries a consistent
- * {@link VerificationErrorCode} and that descriptions are formatted uniformly.</p>
+ * This class builds client and server exceptions for the credential verification module.
  */
 public class VerificationExceptionHandler {
 
@@ -37,11 +33,11 @@ public class VerificationExceptionHandler {
     }
 
     /**
-     * Builds a {@link VerificationClientException} for the given error code.
+     * Builds a client exception for the given error code.
      *
-     * @param errorCode the structured error code
-     * @param data      optional {@link String#format} arguments applied to the error code's description
-     * @return a fully populated client exception
+     * @param errorCode Structured error code.
+     * @param data      Optional format arguments applied to the error code's description.
+     * @return Client exception.
      */
     public static VerificationClientException handleClientException(
             VerificationErrorCode errorCode, String... data) {
@@ -54,12 +50,12 @@ public class VerificationExceptionHandler {
     }
 
     /**
-     * Builds a {@link VerificationServerException} for the given error code, wrapping a cause.
+     * Builds a server exception for the given error code, wrapping a cause.
      *
-     * @param errorCode the structured error code
-     * @param cause     the underlying exception
-     * @param data      optional {@link String#format} arguments applied to the error code's description
-     * @return a fully populated server exception
+     * @param errorCode Structured error code.
+     * @param cause     Underlying exception.
+     * @param data      Optional format arguments applied to the error code's description.
+     * @return Server exception.
      */
     public static VerificationServerException handleServerException(
             VerificationErrorCode errorCode, Throwable cause, String... data) {

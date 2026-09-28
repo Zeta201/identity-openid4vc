@@ -37,8 +37,7 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPrivateKey;
 
 /**
- * Unit tests for {@link JwksValidator}.
- * Tests validator type and JWKS URI validation.
+ * This class tests JwksValidator.
  */
 public class JwksValidatorTest {
 

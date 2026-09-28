@@ -45,7 +45,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import java.text.ParseException;
 
 /**
- * Resolves the issuer's public key from a JWKS endpoint URI configured on the {@link Issuer}.
+ * This class validates a credential signature against an issuer's JWKS endpoint.
  */
 public class JwksValidator implements CredentialSignatureValidator {
 

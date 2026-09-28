@@ -21,16 +21,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.verification.signature;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
 /**
- * Extension point for credential signature validation.
- *
- * <p>Built-in implementations:
- * <ul>
- *   <li>{@code X5C} — verifies against the x5c certificate chain embedded in the JOSE header (HAIP §6.1.1).</li>
- *   <li>{@code JWKS_URI} — fetches JWKS directly from a configured endpoint URI.</li>
- *   <li>{@code PEM} — derives the JWKS from a PEM-encoded certificate on the credential config.</li>
- * </ul>
- *
- * <p>To register a custom validator, implement this interface and publish it as an OSGi service.
+ * This interface validates a credential's cryptographic signature.
  */
 public interface CredentialSignatureValidator {
 
@@ -39,17 +30,17 @@ public interface CredentialSignatureValidator {
     String TYPE_PEM = "PEM";
 
     /**
-     * Returns the unique type key for this validator (e.g. {@code "JWKS_URI"}).
-     * This value is persisted in the database and used for look-up at verification time.
+     * Returns the unique type key for this validator.
+     *
+     * @return Validator type key.
      */
     String getValidatorType();
 
     /**
      * Validates the cryptographic signature of the issuer-signed JWT in the given request.
      *
-     * @param context carries the parsed SD-JWT VC issuer-signed JWT and the matched issuer
-     *                configuration (JWKS URI, PEM certificate, or trusted CA cert for x5c)
-     * @throws VerificationException if key resolution or signature verification fails
+     * @param context Signature validation context.
+     * @throws VerificationException If key resolution or signature verification fails.
      */
     void validateSignature(SignatureValidationContext context) throws VerificationException;
 }

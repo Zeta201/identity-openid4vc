@@ -22,8 +22,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 
 /**
- * Context object passed to a {@link CredentialSignatureValidator} carrying the
- * issuer-signed JWT and matched issuer configuration required for signature validation.
+ * This class represents the context passed to a credential signature validator.
  */
 public class SignatureValidationContext {
 

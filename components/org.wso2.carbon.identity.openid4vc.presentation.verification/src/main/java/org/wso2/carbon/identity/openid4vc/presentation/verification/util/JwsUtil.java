@@ -30,7 +30,7 @@ import java.security.PublicKey;
 import java.util.Set;
 
 /**
- * Low-level JWS verification utility: algorithm allowlist enforcement and signature verification.
+ * Utility class for JWS signature verification.
  */
 public class JwsUtil {
 
@@ -53,14 +53,12 @@ public class JwsUtil {
 
     /**
      * Verifies a JWT signature using a provided public key and JWS algorithm.
-     * Rejects disallowed algorithms and detects algorithm-switching attacks before
-     * attempting cryptographic verification.
      *
-     * @param signedJwt the parsed JWT to verify
-     * @param publicKey the public key to verify against
-     * @param algorithm the expected JWS algorithm identifier
-     * @return {@code true} if the signature is valid; otherwise {@code false}
-     * @throws VerificationException if the algorithm is disallowed or verification fails
+     * @param signedJwt Parsed JWT to verify.
+     * @param publicKey Public key to verify against.
+     * @param algorithm Expected JWS algorithm identifier.
+     * @return True if the signature is valid.
+     * @throws VerificationException If the algorithm is disallowed or verification fails.
      */
     public static boolean verifySignatureWithPublicKey(SignedJWT signedJwt, PublicKey publicKey, String algorithm)
             throws VerificationException {

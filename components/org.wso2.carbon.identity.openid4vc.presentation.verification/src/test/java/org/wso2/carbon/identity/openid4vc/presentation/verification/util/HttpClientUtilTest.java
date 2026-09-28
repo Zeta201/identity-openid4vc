@@ -25,7 +25,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.Ve
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationServerException;
 
 /**
- * Unit tests for {@link HttpClientUtil} protocol enforcement and URL validation.
+ * This class tests protocol enforcement and URL validation in HttpClientUtil.
  */
 public class HttpClientUtilTest {
 

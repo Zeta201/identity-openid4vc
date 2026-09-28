@@ -23,21 +23,16 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResp
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
 
 /**
- * Service interface for Verifiable Credential verification.
+ * This interface verifies Verifiable Credentials.
  */
 public interface VerificationService {
 
     /**
      * Runs the verification pipeline for a parsed wallet submission.
      *
-     * <p>Performs format routing, format-specific credential verification, and claim constraint
-     * enforcement. Has no knowledge of sessions — the caller is responsible for finalizing
-     * the session based on the result or caught exception.
-     *
-     * @param verificationRequest the parsed submission context produced by
-     *                            {@code PresentationSessionService.buildVerificationRequest}
-     * @return the verification result containing the verified subject claims
-     * @throws VerificationException if the credential fails verification or a required claim is absent
+     * @param verificationRequest Parsed submission context.
+     * @return Verification result containing the verified subject claims.
+     * @throws VerificationException If the credential fails verification or a required claim is absent.
      */
     VerificationResponseDTO verifyPresentation(VerificationRequestDTO verificationRequest)
             throws VerificationException;

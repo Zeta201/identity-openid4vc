@@ -40,8 +40,7 @@ import java.security.PublicKey;
 import java.util.Date;
 
 /**
- * Unit tests for {@link JwsUtil}.
- * Tests RSA/EC signature verification, algorithm enforcement, and algorithm-switching attack prevention.
+ * This class tests RSA/EC signature verification and algorithm enforcement in JwsUtil.
  */
 public class JwsUtilTest {
 

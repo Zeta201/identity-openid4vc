@@ -36,8 +36,9 @@ public class PresentationEndpointUtils {
     }
 
     /**
-     * Returns the correlation ID set on the current request thread by the Carbon runtime,
-     * or an empty string if none is present.
+     * Returns the correlation ID set on the current request thread.
+     *
+     * @return Correlation ID, or an empty string if none is present.
      */
     public static String getCorrelationId() {
 

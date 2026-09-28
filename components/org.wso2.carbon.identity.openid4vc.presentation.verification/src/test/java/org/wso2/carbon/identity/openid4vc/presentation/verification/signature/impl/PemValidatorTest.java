@@ -38,11 +38,7 @@ import java.security.KeyPairGenerator;
 import java.util.Date;
 
 /**
- * Unit tests for {@link PemValidator}.
- *
- * <p>The valid PEM constant is a self-signed EC certificate generated for test use only.
- * It is NOT used for any actual credential signing; it is only present so the PEM-parsing
- * code path can be exercised without needing a real issuer certificate.</p>
+ * This class tests PemValidator.
  */
 public class PemValidatorTest {
 

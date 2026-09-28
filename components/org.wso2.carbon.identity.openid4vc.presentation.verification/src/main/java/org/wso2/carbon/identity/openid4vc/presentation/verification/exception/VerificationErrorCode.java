@@ -19,15 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.exception;
 
 /**
- * Error codes for credential verification operations.
- *
- * <p>Each entry carries three fields:
- * <ul>
- *   <li>{@code code} — internal tracking code (e.g. {@code VPV-60001})</li>
- *   <li>{@code message} — short developer-facing label used as the exception message</li>
- *   <li>{@code description} — longer user-facing text; may contain {@code %s} placeholders formatted via
- *       {@link org.wso2.carbon.identity.openid4vc.presentation.verification.util.VerificationExceptionHandler}</li>
- * </ul>
+ * This class represents the error codes for the credential verification module.
  */
 public enum VerificationErrorCode {
 

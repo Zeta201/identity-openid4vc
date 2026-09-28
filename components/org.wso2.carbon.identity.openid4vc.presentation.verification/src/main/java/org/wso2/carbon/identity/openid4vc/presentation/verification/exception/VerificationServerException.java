@@ -19,10 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.verification.exception;
 
 /**
- * Exception type for server-side failures in credential verification.
- *
- * <p>Represents a 5xx-class error where the server encountered an unexpected condition.
- * Every instance must carry a {@link VerificationErrorCode}.</p>
+ * This class represents the server exception for the credential verification module.
  */
 public class VerificationServerException extends VerificationException {
 

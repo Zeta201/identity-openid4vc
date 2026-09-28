@@ -58,15 +58,6 @@ public class VerificationSessionsEndpoint {
     private static final Log LOG = LogFactory.getLog(VerificationSessionsEndpoint.class);
     private static final Gson GSON = new Gson();
 
-    /**
-     * Starts a new VP verification session for the given presentation definition.
-     *
-     * @param request  the HTTP servlet request
-     * @param response the HTTP servlet response
-     * @param body     JSON body containing {@code presentationDefinitionIdentifier}
-     * @return 201 with {@code requestId}, {@code walletUrl}, {@code requestUri}, {@code clientId},
-     *         and {@code expiresAt}
-     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -127,14 +118,6 @@ public class VerificationSessionsEndpoint {
         return buildStartSessionResponse(initiateResponse);
     }
 
-    /**
-     * Returns the final result of a VP verification session once it has reached a terminal state.
-     *
-     * @param request  the HTTP servlet request
-     * @param response the HTTP servlet response
-     * @param id       the VP request ID
-     * @return the session result containing status and, on failure, the error details
-     */
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -184,15 +167,6 @@ public class VerificationSessionsEndpoint {
         return buildVerificationResultResponse(verificationResult);
     }
 
-    /**
-     * Returns the current status of a VP verification session for polling.
-     * Does not evict the session from cache, allowing repeated calls while the session is active.
-     *
-     * @param request  the HTTP servlet request
-     * @param response the HTTP servlet response
-     * @param id       the VP request ID
-     * @return the session state including status, expiry, and — when terminal — the error type
-     */
     @GET
     @Path("/{id}/status")
     @Produces(MediaType.APPLICATION_JSON)

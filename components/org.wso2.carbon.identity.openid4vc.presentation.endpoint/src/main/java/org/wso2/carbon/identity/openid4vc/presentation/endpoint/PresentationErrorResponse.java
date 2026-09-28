@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Represents an error response for OpenID4VP endpoints as per OpenID4VP specification.
+ * This class represents the error response for wallet-facing OpenID4VP endpoints.
  */
 public class PresentationErrorResponse {
 
@@ -55,7 +55,7 @@ public class PresentationErrorResponse {
     }
 
     /**
-     * Builder for constructing PresentationErrorResponse instances.
+     * Builder for {@link PresentationErrorResponse}.
      */
     public static class Builder {
 
