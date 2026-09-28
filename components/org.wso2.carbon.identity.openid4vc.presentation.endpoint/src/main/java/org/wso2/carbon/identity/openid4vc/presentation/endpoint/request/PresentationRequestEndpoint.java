@@ -60,7 +60,7 @@ public class PresentationRequestEndpoint {
             }
             try {
                 PresentationCoreServiceFactory.getPresentationCoreService()
-                        .handleSessionFailed(id, tenantDomain, e.getErrorType(), e.getMessage());
+                        .handleSessionFailed(id, e.getErrorType(), e.getMessage(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for id: %s", id), ex);
             }
@@ -74,9 +74,10 @@ public class PresentationRequestEndpoint {
             LOG.error(String.format("Server error serving presentation request for id: %s", id), e);
             try {
                 PresentationCoreServiceFactory.getPresentationCoreService()
-                        .handleSessionFailed(id, tenantDomain,
+                        .handleSessionFailed(id,
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
-                                PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription());
+                                PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription(),
+                                tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for id: %s", id), ex);
             }
