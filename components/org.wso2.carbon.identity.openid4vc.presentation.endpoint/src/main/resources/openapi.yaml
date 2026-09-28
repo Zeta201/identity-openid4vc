@@ -54,9 +54,11 @@ paths:
       description: |
         Initiates a new VP verification session for the specified presentation definition.
 
-        Returns a `requestUri` to embed in the QR code or deep link shown to the wallet holder,
-        a `requestId` used to track the session, and an `expiresAt` timestamp indicating when the
-        QR code becomes invalid.
+        Returns a `walletUrl` deep-link (`openid4vp://...`) to embed in the QR code or deep
+        link shown to the wallet holder, the `requestUri` the wallet fetches to retrieve the
+        signed authorization request JWT, the verifier's `clientId`, a `requestId` used to
+        track the session, and an `expiresAt` timestamp indicating when the QR code becomes
+        invalid.
 
         The session remains `ACTIVE` until the wallet submits a VP token or the session expires.
 
@@ -142,11 +144,13 @@ paths:
         state (`VERIFIED` or `FAILED`).
 
         **Session still active (HTTP 400)**: If the session has not yet left the `ACTIVE` state,
-        the endpoint returns HTTP 400 with `error: verification_pending`. The caller should
-        continue polling `/verification-sessions/{id}/status` and retry once the status is terminal.
+        the endpoint returns HTTP 400 with error code `VPC-60008` (`verification_pending`). The
+        caller should continue polling `/verification-sessions/{id}/status` and retry once the
+        status is terminal.
 
-        On `VERIFIED`, the full `verificationResponse` object is included, containing credential
-        metadata and the subject claims extracted from the holder's disclosed SD-JWT payload.
+        On `VERIFIED`, the `credential` and `keyBinding` objects are included, containing
+        credential metadata, key-binding verification outcome, and the subject claims extracted
+        from the holder's disclosed SD-JWT payload.
         On `FAILED`, `errorType` and `errorDescription` describe the failure.
 
         <b>Permission required:</b> <br>
@@ -417,7 +421,9 @@ components:
       type: object
       required:
         - requestId
+        - walletUrl
         - requestUri
+        - clientId
         - expiresAt
       properties:
         requestId:
@@ -425,12 +431,26 @@ components:
           description: >-
             Unique identifier for this VP session. Used to poll status or retrieve the final result.
           example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        walletUrl:
+          type: string
+          description: >-
+            The `openid4vp://` deep-link URL to embed in the QR code or deep link shown to the
+            wallet holder. Embeds the verifier's `client_id` and the `requestUri`; the wallet
+            app uses this to launch the presentation flow.
+          example: >-
+            openid4vp://?client_id=x509_san_dns%3Aidp.example.com&request_uri=https%3A%2F%2Flocalhost%3A9443%2Ft%2Fdemo.com%2Foid4vp%2Frequests%2Fa1b2c3d4-e5f6-7890-abcd-ef1234567890
         requestUri:
           type: string
           description: >-
-            The `request_uri` value to encode into the QR code or deep link shown to the wallet
-            holder. The wallet fetches this URI to retrieve the signed authorization request object.
+            The `request_uri` value embedded in `walletUrl`. The wallet fetches this URI to
+            retrieve the signed authorization request object.
           example: 'https://localhost:9443/t/demo.com/oid4vp/requests/a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        clientId:
+          type: string
+          description: >-
+            The verifier's `client_id`, embedded in the signed authorization request and used
+            by the wallet to identify the requesting party.
+          example: 'x509_san_dns:idp.example.com'
         expiresAt:
           type: integer
           format: int64
@@ -486,8 +506,13 @@ components:
         Final outcome of the VP session. Returned once the session is in a terminal state
         (`VERIFIED` or `FAILED`).
       required:
+        - requestId
         - status
       properties:
+        requestId:
+          type: string
+          description: The VP session identifier.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
         status:
           $ref: '#/components/schemas/VPSessionStatus'
         errorType:
@@ -501,47 +526,68 @@ components:
             Present only when `status` is `FAILED`. Human-readable description of the failure.
             Not intended for direct display to end users.
           example: The verifiable presentation verification failed.
-        verificationResponse:
-          $ref: '#/components/schemas/VerificationResponse'
+        credential:
+          $ref: '#/components/schemas/Credential'
+        keyBinding:
+          $ref: '#/components/schemas/KeyBinding'
+        verifiedAt:
+          type: string
+          format: date-time
+          description: >-
+            Present only when `status` is `VERIFIED`. Timestamp at which this server completed
+            verification.
+          example: '2026-09-28T09:42:11Z'
 
-    VerificationResponse:
+    Credential:
       type: object
       description: >-
-        Detailed outcome of a successful credential verification. Present only when
-        `status` is `VERIFIED`. Contains credential metadata and the subject claims
-        disclosed by the holder from the SD-JWT VC.
+        Metadata and disclosed subject claims for the verified credential. Present only when
+        `status` is `VERIFIED`.
       properties:
-        credentialId:
-          type: string
-          description: Identifier of the presentation definition that was requested and satisfied.
-          example: national-id-basic
         vct:
           type: string
           description: Verifiable Credential Type (`vct`) claim from the SD-JWT VC.
           example: 'https://credentials.example.com/national-id'
-        credentialFormat:
+        format:
           type: string
           description: Credential format string reported by the verifier.
           example: dc+sd-jwt
-        signingAlgorithm:
-          type: string
-          description: JWS algorithm used to sign the credential (e.g. `ES256`, `EdDSA`).
-          example: EdDSA
         issuer:
           type: string
           description: '`iss` claim from the credential — identifies the credential issuer.'
           example: 'https://issuer.example.com'
+        signingAlgorithm:
+          type: string
+          description: JWS algorithm used to sign the credential (e.g. `ES256`, `EdDSA`).
+          example: EdDSA
         issuedAt:
-          type: integer
-          format: int64
-          description: '`iat` claim from the credential. Unix timestamp in seconds when the credential was issued.'
-          example: 1700000000
+          type: string
+          format: date-time
+          description: '`iat` claim from the credential.'
+          example: '2026-09-01T10:15:00Z'
         expiresAt:
-          type: integer
-          format: int64
-          description: '`exp` claim from the credential. Unix timestamp in seconds after which the credential is invalid.'
-          example: 1800000000
-        kbJwtVerified:
+          type: string
+          format: date-time
+          description: '`exp` claim from the credential.'
+          example: '2027-09-01T10:15:00Z'
+        claims:
+          type: object
+          additionalProperties: true
+          description: >-
+            Subject claims extracted from the credential's disclosed payload, keyed by claim name.
+            Contents depend on which selective disclosures the holder chose to reveal.
+          example:
+            given_name: Jane
+            family_name: Doe
+            birthdate: '1990-01-01'
+
+    KeyBinding:
+      type: object
+      description: >-
+        Outcome of key-binding (holder-binding) verification. Present only when `status` is
+        `VERIFIED`.
+      properties:
+        verified:
           type: boolean
           description: >-
             Whether the key-binding JWT (`kb+jwt`) in the VP token was successfully verified,
@@ -553,21 +599,6 @@ components:
             Nonce extracted from the key-binding JWT. Must match the nonce from the original
             authorization request to confirm freshness.
           example: n-0S6_WzA2Mj
-        verifiedAt:
-          type: integer
-          format: int64
-          description: Unix timestamp in milliseconds at which this server completed verification.
-          example: 1735689590000
-        subjectClaims:
-          type: object
-          additionalProperties: true
-          description: >-
-            Subject claims extracted from the credential's disclosed payload, keyed by claim name.
-            Contents depend on which selective disclosures the holder chose to reveal.
-          example:
-            given_name: Jane
-            family_name: Doe
-            birthdate: '1990-01-01'
 
     PresentationSubmissionForm:
       type: object
