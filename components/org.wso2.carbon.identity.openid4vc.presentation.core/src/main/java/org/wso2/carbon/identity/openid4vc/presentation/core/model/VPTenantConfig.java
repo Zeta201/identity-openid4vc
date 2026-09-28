@@ -19,11 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.model;
 
 /**
- * Tenant-level configuration for the OpenID4VP presentation flow.
- * Loaded from the configuration store by
- * {@link org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService}
- * and applied when building presentation requests. Missing fields are filled with server
- * defaults before the config is returned to the caller.
+ * This class represents the tenant-level configuration for the OpenID4VP presentation flow.
  */
 public class VPTenantConfig {
 

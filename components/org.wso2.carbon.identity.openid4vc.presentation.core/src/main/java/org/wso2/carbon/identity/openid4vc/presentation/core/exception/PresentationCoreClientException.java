@@ -19,10 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.exception;
 
 /**
- * Exception type for client-side presentation core errors.
- *
- * <p>Represents a 4xx-class error where the client submitted an invalid or
- * unprocessable request. Every instance must carry a {@link PresentationCoreErrorCode}.</p>
+ * This class represents the client exception for the presentation core module.
  */
 public class PresentationCoreClientException extends PresentationCoreException {
 

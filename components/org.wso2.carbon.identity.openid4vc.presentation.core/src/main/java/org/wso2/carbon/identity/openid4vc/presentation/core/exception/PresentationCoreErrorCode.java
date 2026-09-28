@@ -19,16 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.exception;
 
 /**
- * Error codes for presentation core client/server exception handling.
- *
- * <p>Each entry carries four fields:
- * <ul>
- *   <li>{@code code} — internal tracking code (e.g. {@code VPC-60001})</li>
- *   <li>{@code errorType} — protocol-level error type returned in responses</li>
- *   <li>{@code message} — short developer-facing label used as the exception message</li>
- *   <li>{@code description} — longer description; may contain {@code %s} placeholders formatted via
- *       {@link org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreExceptionHandler}</li>
- * </ul>
+ * This class represents the error codes for the presentation core module.
  */
 public enum PresentationCoreErrorCode {
 

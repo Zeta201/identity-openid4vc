@@ -83,11 +83,11 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Resolves the ECDSA signing key alias for the given tenant from the keystore manager.
+     * Resolves the ECDSA signing key alias for the given tenant.
      *
-     * @param tenantDomain the tenant domain whose key alias to resolve
-     * @return the key alias string
-     * @throws IllegalStateException if the alias cannot be resolved
+     * @param tenantDomain Tenant domain.
+     * @return Key alias.
+     * @throws IllegalStateException If the alias cannot be resolved.
      */
     public static String resolveSigningKeyAlias(String tenantDomain) {
 
@@ -100,16 +100,12 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Builds the {@code client_id} value for the given scheme and tenant.
+     * Builds the client ID value for the given scheme and tenant.
      *
-     * <p>Supports {@code x509_san_dns} (prefixed with the first dNSName SAN of the signing cert)
-     * and {@code x509_hash} (prefixed with the base64url SHA-256 of the signing cert). Throws for
-     * any unrecognized scheme.
-     *
-     * @param scheme       the {@code client_id_scheme} configured for the tenant
-     * @param tenantDomain the tenant domain used to load the signing certificate
-     * @return the fully constructed {@code client_id} string
-     * @throws PresentationCoreException if the certificate cannot be loaded or the scheme is unsupported
+     * @param scheme       Client ID scheme.
+     * @param tenantDomain Tenant domain.
+     * @return Client ID.
+     * @throws PresentationCoreException If the certificate cannot be loaded or the scheme is unsupported.
      */
     public static String buildClientId(String scheme, String tenantDomain)
             throws PresentationCoreException {
@@ -125,11 +121,11 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Computes and returns the base64url-encoded SHA-256 hash of the tenant's signing certificate.
+     * Computes the base64url-encoded SHA-256 hash of the tenant's signing certificate.
      *
-     * @param tenantDomain the tenant domain whose signing certificate to hash
-     * @return the base64url SHA-256 hash string
-     * @throws PresentationCoreServerException if the certificate cannot be loaded or hashed
+     * @param tenantDomain Tenant domain.
+     * @return Base64url SHA-256 hash.
+     * @throws PresentationCoreServerException If the certificate cannot be loaded or hashed.
      */
     public static String resolveServerCertHash(String tenantDomain) throws PresentationCoreServerException {
 
@@ -142,11 +138,11 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Computes {@code base64url(SHA-256(DER(cert)))} for the given X.509 certificate.
+     * Computes the base64url-encoded SHA-256 hash of the given X.509 certificate.
      *
-     * @param cert the certificate to hash
-     * @return the base64url-encoded SHA-256 hash string
-     * @throws PresentationCoreServerException if DER encoding or hashing fails
+     * @param cert Certificate to hash.
+     * @return Base64url SHA-256 hash.
+     * @throws PresentationCoreServerException If DER encoding or hashing fails.
      */
     public static String computeCertHash(X509Certificate cert) throws PresentationCoreServerException {
 
@@ -161,12 +157,11 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Loads the tenant's signing certificate and returns the first dNSName Subject Alternative
-     * Name entry, which is used as the {@code x509_san_dns} client ID value.
+     * Resolves the first dNSName Subject Alternative Name entry of the tenant's signing certificate.
      *
-     * @param tenantDomain the tenant domain whose certificate to inspect
-     * @return the first dNSName SAN value
-     * @throws PresentationCoreException if the certificate has no dNSName SAN or cannot be loaded
+     * @param tenantDomain Tenant domain.
+     * @return First dNSName SAN value.
+     * @throws PresentationCoreException If the certificate has no dNSName SAN or cannot be loaded.
      */
     public static String resolveServerSanDns(String tenantDomain) throws PresentationCoreException {
 
@@ -186,13 +181,10 @@ public class PresentationCoreUtil {
     /**
      * Loads the end-entity signing certificate for the given tenant from the OAUTH keystore.
      *
-     * <p>Prefers the first entry in the certificate chain (end-entity cert); falls back to a
-     * direct alias lookup for keystores that do not store a full chain.
-     *
-     * @param tenantDomain the tenant domain whose keystore to query
-     * @return the end-entity X.509 signing certificate
-     * @throws IdentityKeyStoreResolverException if the keystore cannot be accessed
-     * @throws KeyStoreException                 if the alias lookup fails
+     * @param tenantDomain Tenant domain.
+     * @return End-entity X.509 signing certificate.
+     * @throws IdentityKeyStoreResolverException If the keystore cannot be accessed.
+     * @throws KeyStoreException                 If the alias lookup fails.
      */
     private static X509Certificate loadTenantSigningCertificate(String tenantDomain)
             throws IdentityKeyStoreResolverException, KeyStoreException {
@@ -207,8 +199,8 @@ public class PresentationCoreUtil {
     /**
      * Extracts the first dNSName Subject Alternative Name entry from an X.509 certificate.
      *
-     * @param cert the certificate to inspect
-     * @return the first dNSName SAN value, or {@code null} if none is present or parsing fails
+     * @param cert Certificate to inspect.
+     * @return First dNSName SAN value, or null if none is present or parsing fails.
      */
     public static String extractSanDns(X509Certificate cert) {
 
@@ -230,9 +222,9 @@ public class PresentationCoreUtil {
     /**
      * Returns the first value for the given key from a multi-valued form parameter map.
      *
-     * @param params the form parameter map from the wallet's HTTP POST
-     * @param key    the parameter name to look up
-     * @return the first value, or {@code null} if the key is absent or the list is empty
+     * @param params Form parameter map from the wallet's HTTP POST.
+     * @param key    Parameter name to look up.
+     * @return First value, or null if the key is absent or the list is empty.
      */
     public static String extractFirstFormParam(Map<String, List<String>> params, String key) {
 
@@ -241,13 +233,10 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Flattens a VP token map from the wallet's JSON response into a {@code Map<String, String>}.
+     * Flattens a VP token map from the wallet's JSON response into a map of plain string values.
      *
-     * <p>Each value is converted to a plain string. When the raw value is a JSON array, only the
-     * first element is kept; when it is {@code null}, the mapped value is {@code null}.
-     *
-     * @param rawMap the raw {@code vp_token} map parsed from the wallet's claims
-     * @return a flattened map with one string value per credential identifier key
+     * @param rawMap Raw vp_token map parsed from the wallet's claims.
+     * @return Flattened map with one string value per credential identifier key.
      */
     public static Map<String, String> flattenVpTokenMap(Map<String, Object> rawMap) {
 
@@ -265,14 +254,14 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Loads and returns the EC private key for the given alias from the keystore.
+     * Loads the EC private key for the given alias from the keystore.
      *
-     * @param ks          the keystore to query
-     * @param keyAlias    the alias of the private key entry
-     * @param keyPassword the password protecting the key entry
-     * @return the EC private key
-     * @throws GeneralSecurityException  if the key entry cannot be accessed
-     * @throws PresentationCoreException if the resolved key is not an EC private key
+     * @param ks          Keystore to query.
+     * @param keyAlias    Alias of the private key entry.
+     * @param keyPassword Password protecting the key entry.
+     * @return EC private key.
+     * @throws GeneralSecurityException  If the key entry cannot be accessed.
+     * @throws PresentationCoreException If the resolved key is not an EC private key.
      */
     public static ECPrivateKey loadEcPrivateKey(KeyStore ks, String keyAlias, char[] keyPassword)
             throws GeneralSecurityException, PresentationCoreException {
@@ -286,16 +275,12 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Builds the {@code x5c} certificate chain list for inclusion in a JWS header.
+     * Builds the x5c certificate chain list for inclusion in a JWS header.
      *
-     * <p>When the keystore contains a multi-certificate chain, all entries are encoded.
-     * When only a single certificate is available (no chain stored), that certificate alone
-     * is used.
-     *
-     * @param certChain the full certificate chain from the keystore; may be {@code null}
-     * @param cert      the end-entity certificate to use as a fallback
-     * @return the base64-encoded certificate list in {@code x5c} order
-     * @throws GeneralSecurityException if any certificate cannot be DER-encoded
+     * @param certChain Full certificate chain from the keystore; may be null.
+     * @param cert      End-entity certificate to use as a fallback.
+     * @return Base64-encoded certificate list in x5c order.
+     * @throws GeneralSecurityException If any certificate cannot be DER-encoded.
      */
     public static List<Base64> buildX5cChain(Certificate[] certChain, X509Certificate cert)
             throws GeneralSecurityException {
@@ -314,13 +299,10 @@ public class PresentationCoreUtil {
     /**
      * Resolves the private key password for the given tenant's keystore entry.
      *
-     * <p>For the super-tenant, reads the password from the server configuration. For other
-     * tenants, derives the JKS filename from the tenant domain and asks the keystore manager.
-     *
-     * @param ksm          the keystore manager instance
-     * @param tenantDomain the tenant domain whose key password to resolve
-     * @return the key password as a char array; empty array if no password is configured
-     * @throws PresentationCoreException if the tenant keystore password cannot be retrieved
+     * @param ksm          Keystore manager instance.
+     * @param tenantDomain Tenant domain.
+     * @return Key password; empty array if no password is configured.
+     * @throws PresentationCoreException If the tenant keystore password cannot be retrieved.
      */
     public static char[] resolveKeyPassword(KeyStoreManager ksm, String tenantDomain)
             throws PresentationCoreException {
@@ -340,14 +322,11 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Extracts and returns the ephemeral EC public key stored on a VP session.
+     * Extracts the ephemeral EC public key stored on a VP session.
      *
-     * <p>Returns {@code null} when the session has no ephemeral key, which indicates that
-     * the response mode does not require encryption.
-     *
-     * @param session the VP session that may carry an ephemeral private key JWK
-     * @return the public JWK derived from the session's ephemeral private key, or {@code null}
-     * @throws PresentationCoreServerException if the stored JWK cannot be parsed
+     * @param session VP session that may carry an ephemeral private key JWK.
+     * @return Public JWK derived from the session's ephemeral private key, or null if none is stored.
+     * @throws PresentationCoreServerException If the stored JWK cannot be parsed.
      */
     public static ECKey resolveEphemeralPublicKey(VPSession session) throws PresentationCoreServerException {
 
@@ -365,14 +344,11 @@ public class PresentationCoreUtil {
     /**
      * Resolves the signing certificate from the given keystore by alias.
      *
-     * <p>Prefers the first entry in the certificate chain (end-entity cert); falls back to a
-     * direct alias lookup for keystores that do not store a full chain.
-     *
-     * @param ks       the keystore to query
-     * @param keyAlias the alias of the signing key
-     * @return the end-entity X.509 signing certificate
-     * @throws KeyStoreException               if the alias lookup fails
-     * @throws PresentationCoreServerException if no certificate is found for the alias
+     * @param ks       Keystore to query.
+     * @param keyAlias Alias of the signing key.
+     * @return End-entity X.509 signing certificate.
+     * @throws KeyStoreException               If the alias lookup fails.
+     * @throws PresentationCoreServerException If no certificate is found for the alias.
      */
     public static X509Certificate resolveSigningCertificate(KeyStore ks, String keyAlias)
             throws KeyStoreException, PresentationCoreServerException {
@@ -389,13 +365,12 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Builds the tenant-scoped {@code request_uri} at which the wallet fetches the signed
-     * authorization request JWT.
+     * Builds the tenant-scoped request_uri at which the wallet fetches the signed authorization request JWT.
      *
-     * @param tenantDomain the tenant domain to scope the URL to
-     * @param requestId    the VP session ID used as the final path segment
-     * @return the absolute public URL string
-     * @throws PresentationCoreServerException if the base URL cannot be resolved
+     * @param tenantDomain Tenant domain to scope the URL to.
+     * @param requestId    VP session ID used as the final path segment.
+     * @return Absolute public URL.
+     * @throws PresentationCoreServerException If the base URL cannot be resolved.
      */
     public static String buildRequestUri(String tenantDomain, String requestId)
             throws PresentationCoreServerException {
@@ -411,11 +386,11 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Builds the tenant-scoped {@code response_uri} where the wallet POST the VP token.
+     * Builds the tenant-scoped response_uri where the wallet posts the VP token.
      *
-     * @param tenantDomain the tenant domain to scope the URL to
-     * @return the absolute public URL string
-     * @throws PresentationCoreServerException if the base URL cannot be resolved
+     * @param tenantDomain Tenant domain to scope the URL to.
+     * @return Absolute public URL.
+     * @throws PresentationCoreServerException If the base URL cannot be resolved.
      */
     public static String buildResponseUri(String tenantDomain) throws PresentationCoreServerException {
 
@@ -429,15 +404,12 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Constructs a {@link ServiceURL} for the given tenant and path segments.
+     * Constructs a service URL for the given tenant and path segments.
      *
-     * <p>Omits the tenant qualifier for the super-tenant so the URL does not include
-     * an unnecessary {@code /t/carbon.super} segment.
-     *
-     * @param tenantDomain the tenant domain; super-tenant is left unqualified
-     * @param pathSegments one or more path segments appended after the context root
-     * @return the built {@link ServiceURL}
-     * @throws URLBuilderException if the URL cannot be assembled
+     * @param tenantDomain Tenant domain; super-tenant is left unqualified.
+     * @param pathSegments One or more path segments appended after the context root.
+     * @return Built service URL.
+     * @throws URLBuilderException If the URL cannot be assembled.
      */
     public static ServiceURL buildServiceUrl(String tenantDomain, String... pathSegments) throws URLBuilderException {
 
@@ -451,11 +423,9 @@ public class PresentationCoreUtil {
     /**
      * Builds the wallet deep-link URL used to invoke the wallet application.
      *
-     * <p>Produces {@code openid4vp://?client_id=<encoded>&request_uri=<encoded>}.
-     *
-     * @param clientId   the {@code client_id} to embed in the URL
-     * @param requestUri the {@code request_uri} the wallet will fetch for the signed request object
-     * @return the percent-encoded wallet deep-link URL string
+     * @param clientId   Client ID to embed in the URL.
+     * @param requestUri Request URI the wallet will fetch for the signed request object.
+     * @return Percent-encoded wallet deep-link URL.
      */
     public static String buildWalletUrl(String clientId, String requestUri) {
 
@@ -466,17 +436,13 @@ public class PresentationCoreUtil {
     }
 
     /**
-     * Decrypts a {@code direct_post.jwt} JWE and extracts the inner JWT claims.
+     * Decrypts a direct_post.jwt JWE and extracts the inner JWT claims.
      *
-     * <p>The JWE is decrypted with the session's ephemeral EC private key using ECDH-ES. The
-     * decrypted payload is treated as a signed JWT when possible; otherwise plain JSON claim
-     * parsing is used as a fallback.
-     *
-     * @param jweObject              the parsed JWE object received from the wallet
-     * @param ephemeralPrivateKeyJwk the ephemeral EC private key JWK stored on the session
-     * @return the decrypted {@link JWTClaimsSet}
-     * @throws ParseException if the ephemeral key or inner JWT cannot be parsed
-     * @throws JOSEException  if ECDH-ES decryption fails
+     * @param jweObject              Parsed JWE object received from the wallet.
+     * @param ephemeralPrivateKeyJwk Ephemeral EC private key JWK stored on the session.
+     * @return Decrypted JWT claims set.
+     * @throws ParseException If the ephemeral key or inner JWT cannot be parsed.
+     * @throws JOSEException  If ECDH-ES decryption fails.
      */
     public static JWTClaimsSet decryptJweResponse(JWEObject jweObject, String ephemeralPrivateKeyJwk)
             throws ParseException, JOSEException {

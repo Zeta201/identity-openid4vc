@@ -19,11 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.exception;
 
 /**
- * Base exception type for presentation core failures.
- *
- * <p>All subclasses must supply a {@link PresentationCoreErrorCode} so that every failure carries
- * a structured, machine-readable code, a protocol error type, and a human-readable
- * description. Constructors that omit the error code are intentionally absent.</p>
+ * This class represents the base exception for the presentation core module.
  */
 public class PresentationCoreException extends Exception {
 

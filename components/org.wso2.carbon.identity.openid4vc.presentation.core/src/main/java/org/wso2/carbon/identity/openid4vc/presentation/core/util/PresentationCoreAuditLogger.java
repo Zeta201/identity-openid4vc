@@ -30,9 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Audit logger for VP session lifecycle and VP tenant configuration operations.
- * Logs session initiation, credential verification outcomes, and config updates
- * using the WSO2 central audit log framework.
+ * This class logs audit events for VP session lifecycle and VP tenant configuration operations.
  */
 public class PresentationCoreAuditLogger {
 
@@ -86,10 +84,10 @@ public class PresentationCoreAuditLogger {
     /**
      * Logs the initiation of a VP session.
      *
-     * @param requestId          the unique session request ID
-     * @param definition         the presentation definition being requested
-     * @param tenantDomain       the tenant domain for the session
-     * @param responseMode       the configured response mode (e.g. {@code direct_post.jwt})
+     * @param requestId    Session request ID.
+     * @param definition   Presentation definition being requested.
+     * @param tenantDomain Tenant domain for the session.
+     * @param responseMode Configured response mode.
      */
     public void logVPSessionInitiated(String requestId, PresentationDefinition definition,
             String tenantDomain, String responseMode) {
@@ -106,9 +104,9 @@ public class PresentationCoreAuditLogger {
     /**
      * Logs a successful VP credential verification.
      *
-     * @param requestId    the VP session request ID
-     * @param credentialId the identifier of the verified credential
-     * @param tenantDomain the tenant domain for the session
+     * @param requestId    VP session request ID.
+     * @param credentialId Identifier of the verified credential.
+     * @param tenantDomain Tenant domain for the session.
      */
     public void logVPCredentialVerified(String requestId, String credentialId, String tenantDomain) {
 
@@ -123,10 +121,10 @@ public class PresentationCoreAuditLogger {
     /**
      * Logs a failed VP credential verification.
      *
-     * @param requestId        the VP session request ID
-     * @param errorType        machine-readable error type
-     * @param errorDescription human-readable description of the failure reason
-     * @param tenantDomain     the tenant domain for the session
+     * @param requestId        VP session request ID.
+     * @param errorType        Machine-readable error type.
+     * @param errorDescription Human-readable failure description.
+     * @param tenantDomain     Tenant domain for the session.
      */
     public void logVPCredentialVerificationFailed(String requestId, String errorType,
             String errorDescription, String tenantDomain) {
@@ -143,8 +141,8 @@ public class PresentationCoreAuditLogger {
     /**
      * Logs an update to the VP tenant configuration.
      *
-     * @param config       the updated configuration
-     * @param tenantDomain the tenant domain whose config was updated
+     * @param config       Updated configuration.
+     * @param tenantDomain Tenant domain whose config was updated.
      */
     public void logVPConfigUpdated(VPTenantConfig config, String tenantDomain) {
 

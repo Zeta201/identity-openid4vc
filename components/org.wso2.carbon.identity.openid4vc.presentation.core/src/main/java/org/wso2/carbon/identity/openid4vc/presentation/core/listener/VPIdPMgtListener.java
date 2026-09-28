@@ -56,8 +56,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 /**
- * Provisions an ECDSA keypair into the tenant keystore whenever a new IdP backed by
- * {@code PresentationAuthenticator} is created.
+ * This class represents the IdP management listener for the presentation core module.
  */
 public class VPIdPMgtListener extends AbstractIdentityProviderMgtListener {
 

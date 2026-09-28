@@ -24,10 +24,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.model.Presentation
 import java.io.Serializable;
 
 /**
- * Represents the server-side state of an active VP authorization flow.
- * Created when a VP request is initiated and updated as the wallet responds.
- * Serializable so it can be stored in the distributed session cache.
- * Use {@link Builder} to construct instances.
+ * This class represents the server-side state of an active VP authorization flow.
  */
 public class VPSession implements Serializable {
 
@@ -257,9 +254,9 @@ public class VPSession implements Serializable {
         }
 
         /**
-         * Constructs a {@link VPSession} from the values set on this builder.
+         * Constructs a VP session from the values set on this builder.
          *
-         * @return a new {@link VPSession} instance
+         * @return New VP session instance.
          */
         public VPSession build() {
 

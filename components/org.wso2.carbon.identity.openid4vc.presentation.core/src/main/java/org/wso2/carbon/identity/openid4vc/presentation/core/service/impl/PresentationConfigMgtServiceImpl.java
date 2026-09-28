@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import static org.wso2.carbon.identity.configuration.mgt.core.constant.ConfigurationConstants.ErrorMessages.ERROR_CODE_RESOURCE_DOES_NOT_EXISTS;
 
 /**
- * {@link ConfigurationManager}-backed implementation of {@link PresentationConfigMgtService}.
+ * This class provides the configuration-manager-backed implementation of the VP config service.
  */
 public class PresentationConfigMgtServiceImpl implements PresentationConfigMgtService {
 

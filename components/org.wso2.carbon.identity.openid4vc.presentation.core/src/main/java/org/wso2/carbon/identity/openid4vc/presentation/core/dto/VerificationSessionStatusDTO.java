@@ -21,9 +21,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.core.dto;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
 
 /**
- * DTO returned by the VP session status polling endpoint.
- * Carries only the fields a poller needs: session identity, current state,
- * expiry time, and — when the session has failed — the machine-readable error type.
+ * This class represents the response DTO for a VP session status poll.
  */
 public class VerificationSessionStatusDTO {
 

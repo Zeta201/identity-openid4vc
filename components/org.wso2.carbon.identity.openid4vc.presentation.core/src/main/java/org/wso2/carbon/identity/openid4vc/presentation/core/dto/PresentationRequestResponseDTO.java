@@ -19,9 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.dto;
 
 /**
- * DTO returned from the VP session initiation service call. Carries the request ID,
- * the deep-link wallet URL, the request URI the wallet will fetch,
- * the client ID used to identify the verifier, and the request expiry timestamp.
+ * This class represents the response DTO for a VP session initiation request.
  */
 public class PresentationRequestResponseDTO {
 

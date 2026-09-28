@@ -36,10 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * JDBC-backed persistence store for {@link VPSession} objects.
- * Sessions are serialized as JSON. Only the cryptographic secret fields —
- * {@code nonce} and {@code ephemeralPrivateKeyJwk} — are encrypted before storage;
- * the remaining non-sensitive fields are stored as plain JSON.
+ * This class provides JDBC-backed persistence for VP sessions.
  */
 public class VPSessionStore {
 
@@ -62,13 +59,12 @@ public class VPSessionStore {
     }
 
     /**
-     * Persists or updates a VP session. Uses try-UPDATE-then-INSERT to avoid
-     * duplicate key errors when the wallet updates an existing ACTIVE session.
+     * Persists or updates a VP session.
      *
-     * @param requestId the VP session identifier
-     * @param session   the session to persist
-     * @throws CryptoException If the session secrets cannot be encrypted before storage
-     * @throws SQLException    If the database write fails
+     * @param requestId Session request ID.
+     * @param session   Session to persist.
+     * @throws CryptoException If the session secrets cannot be encrypted before storage.
+     * @throws SQLException    If the database write fails.
      */
     public void put(String requestId, VPSession session) throws CryptoException, SQLException {
 
@@ -92,12 +88,11 @@ public class VPSessionStore {
 
     /**
      * Retrieves a VP session by its request ID.
-     * Returns {@code null} if the session does not exist or has expired.
      *
-     * @param requestId the VP session identifier
-     * @return the session, or {@code null}
-     * @throws CryptoException If stored session secrets cannot be decrypted
-     * @throws SQLException    If the database read fails
+     * @param requestId Session request ID.
+     * @return Session, or null if it does not exist or has expired.
+     * @throws CryptoException If stored session secrets cannot be decrypted.
+     * @throws SQLException    If the database read fails.
      */
     public VPSession get(String requestId) throws CryptoException, SQLException {
 
@@ -129,7 +124,7 @@ public class VPSessionStore {
     /**
      * Deletes a VP session from the store.
      *
-     * @param requestId the VP session identifier
+     * @param requestId Session request ID.
      */
     public void remove(String requestId) {
 
@@ -174,9 +169,9 @@ public class VPSessionStore {
     }
 
     /**
-     * Deletes all VP sessions for the given tenant. Intended for tenant offboarding and GDPR erasure.
+     * Deletes all VP sessions for the given tenant.
      *
-     * @param tenantId the numeric tenant identifier
+     * @param tenantId Numeric tenant identifier.
      */
     public void removeByTenant(int tenantId) {
 

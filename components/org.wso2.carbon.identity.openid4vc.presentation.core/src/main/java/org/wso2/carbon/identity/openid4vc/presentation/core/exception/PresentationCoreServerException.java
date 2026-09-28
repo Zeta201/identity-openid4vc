@@ -19,10 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.exception;
 
 /**
- * Exception type for server-side presentation core errors.
- *
- * <p>Represents a 5xx-class error where the server encountered an unexpected condition.
- * Every instance must carry a {@link PresentationCoreErrorCode}.</p>
+ * This class represents the server exception for the presentation core module.
  */
 public class PresentationCoreServerException extends PresentationCoreException {
 

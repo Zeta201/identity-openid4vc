@@ -85,10 +85,7 @@ import java.util.UUID;
 
 
 /**
- * Session lifecycle manager for VP authorization flows.
- *
- * <p>Responsible for initiating, retrieving, and removing VP flow sessions,
- * and for building and signing the OpenID4VP authorization request JWT.
+ * This class manages the session lifecycle and request signing for VP authorization flows.
  */
 public class PresentationCoreServiceImpl implements PresentationSessionService, PresentationRequestService {
 
@@ -234,15 +231,11 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     /**
      * Signs the given JWT claims with the tenant's EC private key.
      *
-     * <p>Loads the tenant's OAuth keystore, resolves the EC private key and signing certificate,
-     * builds the JWS header with type {@code oauth-authz-req+jwt}, the certificate hash as {@code kid},
-     * and the full chain as {@code x5c}, then signs with ES256.
-     *
      * @param claims       JWT claims to sign.
-     * @param tenantDomain tenant whose keystore is used for signing.
-     * @param tenantId     numeric tenant ID used to obtain the keystore manager.
-     * @return the compact-serialized signed JWS string.
-     * @throws PresentationCoreException if key/cert loading or signing fails.
+     * @param tenantDomain Tenant whose keystore is used for signing.
+     * @param tenantId     Numeric tenant ID used to obtain the keystore manager.
+     * @return Compact-serialized signed JWS.
+     * @throws PresentationCoreException If key/cert loading or signing fails.
      */
     private String signWithTenantKey(JWTClaimsSet claims, String tenantDomain, int tenantId)
             throws PresentationCoreException {
@@ -275,15 +268,9 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     /**
      * Builds the JWT claims set for the VP request.
      *
-     * <p>Populates standard OAuth/OpenID4VP parameters from the session: issuer, audience,
-     * {@code client_id}, {@code response_type}, {@code response_mode}, {@code response_uri},
-     * {@code nonce}, {@code state}, and the DCQL query that describes the requested credentials.
-     * When {@code direct_post.jwt} is configured, the ephemeral public key is included in
-     * {@code client_metadata} so the wallet can perform ECDH-ES encryption.
-     *
-     * @param session active VP session containing all parameters for this VP request.
-     * @return the assembled {@link JWTClaimsSet} ready to be signed.
-     * @throws PresentationCoreServerException if the ephemeral public key cannot be parsed.
+     * @param session Active VP session containing all parameters for this VP request.
+     * @return Assembled JWT claims set ready to be signed.
+     * @throws PresentationCoreServerException If the ephemeral public key cannot be parsed.
      */
     private static JWTClaimsSet buildPresentationRequestClaims(VPSession session) throws
         PresentationCoreServerException {
@@ -310,12 +297,12 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     }
 
     /**
-     * Returns the live {@link VPSession} for the given request ID, or {@code null}
-     * if the session has expired or was never created.
+     * Retrieves the live VP session for the given request ID.
      *
-     * @param requestId Request ID returned by {@code initiate}.
-     * @return The cached session, or {@code null} if absent or expired.
-     * @throws PresentationCoreException If the database read or secret decryption fails.
+     * @param requestId    Session request ID.
+     * @param tenantDomain Tenant domain of the caller.
+     * @return Cached session.
+     * @throws PresentationCoreException If the session is not found or has expired.
      */
     @Override
     public VPSession getPresentationSession(String requestId, String tenantDomain) throws PresentationCoreException {
@@ -615,12 +602,9 @@ public class PresentationCoreServiceImpl implements PresentationSessionService, 
     /**
      * Generates a one-time EC P-256 key pair for ECDH encryption of the wallet's VP token response.
      *
-     * <p>The {@code requestId} is set as the key ID ({@code kid}) so the server can look up
-     * the matching private key from the session when the encrypted response arrives.
-     *
-     * @param requestId session request ID used as the key's {@code kid}.
-     * @return the generated private key serialized as a JWK JSON string.
-     * @throws PresentationCoreServerException if key generation fails.
+     * @param requestId Session request ID used as the key's kid.
+     * @return Generated private key serialized as a JWK JSON string.
+     * @throws PresentationCoreServerException If key generation fails.
      */
     private String generateEphemeralKey(String requestId) throws PresentationCoreServerException {
 

@@ -21,19 +21,17 @@ package org.wso2.carbon.identity.openid4vc.presentation.core.service;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 
 /**
- * OSGi service for building and signing the OpenID4VP authorization request JWT.
+ * This interface builds and signs the OpenID4VP authorization request JWT.
  */
 public interface PresentationRequestService {
 
     /**
-     * Generates the signed presentation request JWT for a VP flow session,
-     * served to the wallet via {@code request_uri}.
+     * Generates the signed presentation request JWT for a VP flow session.
      *
-     * @param requestId    the transaction ID of the VP session
-     * @param tenantDomain the tenant domain resolved from the request URL
-     * @return the signed request JWT string
-     * @throws PresentationCoreException if the session is not found, does not belong to the given tenant,
-     *                                   or the JWT cannot be built
+     * @param requestId    VP session request ID.
+     * @param tenantDomain Tenant domain resolved from the request URL.
+     * @return Signed request JWT.
+     * @throws PresentationCoreException If the session is not found or the JWT cannot be built.
      */
     String buildPresentationRequest(String requestId, String tenantDomain) throws PresentationCoreException;
 }

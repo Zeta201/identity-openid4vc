@@ -18,26 +18,10 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.core.dto;
 
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 
 /**
- * Immutable context DTO produced by {@link PresentationSessionService#buildVerificationRequest}
- * and consumed by the verification pipeline.
- *
- * <p>Each field is required by at least one verification step:
- * <ul>
- *   <li>{@code token} — the raw credential string (e.g. the compact SD-JWT) extracted from the
- *       vp_token map by credential query ID, handed to the verifier for parsing and signature
- *       validation.</li>
- *   <li>{@code credential} — the credential entry from the presentation definition, carrying the
- *       expected {@code vct}, format, and trusted issuer configurations used to select the correct
- *       signature validator and enforce type constraints.</li>
- *   <li>{@code expectedNonce} — the nonce issued by IS for this VP session; the verifier checks it
- *       matches the {@code nonce} claim in the KB-JWT to prevent replay attacks.</li>
- *   <li>{@code expectedAudience} — the verifier's {@code client_id} from the VP request; the
- *       verifier checks it appears in the KB-JWT {@code aud} claim.</li>
- * </ul>
+ * This class represents the immutable context DTO consumed by the verification pipeline.
  */
 public class VerificationRequestDTO {
 

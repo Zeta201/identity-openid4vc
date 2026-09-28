@@ -22,28 +22,25 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.exception.Presentati
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPTenantConfig;
 
 /**
- * OSGi service for per-tenant VP configuration management.
- * Config is persisted in the governance registry under each tenant's namespace.
+ * This interface manages per-tenant VP configuration.
  */
 public interface PresentationConfigMgtService {
 
     /**
      * Retrieves the VP configuration for the given tenant.
-     * Returns an object with {@code null} fields if no tenant-level config has been saved yet.
      *
-     * @param tenantDomain the tenant domain whose config should be retrieved
-     * @return the current VP config; never {@code null}, but individual fields may be {@code null}
-     * @throws PresentationCoreException if the registry lookup fails
+     * @param tenantDomain Tenant domain whose config should be retrieved.
+     * @return Current VP config; individual fields may be null if unset.
+     * @throws PresentationCoreException If the registry lookup fails.
      */
     VPTenantConfig getVPConfig(String tenantDomain) throws PresentationCoreException;
 
     /**
      * Persists the VP configuration for the given tenant.
-     * Any existing config for the tenant is overwritten.
      *
-     * @param vpConfig     the new config values to store
-     * @param tenantDomain the tenant domain whose config should be updated
-     * @throws PresentationCoreException if the registry write fails
+     * @param vpConfig     New config values to store.
+     * @param tenantDomain Tenant domain whose config should be updated.
+     * @throws PresentationCoreException If the registry write fails.
      */
     void setVPConfig(VPTenantConfig vpConfig, String tenantDomain) throws PresentationCoreException;
 }
