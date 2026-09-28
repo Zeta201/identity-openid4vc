@@ -138,8 +138,7 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
             context.setProperty(VP_REQUEST_ID, presentationRequestResponse.getRequestId());
             DIAGNOSTIC_LOG.logVPFlowInitiated(presentationRequestResponse.getRequestId(), tenantDomain);
 
-            // Sub-organizations are not supported; the wallet login page's org-based
-            // redirect handling is left in place for org-unaware tenant resolution only.
+
             String redirectUrl = createRedirectUrl(presentationRequestResponse, context.getContextIdentifier(),
                     tenantDomain, StringUtils.EMPTY);
 
