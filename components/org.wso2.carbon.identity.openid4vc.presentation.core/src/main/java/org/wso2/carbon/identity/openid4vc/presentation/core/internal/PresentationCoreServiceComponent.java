@@ -58,9 +58,9 @@ public class PresentationCoreServiceComponent {
             PresentationCoreDataHolder.getInstance().setVpConfigService(configService);
             bundleContext.registerService(PresentationConfigMgtService.class, configService, null);
 
-            PresentationCoreServiceImpl vpSessionService = new PresentationCoreServiceImpl();
-            PresentationCoreDataHolder.getInstance().setVpSessionService(vpSessionService);
-            bundleContext.registerService(PresentationCoreService.class, vpSessionService, null);
+            PresentationCoreServiceImpl vpCoreService = new PresentationCoreServiceImpl();
+            PresentationCoreDataHolder.getInstance().setVpCoreService(vpCoreService);
+            bundleContext.registerService(PresentationCoreService.class, vpCoreService, null);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("OpenID4VP presentation core component activated.");

@@ -32,7 +32,7 @@ public class PresentationCoreDataHolder {
 
     private static final PresentationCoreDataHolder instance = new PresentationCoreDataHolder();
 
-    private PresentationCoreService vpSessionService;
+    private PresentationCoreService vpCoreService;
     private PresentationConfigMgtService vpConfigService;
     private RealmService realmService;
     private ApplicationManagementService applicationManagementService;
@@ -48,14 +48,14 @@ public class PresentationCoreDataHolder {
         return instance;
     }
 
-    public PresentationCoreService getVpSessionService() {
+    public PresentationCoreService getVpCoreService() {
 
-        return vpSessionService;
+        return vpCoreService;
     }
 
-    public void setVpSessionService(PresentationCoreService vpSessionService) {
+    public void setVpCoreService(PresentationCoreService vpCoreService) {
 
-        this.vpSessionService = vpSessionService;
+        this.vpCoreService = vpCoreService;
     }
 
     public PresentationConfigMgtService getVpConfigService() {
