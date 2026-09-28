@@ -212,7 +212,6 @@
                             *;resolution:=optional
                         </Import-Package>
                         <Embed-Transitive>true</Embed-Transitive>
-                        <DynamicImport-Package>*</DynamicImport-Package>
                         <_dsannotations-options>version;minimum=1.2.0</_dsannotations-options>
                         <_dsannotations>*</_dsannotations>
                         <_removeheaders>Require-Capability</_removeheaders>
