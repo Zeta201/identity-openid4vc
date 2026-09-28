@@ -32,9 +32,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This interface manages VP flow sessions for standalone verification and self-registration flows.
+ * This interface manages VP flow sessions and builds the OpenID4VP authorization request JWT.
  */
-public interface PresentationSessionService {
+public interface PresentationCoreService {
 
     /**
      * Initiates a new VP flow session.
@@ -138,5 +138,13 @@ public interface PresentationSessionService {
     VerificationSessionRespDTO getPresentationSessionResult(String requestId, String tenantDomain)
             throws PresentationCoreException;
 
+    /**
+     * Generates the signed presentation request JWT for a VP flow session.
+     *
+     * @param requestId    VP session request ID.
+     * @param tenantDomain Tenant domain resolved from the request URL.
+     * @return Signed request JWT.
+     * @throws PresentationCoreException If the session is not found or the JWT cannot be built.
+     */
+    String buildPresentationRequest(String requestId, String tenantDomain) throws PresentationCoreException;
 }
-

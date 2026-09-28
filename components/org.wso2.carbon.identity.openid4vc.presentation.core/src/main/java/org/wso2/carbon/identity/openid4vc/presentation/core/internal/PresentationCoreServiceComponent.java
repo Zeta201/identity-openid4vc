@@ -30,8 +30,7 @@ import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.configuration.mgt.core.ConfigurationManager;
 import org.wso2.carbon.identity.openid4vc.presentation.core.listener.VPIdPMgtListener;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationRequestService;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.impl.PresentationConfigMgtServiceImpl;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.impl.PresentationCoreServiceImpl;
 import org.wso2.carbon.identity.openid4vc.template.management.PresentationDefinitionManager;
@@ -61,8 +60,7 @@ public class PresentationCoreServiceComponent {
 
             PresentationCoreServiceImpl vpSessionService = new PresentationCoreServiceImpl();
             PresentationCoreDataHolder.getInstance().setVpSessionService(vpSessionService);
-            bundleContext.registerService(PresentationSessionService.class, vpSessionService, null);
-            bundleContext.registerService(PresentationRequestService.class, vpSessionService, null);
+            bundleContext.registerService(PresentationCoreService.class, vpSessionService, null);
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("OpenID4VP presentation core component activated.");

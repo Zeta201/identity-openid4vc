@@ -61,8 +61,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.internal.Presentatio
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession.VPSessionStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPTenantConfig;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationRequestService;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.util.DcqlUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreAuditLogger;
 import org.wso2.carbon.identity.openid4vc.presentation.core.util.PresentationCoreExceptionHandler;
@@ -87,7 +86,7 @@ import java.util.UUID;
 /**
  * This class manages the session lifecycle and request signing for VP authorization flows.
  */
-public class PresentationCoreServiceImpl implements PresentationSessionService, PresentationRequestService {
+public class PresentationCoreServiceImpl implements PresentationCoreService {
 
     private static final Log LOG = LogFactory.getLog(PresentationCoreServiceImpl.class);
     private static final PresentationCoreAuditLogger AUDIT_LOGGER = PresentationCoreAuditLogger.getInstance();

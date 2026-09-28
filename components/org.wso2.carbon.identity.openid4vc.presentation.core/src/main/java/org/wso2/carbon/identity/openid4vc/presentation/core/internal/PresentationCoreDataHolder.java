@@ -21,7 +21,7 @@ package org.wso2.carbon.identity.openid4vc.presentation.core.internal;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.configuration.mgt.core.ConfigurationManager;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 import org.wso2.carbon.identity.openid4vc.template.management.PresentationDefinitionManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
@@ -32,7 +32,7 @@ public class PresentationCoreDataHolder {
 
     private static final PresentationCoreDataHolder instance = new PresentationCoreDataHolder();
 
-    private PresentationSessionService vpSessionService;
+    private PresentationCoreService vpSessionService;
     private PresentationConfigMgtService vpConfigService;
     private RealmService realmService;
     private ApplicationManagementService applicationManagementService;
@@ -48,12 +48,12 @@ public class PresentationCoreDataHolder {
         return instance;
     }
 
-    public PresentationSessionService getVpSessionService() {
+    public PresentationCoreService getVpSessionService() {
 
         return vpSessionService;
     }
 
-    public void setVpSessionService(PresentationSessionService vpSessionService) {
+    public void setVpSessionService(PresentationCoreService vpSessionService) {
 
         this.vpSessionService = vpSessionService;
     }
