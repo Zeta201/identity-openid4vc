@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.core.response;
 
 import com.google.gson.Gson;
-import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
+import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession.VPSessionStatus;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

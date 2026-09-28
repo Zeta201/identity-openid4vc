@@ -35,7 +35,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.exception.Presentati
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
-import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
+import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession.VPSessionStatus;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.impl.PresentationCoreServiceImpl;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 

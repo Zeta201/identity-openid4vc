@@ -157,6 +157,34 @@ public class VPSession implements Serializable {
     }
 
     /**
+     * This enum represents the status of a Verifiable Presentation Request.
+     */
+    public enum VPSessionStatus {
+
+        ACTIVE("ACTIVE"),
+        VERIFIED("VERIFIED"),
+        FAILED("FAILED");
+
+        private final String value;
+
+        VPSessionStatus(String value) {
+
+            this.value = value;
+        }
+
+        public String getValue() {
+
+            return value;
+        }
+
+        @Override
+        public String toString() {
+
+            return value;
+        }
+    }
+
+    /**
      * Builder for {@link VPSession}.
      */
     public static class Builder {
