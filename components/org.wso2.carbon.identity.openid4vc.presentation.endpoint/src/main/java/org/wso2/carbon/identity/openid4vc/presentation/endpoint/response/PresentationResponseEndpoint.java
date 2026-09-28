@@ -29,7 +29,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.exception.Presentati
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.PresentationErrorResponse;
-import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationSessionServiceFactory;
+import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationCoreServiceFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.VerificationServiceFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -69,7 +69,7 @@ public class PresentationResponseEndpoint {
         String tenantDomain = CommonUtil.resolveTenantDomain();
         PresentationSubmissionDTO presentationSubmission;
         try {
-            presentationSubmission = PresentationSessionServiceFactory.getPresentationSessionService()
+            presentationSubmission = PresentationCoreServiceFactory.getPresentationCoreService()
                     .parsePresentationSubmission(formParams, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {
@@ -99,7 +99,7 @@ public class PresentationResponseEndpoint {
                         requestId, presentationSubmission.getError()));
             }
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(requestId, presentationSubmission.getError(),
                                 presentationSubmission.getErrorDescription(), tenantDomain);
             } catch (PresentationCoreException ex) {
@@ -110,14 +110,14 @@ public class PresentationResponseEndpoint {
 
         VerificationRequestDTO verificationRequest;
         try {
-            verificationRequest = PresentationSessionServiceFactory.getPresentationSessionService()
+            verificationRequest = PresentationCoreServiceFactory.getPresentationCoreService()
                     .buildVerificationRequest(presentationSubmission, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug(String.format("Presentation submission validation failed for requestId: %s", requestId), e);
             }
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(requestId, e.getErrorType(), e.getMessage(), tenantDomain);
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for requestId: %s", requestId), ex);
@@ -131,7 +131,7 @@ public class PresentationResponseEndpoint {
         } catch (PresentationCoreException e) {
             LOG.error(String.format("Server error building verification request for requestId: %s", requestId), e);
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(requestId,
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription(), tenantDomain);
@@ -149,7 +149,7 @@ public class PresentationResponseEndpoint {
         VerificationService verificationService = VerificationServiceFactory.getVerificationService();
         try {
             VerificationResponseDTO result = verificationService.verifyPresentation(verificationRequest);
-            PresentationSessionServiceFactory.getPresentationSessionService()
+            PresentationCoreServiceFactory.getPresentationCoreService()
                     .handleSessionVerified(requestId, result, tenantDomain);
         } catch (PresentationCoreException e) {
             LOG.error(String.format("Failed to mark session as verified for requestId: %s", requestId), e);
@@ -158,7 +158,7 @@ public class PresentationResponseEndpoint {
                 LOG.debug(String.format("Credential verification failed for requestId: %s", requestId), e);
             }
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(requestId,
                                 e.getErrorCode().getCode(),
                                 e.getErrorCode().getDescription(), tenantDomain);
@@ -168,7 +168,7 @@ public class PresentationResponseEndpoint {
         } catch (VerificationException e) {
             LOG.error(String.format("Unexpected error during verification for requestId: %s", requestId), e);
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(requestId,
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription(), tenantDomain);

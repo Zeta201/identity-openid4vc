@@ -25,8 +25,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.exception.Presentati
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.PresentationErrorResponse;
-import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationRequestServiceFactory;
-import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationSessionServiceFactory;
+import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationCoreServiceFactory;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -52,7 +51,7 @@ public class PresentationRequestEndpoint {
 
         String tenantDomain = CommonUtil.resolveTenantDomain();
         try {
-            String requestJwt = PresentationRequestServiceFactory.getPresentationRequestService()
+            String requestJwt = PresentationCoreServiceFactory.getPresentationCoreService()
                     .buildPresentationRequest(id, tenantDomain);
             return Response.ok(requestJwt, CONTENT_TYPE_AUTHZ_REQ).build();
 
@@ -61,7 +60,7 @@ public class PresentationRequestEndpoint {
                 LOG.debug(String.format("Presentation request client error for id: %s", id), e);
             }
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(id, tenantDomain, e.getErrorType(), e.getMessage());
             } catch (PresentationCoreException ex) {
                 LOG.error(String.format("Failed to mark session as failed for id: %s", id), ex);
@@ -75,7 +74,7 @@ public class PresentationRequestEndpoint {
         } catch (PresentationCoreException e) {
             LOG.error(String.format("Server error serving presentation request for id: %s", id), e);
             try {
-                PresentationSessionServiceFactory.getPresentationSessionService()
+                PresentationCoreServiceFactory.getPresentationCoreService()
                         .handleSessionFailed(id, tenantDomain,
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
                                 PresentationCoreErrorCode.INTERNAL_SERVER_ERROR.getDescription());

@@ -34,7 +34,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.response.Presentatio
 import org.wso2.carbon.identity.openid4vc.presentation.core.response.VerificationSessionResultResponse;
 import org.wso2.carbon.identity.openid4vc.presentation.core.response.VerificationSessionStatusResponse;
 import org.wso2.carbon.identity.openid4vc.presentation.endpoint.VerifierErrorResponse;
-import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationSessionServiceFactory;
+import org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories.PresentationCoreServiceFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -102,7 +102,7 @@ public class VerificationSessionsEndpoint {
 
         PresentationRequestResponseDTO initiateResponse;
         try {
-            initiateResponse = PresentationSessionServiceFactory.getPresentationSessionService()
+            initiateResponse = PresentationCoreServiceFactory.getPresentationCoreService()
                     .startPresentationSessionByIdentifier(presentationDefinitionIdentifier, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {
@@ -146,7 +146,7 @@ public class VerificationSessionsEndpoint {
 
         VerificationSessionRespDTO verificationResult;
         try {
-            verificationResult = PresentationSessionServiceFactory.getPresentationSessionService()
+            verificationResult = PresentationCoreServiceFactory.getPresentationCoreService()
                     .getPresentationSessionResult(id, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {
@@ -204,7 +204,7 @@ public class VerificationSessionsEndpoint {
 
         VerificationSessionStatusDTO sessionStatus;
         try {
-            sessionStatus = PresentationSessionServiceFactory.getPresentationSessionService()
+            sessionStatus = PresentationCoreServiceFactory.getPresentationCoreService()
                     .getPresentationSessionStatus(id, tenantDomain);
         } catch (PresentationCoreClientException e) {
             if (LOG.isDebugEnabled()) {

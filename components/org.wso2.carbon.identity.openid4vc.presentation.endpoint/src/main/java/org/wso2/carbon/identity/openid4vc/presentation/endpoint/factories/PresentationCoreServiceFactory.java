@@ -19,30 +19,30 @@
 package org.wso2.carbon.identity.openid4vc.presentation.endpoint.factories;
 
 import org.wso2.carbon.context.PrivilegedCarbonContext;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationRequestService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 
 /**
- * Factory for retrieving the {@link PresentationRequestService} OSGi service instance
+ * Factory for retrieving the {@link PresentationCoreService} OSGi service instance
  * from the Carbon runtime. Loaded once at WAR startup.
  */
-public class PresentationRequestServiceFactory {
+public class PresentationCoreServiceFactory {
 
-    private static final PresentationRequestService SERVICE;
+    private static final PresentationCoreService SERVICE;
 
     static {
-        PresentationRequestService service = (PresentationRequestService) PrivilegedCarbonContext
-                .getThreadLocalCarbonContext().getOSGiService(PresentationRequestService.class, null);
+        PresentationCoreService service = (PresentationCoreService) PrivilegedCarbonContext
+                .getThreadLocalCarbonContext().getOSGiService(PresentationCoreService.class, null);
 
         if (service == null) {
-            throw new IllegalStateException("PresentationRequestService is not available from OSGi context.");
+            throw new IllegalStateException("PresentationCoreService is not available from OSGi context.");
         }
         SERVICE = service;
     }
 
-    private PresentationRequestServiceFactory() {
+    private PresentationCoreServiceFactory() {
     }
 
-    public static PresentationRequestService getPresentationRequestService() {
+    public static PresentationCoreService getPresentationCoreService() {
 
         return SERVICE;
     }
