@@ -25,10 +25,6 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.Ve
  */
 public interface CredentialSignatureValidator {
 
-    String TYPE_X5C = "X5C";
-    String TYPE_JWKS_URI = "JWKS_URI";
-    String TYPE_PEM = "PEM";
-
     /**
      * Returns the unique type key for this validator.
      *

@@ -93,7 +93,7 @@ public class SdJwtVcVerifierTest {
             @Override
             public String getValidatorType() {
 
-                return CredentialSignatureValidator.TYPE_X5C;
+                return "X5C";
             }
 
             @Override
@@ -104,7 +104,7 @@ public class SdJwtVcVerifierTest {
 
         PresentationVerificationDataHolder mockHolderInstance =
                 Mockito.mock(PresentationVerificationDataHolder.class);
-        Mockito.when(mockHolderInstance.getCredentialSignatureValidator(CredentialSignatureValidator.TYPE_X5C))
+        Mockito.when(mockHolderInstance.getCredentialSignatureValidator("X5C"))
                .thenReturn(Optional.of(noOpValidator));
 
         mockedHolder = Mockito.mockStatic(PresentationVerificationDataHolder.class);

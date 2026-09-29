@@ -49,6 +49,8 @@ import java.text.ParseException;
  */
 public class JwksValidator implements CredentialSignatureValidator {
 
+    private static final String TYPE_JWKS_URI = "JWKS_URI";
+
     @Override
     public String getValidatorType() {
 

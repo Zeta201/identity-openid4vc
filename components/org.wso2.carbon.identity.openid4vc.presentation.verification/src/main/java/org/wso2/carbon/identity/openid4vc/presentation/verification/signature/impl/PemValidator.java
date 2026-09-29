@@ -42,6 +42,8 @@ import java.security.cert.X509Certificate;
  */
 public class PemValidator implements CredentialSignatureValidator {
 
+    private static final String TYPE_PEM = "PEM";
+
     @Override
     public String getValidatorType() {
 

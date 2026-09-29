@@ -53,6 +53,8 @@ import java.util.List;
  */
 public class X5cValidator implements CredentialSignatureValidator {
 
+    private static final String TYPE_X5C = "X5C";
+
     @Override
     public String getValidatorType() {
 
