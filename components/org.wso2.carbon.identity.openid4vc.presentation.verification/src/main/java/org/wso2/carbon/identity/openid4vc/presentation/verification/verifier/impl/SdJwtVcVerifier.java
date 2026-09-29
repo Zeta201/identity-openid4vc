@@ -151,30 +151,26 @@ public class SdJwtVcVerifier implements FormatVerifier {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.INVALID_ISSUER_JWT);
         }
 
-        // Match jwks_uri / pem configs by issuer URL first.
         for (Issuer issuer : issuers) {
             KeyResolutionMethod method = issuer.getKeyResolutionMethod();
-            if (method != KeyResolutionMethod.X5C && StringUtils.equals(iss, issuer.getIssuerUrl())) {
-                resolveSignatureValidator(method).validateSignature(
-                        new SignatureValidationContext(issuerJwt, issuer));
-                return;
-            }
-        }
-
-        // For x5c mechanisms the trust anchor is determined by AKI matching inside the validator.
-        // Try each x5c mechanism; the first one that validates the chain is accepted.
-        for (Issuer issuer : issuers) {
-            if (issuer.getKeyResolutionMethod() != KeyResolutionMethod.X5C) {
-                continue;
-            }
-            try {
-                resolveSignatureValidator(KeyResolutionMethod.X5C).
-                        validateSignature(new SignatureValidationContext(issuerJwt, issuer));
-                return;
-            } catch (VerificationException e) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("x5c trust anchor '" + issuer.getIssuerUrl()
-                            + "' did not validate the cert chain for credential '" + credentialId + "'.", e);
+            if (method != KeyResolutionMethod.X5C) {
+                // jwks_uri / pem: match by issuer URL.
+                if (StringUtils.equals(iss, issuer.getIssuerUrl())) {
+                    resolveSignatureValidator(method).validateSignature(
+                            new SignatureValidationContext(issuerJwt, issuer));
+                    return;
+                }
+            } else {
+                // x5c: the trust anchor is determined by AKI matching inside the validator.
+                CredentialSignatureValidator validator = resolveSignatureValidator(KeyResolutionMethod.X5C);
+                try {
+                    validator.validateSignature(new SignatureValidationContext(issuerJwt, issuer));
+                    return;
+                } catch (VerificationException e) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("x5c trust anchor '" + issuer.getIssuerUrl()
+                                + "' did not validate the cert chain for credential '" + credentialId + "'.", e);
+                    }
                 }
             }
         }
