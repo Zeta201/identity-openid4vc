@@ -41,7 +41,7 @@ public class VerificationConstants {
     public static final String SHA_512 = "SHA-512";
 
     /**
-     * SD-JWT {@code _sd_alg} hash algorithm identifiers (lowercase, per IANA registry).
+     * SD-JWT {@code _sd_alg} hash algorithm identifiers.
      */
     public static final String SD_JWT_HASH_ALG_SHA_256 = "sha-256";
     public static final String SD_JWT_HASH_ALG_SHA_384 = "sha-384";
