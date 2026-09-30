@@ -136,6 +136,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
             } catch (PresentationCoreException ex) {
                 LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
             }
+            context.setProperty(VP_REQUEST_ID, null);
             return userError(e.getMessage());
         } catch (PresentationAuthenticatorException e) {
             String requestId = (String) context.getProperty(VP_REQUEST_ID);
@@ -149,6 +150,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
             } catch (PresentationCoreException ex) {
                 LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
             }
+            context.setProperty(VP_REQUEST_ID, null);
             ExecutorResponse errorResponse = new ExecutorResponse();
             errorResponse.setResult(STATUS_ERROR);
             errorResponse.addMessage(MessageDTO.MessageType.ERROR, e.getMessage(), null);
@@ -169,6 +171,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
             } catch (PresentationCoreException e) {
                 LOG.warn("Could not mark session as failed on rollback. requestId: " + requestId);
             }
+            context.setProperty(VP_REQUEST_ID, null);
         }
         return new ExecutorResponse(STATUS_COMPLETE);
     }
@@ -247,6 +250,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
 
             case FAILED:
                 DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, session.getErrorType());
+                context.setProperty(VP_REQUEST_ID, null);
                 return userError("Wallet verification failed.");
 
             case ACTIVE:
