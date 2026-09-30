@@ -36,7 +36,10 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.service.Presentation
 /**
  * OSGi DS component for the VP authenticator bundle.
  */
-@Component(name = "org.wso2.carbon.identity.openid4vc.presentation.authenticator.component", immediate = true)
+@Component(
+        name = "org.wso2.carbon.identity.openid4vc.presentation.authenticator.component",
+        immediate = true
+)
 public class PresentationAuthenticatorServiceComponent {
 
     private static final Log LOG = LogFactory.getLog(PresentationAuthenticatorServiceComponent.class);
@@ -46,9 +49,7 @@ public class PresentationAuthenticatorServiceComponent {
         try {
             BundleContext bundleContext = context.getBundleContext();
             bundleContext.registerService(ApplicationAuthenticator.class, new PresentationAuthenticator(), null);
-            bundleContext.registerService(Executor.class,
-                    new PresentationExecutor(
-                            PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService()), null);
+            bundleContext.registerService(Executor.class, new PresentationExecutor(), null);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("OpenID4VP authenticator component activated.");
             }
@@ -71,13 +72,19 @@ public class PresentationAuthenticatorServiceComponent {
             policy = ReferencePolicy.DYNAMIC,
             unbind = "unsetPresentationSessionService"
     )
-    protected void setPresentationSessionService(PresentationCoreService vpSessionService) {
+    protected void setPresentationSessionService(PresentationCoreService presentationSessionService) {
 
-        PresentationAuthenticatorDataHolder.getInstance().setPresentationSessionService(vpSessionService);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Setting the Presentation Session Service.");
+        }
+        PresentationAuthenticatorDataHolder.getInstance().setPresentationSessionService(presentationSessionService);
     }
 
-    protected void unsetPresentationSessionService(PresentationCoreService vpSessionService) {
+    protected void unsetPresentationSessionService(PresentationCoreService presentationSessionService) {
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Unsetting the Presentation Session Service.");
+        }
         PresentationAuthenticatorDataHolder.getInstance().setPresentationSessionService(null);
     }
 
@@ -88,13 +95,19 @@ public class PresentationAuthenticatorServiceComponent {
             policy = ReferencePolicy.DYNAMIC,
             unbind = "unsetPresentationConfigMgtService"
     )
-    protected void setPresentationConfigMgtService(PresentationConfigMgtService vpConfigService) {
+    protected void setPresentationConfigMgtService(PresentationConfigMgtService presentationConfigMgtService) {
 
-        PresentationAuthenticatorDataHolder.getInstance().setPresentationConfigMgtService(vpConfigService);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Setting the Presentation Config Management Service.");
+        }
+        PresentationAuthenticatorDataHolder.getInstance().setPresentationConfigMgtService(presentationConfigMgtService);
     }
 
-    protected void unsetPresentationConfigMgtService(PresentationConfigMgtService vpConfigService) {
+    protected void unsetPresentationConfigMgtService(PresentationConfigMgtService presentationConfigMgtService) {
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Unsetting the Presentation Config Management Service.");
+        }
         PresentationAuthenticatorDataHolder.getInstance().setPresentationConfigMgtService(null);
     }
 }

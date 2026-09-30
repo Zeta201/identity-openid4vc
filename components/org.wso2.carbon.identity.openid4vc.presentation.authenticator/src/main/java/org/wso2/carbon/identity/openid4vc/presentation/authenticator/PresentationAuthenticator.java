@@ -24,11 +24,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
-import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.FederatedApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
-import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorErrorCode;
@@ -67,7 +65,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
     private static final String AUTHENTICATOR_NAME = "PresentationAuthenticator";
     private static final String AUTHENTICATOR_FRIENDLY_NAME = "Wallet (OpenID4VP)";
     private static final String STATUS_SUCCESS = "success";
-    private static final String STATUS_FAILED = "failed";
     private static final String WALLET_LOGIN_PAGE = "/authenticationendpoint/wallet_login.jsp";
     private static final String PARAM_SESSION_DATA_KEY = "sessionDataKey";
     private static final String PARAM_REQUEST_ID = "requestId";
@@ -158,13 +155,19 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
      * @param request  HTTP request.
      * @param response HTTP response.
      * @param context  Authentication context.
-     * @throws AuthenticationFailedException If authentication fails.
+     * @throws AuthenticationFailedException If status is not success, or response processing fails.
      */
     @Override
     protected void processAuthenticationResponse(HttpServletRequest request,
                                                  HttpServletResponse response,
                                                  AuthenticationContext context)
             throws AuthenticationFailedException {
+
+        String status = StringUtils.trimToNull(request.getParameter(PARAM_STATUS));
+        if (!STATUS_SUCCESS.equals(status)) {
+            // Fail closed: any non-success status (including unrecognised values) is treated as a failure.
+            handleVerificationFailure(request, context);
+        }
 
         String subjectClaimName = PresentationAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdP());
         if (StringUtils.isBlank(subjectClaimName)) {
@@ -232,6 +235,44 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
         }
 
         context.setSubject(authenticatedUser);
+        DIAGNOSTIC_LOG.logVPAuthenticationSuccess((String) context.getProperty(VP_REQUEST_ID));
+    }
+
+    /**
+     * Handles a non-success status callback from the wallet by marking the VP session as failed.
+     *
+     * @param request HTTP request carrying the status callback.
+     * @param context Current authentication context.
+     * @throws AuthenticationFailedException Always, to fail the current step.
+     */
+    private void handleVerificationFailure(HttpServletRequest request, AuthenticationContext context)
+            throws AuthenticationFailedException {
+
+        String requestId = (String) context.getProperty(VP_REQUEST_ID);
+        String errorType = StringUtils.trimToNull(request.getParameter(PARAM_ERROR_TYPE));
+        String tenantDomain = null;
+        try {
+            tenantDomain = context.getTenantDomain();
+            if (errorType == null) {
+                VPSession failedSession = PresentationAuthenticatorDataHolder.getInstance().
+                        getPresentationSessionService().getPresentationSession(requestId, tenantDomain);
+                errorType = failedSession != null ? failedSession.getErrorType() : null;
+            }
+        } catch (PresentationCoreException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Could not retrieve error type from VP session for requestId: " + requestId, e);
+            }
+        }
+        DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, errorType);
+        try {
+            PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
+                    handleSessionFailed(requestId, errorType, null, tenantDomain);
+        } catch (PresentationCoreException ex) {
+            LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
+        }
+        throw new AuthenticationFailedException(
+                PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getCode(),
+                PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getMessage());
     }
 
     /**
@@ -263,71 +304,16 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
                 '&' + SESSION_TTL_MS + '=' + sessionTtlMs;
     }
 
-    @Override
-    public AuthenticatorFlowStatus process(HttpServletRequest request,
-                                           HttpServletResponse response,
-                                           AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
-
-        String status = StringUtils.trimToNull(request.getParameter(PARAM_STATUS));
-
-        if (StringUtils.isNotBlank(status)) {
-            return handleStatusCallback(request, response, context, status);
-        }
-
-        return super.process(request, response, context);
-    }
-
     /**
-     * Handles the wallet callback by routing on the status parameter.
+     * Enables the framework's built-in retry so a failed verification re-initiates the wallet flow
+     * instead of failing the step outright.
      *
-     * @param request  HTTP request carrying the status callback.
-     * @param response HTTP response.
-     * @param context  Current authentication context.
-     * @param status   Callback status value.
-     * @return SUCCESS_COMPLETED on success, or INCOMPLETE for unrecognised status values.
-     * @throws AuthenticationFailedException If status is failed or response processing fails.
+     * @return Always true.
      */
-    private AuthenticatorFlowStatus handleStatusCallback(HttpServletRequest request,
-                                                         HttpServletResponse response,
-                                                         AuthenticationContext context,
-                                                         String status)
-            throws AuthenticationFailedException {
+    @Override
+    protected boolean retryAuthenticationEnabled() {
 
-        if (STATUS_SUCCESS.equals(status)) {
-            processAuthenticationResponse(request, response, context);
-            DIAGNOSTIC_LOG.logVPAuthenticationSuccess((String) context.getProperty(VP_REQUEST_ID));
-            return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
-        } else if (STATUS_FAILED.equals(status)) {
-            String requestId = (String) context.getProperty(VP_REQUEST_ID);
-            String errorType = StringUtils.trimToNull(request.getParameter(PARAM_ERROR_TYPE));
-            String tenantDomain = null;
-            try {
-                tenantDomain = context.getTenantDomain();
-                if (errorType == null) {
-                    VPSession failedSession = PresentationAuthenticatorDataHolder.getInstance().
-                            getPresentationSessionService().getPresentationSession(requestId, tenantDomain);
-                    errorType = failedSession != null ? failedSession.getErrorType() : null;
-                }
-            } catch (PresentationCoreException e) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Could not retrieve error type from VP session for requestId: " + requestId, e);
-                }
-            }
-            DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, errorType);
-            try {
-                PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
-                        handleSessionFailed(requestId, errorType, null, tenantDomain);
-            } catch (PresentationCoreException ex) {
-                LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
-            }
-            context.setRetrying(true);
-            throw new AuthenticationFailedException(
-                    PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getCode(),
-                    PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getMessage());
-        }
-
-        return AuthenticatorFlowStatus.INCOMPLETE;
+        return true;
     }
 
     @Override

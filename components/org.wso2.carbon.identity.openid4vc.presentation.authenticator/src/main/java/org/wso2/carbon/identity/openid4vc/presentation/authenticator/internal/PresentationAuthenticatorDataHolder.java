@@ -28,8 +28,8 @@ public class PresentationAuthenticatorDataHolder {
 
     private static final PresentationAuthenticatorDataHolder instance = new PresentationAuthenticatorDataHolder();
 
-    private PresentationCoreService vpSessionService;
-    private PresentationConfigMgtService vpConfigMgtService;
+    private PresentationCoreService presentationSessionService;
+    private PresentationConfigMgtService presentationConfigMgtService;
 
     private PresentationAuthenticatorDataHolder() {
 
@@ -42,21 +42,21 @@ public class PresentationAuthenticatorDataHolder {
 
     public PresentationCoreService getPresentationSessionService() {
 
-        return vpSessionService;
+        return presentationSessionService;
     }
 
-    public void setPresentationSessionService(PresentationCoreService vpSessionService) {
+    public void setPresentationSessionService(PresentationCoreService presentationSessionService) {
 
-        this.vpSessionService = vpSessionService;
+        this.presentationSessionService = presentationSessionService;
     }
 
     public PresentationConfigMgtService getPresentationConfigMgtService() {
 
-        return vpConfigMgtService;
+        return presentationConfigMgtService;
     }
 
-    public void setPresentationConfigMgtService(PresentationConfigMgtService vpConfigMgtService) {
+    public void setPresentationConfigMgtService(PresentationConfigMgtService presentationConfigMgtService) {
 
-        this.vpConfigMgtService = vpConfigMgtService;
+        this.presentationConfigMgtService = presentationConfigMgtService;
     }
 }
