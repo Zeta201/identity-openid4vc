@@ -235,7 +235,6 @@
     </build>
 
     <properties>
-        <mavan.spotbugsplugin.exclude.file>../../spotbugs-exclude-filter.xml</mavan.spotbugsplugin.exclude.file>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <osgi.service.component.annotations.imp.pkg.version.range>[1.2.0,2.0.0)</osgi.service.component.annotations.imp.pkg.version.range>
         <commons-lang.wso2.osgi.version.range>[2.6,3)</commons-lang.wso2.osgi.version.range>
