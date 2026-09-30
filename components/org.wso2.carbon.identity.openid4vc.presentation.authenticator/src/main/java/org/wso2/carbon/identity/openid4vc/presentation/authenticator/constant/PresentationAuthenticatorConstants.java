@@ -19,8 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant;
 
 /**
- * Constants shared across the presentation authenticator module.
- * Only constants used in more than one class belong here.
+ * This class represents the constants for the presentation authenticator module.
  */
 public class PresentationAuthenticatorConstants {
 

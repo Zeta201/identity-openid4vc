@@ -19,8 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception;
 
 /**
- * Represents a 5xx-class error caused by a server-side failure.
- * Every instance must carry a {@link PresentationAuthenticatorErrorCode}.
+ * This class represents the server exception for the presentation authenticator module.
  */
 public class PresentationAuthenticatorServerException extends PresentationAuthenticatorException {
 

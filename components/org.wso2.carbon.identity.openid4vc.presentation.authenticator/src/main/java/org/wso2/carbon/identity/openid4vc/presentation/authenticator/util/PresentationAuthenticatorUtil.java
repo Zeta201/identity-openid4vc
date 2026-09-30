@@ -42,19 +42,11 @@ public class PresentationAuthenticatorUtil {
 
     /**
      * Resolves the subject identifier for the authenticated user from the verified credential claims.
-     * The raw claim value is namespaced by the credential issuer (the JWT {@code iss} value from
-     * {@code metadata}) to prevent cross-issuer collisions: two credentials from different issuers
-     * that happen to carry the same claim value (e.g. the same email address) will resolve to
-     * different IS identities.
-     * <p>
-     * Format: {@code <issuer>#<claimValue>}, e.g.
-     * {@code https://issuer.example.com/oid4vci#alice@example.com}.
-     * Falls back to the raw claim value when no issuer is available in metadata.
      *
-     * @param subjectClaims   claims extracted from the verified credential.
-     * @param subjectClaimName remote claim URI configured as the subject attribute; may be null.
-     * @param metadata         presentation metadata carrying the issuer identifier; may be null.
-     * @return namespaced subject identifier string, or null if not resolvable.
+     * @param subjectClaims    Claims extracted from the verified credential.
+     * @param subjectClaimName Remote claim URI configured as the subject attribute; may be null.
+     * @param metadata         Presentation metadata carrying the issuer identifier; may be null.
+     * @return Namespaced subject identifier, or null if not resolvable.
      */
     public static String resolveSubjectIdentifier(Map<String, Object> subjectClaims,
                                                    String subjectClaimName,
@@ -80,9 +72,7 @@ public class PresentationAuthenticatorUtil {
     }
 
     /**
-     * Extracts a stable string identifier from the {@code cnf} (confirmation) claim.
-     * Uses {@code cnf.jkt} (JWK thumbprint — unique, '/'-safe) or {@code cnf} as a plain string.
-     * Returns {@code null} if no usable identifier is found.
+     * Extracts a stable string identifier from the cnf (confirmation) claim.
      */
     private static String resolveSubjectFromCnf(Map<String, Object> verifiedClaims) {
 
@@ -102,17 +92,11 @@ public class PresentationAuthenticatorUtil {
     }
 
     /**
-     * Qualifies a subject identifier value with the credential issuer to prevent cross-issuer
-     * collisions. Two credentials from different issuers that carry the same claim value
-     * (e.g. the same email address) will produce distinct identifiers.
+     * Qualifies a subject identifier value with the credential issuer to prevent cross-issuer collisions.
      *
-     * <p>Format: {@code <issuer>#<value>}, e.g.
-     * {@code https://issuer.example.com/oid4vci#alice@example.com}.
-     * Falls back to the raw value when no issuer is available in {@code metadata}.</p>
-     *
-     * @param value    the raw subject identifier extracted from the credential claim
-     * @param metadata presentation metadata carrying the issuer; may be {@code null}
-     * @return the issuer-qualified identifier, or {@code value} if the issuer is unavailable
+     * @param value    Raw subject identifier extracted from the credential claim.
+     * @param metadata Presentation metadata carrying the issuer; may be null.
+     * @return Issuer-qualified identifier, or value if the issuer is unavailable.
      */
     private static String qualifyWithIssuer(String value, VerificationResponseDTO metadata) {
 
@@ -124,11 +108,9 @@ public class PresentationAuthenticatorUtil {
 
     /**
      * Returns the remote VP claim name configured as the Subject Attribute on the IdP's Attributes tab.
-     * This claim's value in the verified credential will become the subject identifier for the
-     * authenticated user.
      *
-     * @param externalIdPConfig the external IdP configuration; may be null.
-     * @return configured subject claim URI, or null if none is set.
+     * @param externalIdPConfig External IdP configuration; may be null.
+     * @return Configured subject claim URI, or null if none is set.
      */
     public static String resolveSubjectClaimName(ExternalIdPConfig externalIdPConfig) {
 
@@ -141,12 +123,11 @@ public class PresentationAuthenticatorUtil {
     }
 
     /**
-     * Builds the federated user attribute map from the verified credential claims using
-     * the IdP claim mappings. Only claims with a matching remote-to-local mapping are included.
+     * Builds the federated user attribute map from the verified credential claims using the IdP claim mappings.
      *
-     * @param subjectClaims the subject-attribute claims extracted from the verified credential
-     * @param idpConfig      the IdP configuration carrying the claim mappings, or {@code null}
-     * @return a map of {@link ClaimMapping} to claim value strings, ready for the authenticated user
+     * @param subjectClaims Subject-attribute claims extracted from the verified credential.
+     * @param idpConfig     IdP configuration carrying the claim mappings, or null.
+     * @return Map of claim mappings to claim value strings, ready for the authenticated user.
      */
     public static Map<ClaimMapping, String> buildUserAttributes(Map<String, Object> subjectClaims,
                                                                 ExternalIdPConfig idpConfig) {

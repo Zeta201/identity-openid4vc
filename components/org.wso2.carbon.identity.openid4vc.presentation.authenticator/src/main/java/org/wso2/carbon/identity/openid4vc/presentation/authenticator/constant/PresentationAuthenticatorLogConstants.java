@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant;
 
 /**
- * Diagnostic log constants for the OpenID4VP authenticator.
+ * This class represents the diagnostic log constants for the presentation authenticator module.
  */
 public class PresentationAuthenticatorLogConstants {
 

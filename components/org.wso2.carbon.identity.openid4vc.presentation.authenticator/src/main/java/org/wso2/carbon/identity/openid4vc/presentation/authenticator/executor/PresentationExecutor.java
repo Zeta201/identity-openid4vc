@@ -62,10 +62,7 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.cons
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorConstants.WALLET_URL;
 
 /**
- * Flow executor for wallet-based self-registration via OpenID4VP.
- * Initiation returns {@code STATUS_EXTERNAL_REDIRECTION} with the wallet deep-link;
- * completion polls the VP session and returns {@code STATUS_COMPLETE}, re-issues the
- * redirection when still {@code ACTIVE}, or returns {@code STATUS_USER_ERROR} on failure.
+ * This class represents the flow executor for wallet-based self-registration via OpenID4VP.
  */
 public class PresentationExecutor extends AuthenticationExecutor {
 
@@ -81,7 +78,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
     /**
      * Creates the executor with the given VP flow service.
      *
-     * @param vpSessionService the service used to initiate and retrieve VP flow sessions
+     * @param vpSessionService VP flow service.
      */
     public PresentationExecutor(PresentationCoreService vpSessionService) {
 
@@ -177,14 +174,11 @@ public class PresentationExecutor extends AuthenticationExecutor {
     }
 
     /**
-     * Initiates a new VP flow: generates a request ID, calls the VP flow service, and returns
-     * a redirection response pointing the user's browser to the wallet URL.
+     * Initiates a new VP flow and returns a redirection response pointing to the wallet URL.
      *
-     * @param context the current flow execution context
-     * @return an {@link ExecutorResponse} with {@code STATUS_EXTERNAL_REDIRECTION} carrying
-     *         the wallet URL and request ID in {@code additionalInfo}
-     * @throws PresentationAuthenticatorException if inputs are invalid or the VP flow service fails to initiate
-     *         the session
+     * @param context Current flow execution context.
+     * @return Executor response with STATUS_EXTERNAL_REDIRECTION carrying the wallet URL and request ID.
+     * @throws PresentationAuthenticatorException If inputs are invalid or the VP flow service fails to initiate.
      */
     private ExecutorResponse initiateVPFlow(FlowExecutionContext context) throws PresentationAuthenticatorException {
 
@@ -226,11 +220,9 @@ public class PresentationExecutor extends AuthenticationExecutor {
 
     /**
      * Processes the VP flow response after the wallet has submitted the presentation.
-     * Reads the session status and returns the appropriate executor response.
      *
-     * @param context the current flow execution context carrying the {@code vp_request_id}
-     * @return {@code STATUS_COMPLETE} if verified, {@code STATUS_USER_ERROR} if failed,
-     *         or {@code STATUS_EXTERNAL_REDIRECTION} if still pending
+     * @param context Current flow execution context carrying the vp_request_id.
+     * @return STATUS_COMPLETE if verified, STATUS_USER_ERROR if failed, or STATUS_EXTERNAL_REDIRECTION if pending.
      */
     private ExecutorResponse processVPResponse(FlowExecutionContext context)
             throws PresentationAuthenticatorException {
@@ -280,15 +272,12 @@ public class PresentationExecutor extends AuthenticationExecutor {
     }
 
     /**
-     * Builds the {@code STATUS_COMPLETE} executor response after a successful VP verification.
-     * Maps credential claims to local WSO2 claim URIs, resolves the subject identifier,
-     * registers the federated association, and removes the VP session from the cache.
+     * Builds the STATUS_COMPLETE executor response after a successful VP verification.
      *
-     * @param context the current flow execution context
-     * @param session the verified VP flow session containing the verification result
-     * @return {@code STATUS_COMPLETE} response with mapped user claims
-     * @throws PresentationAuthenticatorClientException if the subject identifier cannot be resolved from the
-     *         verified credential
+     * @param context Current flow execution context.
+     * @param session Verified VP flow session containing the verification result.
+     * @return STATUS_COMPLETE response with mapped user claims.
+     * @throws PresentationAuthenticatorClientException If the subject identifier cannot be resolved.
      */
     private ExecutorResponse buildCompleteResponse(FlowExecutionContext context,
                                                    VPSession session) throws PresentationAuthenticatorException {
@@ -340,11 +329,10 @@ public class PresentationExecutor extends AuthenticationExecutor {
 
     /**
      * Translates credential claim keys to local WSO2 claim URIs using the IdP claim mappings.
-     * Claims with no matching mapping are silently dropped.
      *
-     * @param credentialClaims the subject-attribute claims from the verified credential
-     * @param idpConfig        the IdP configuration carrying the claim mappings, or {@code null}
-     * @return a map of local claim URIs to their corresponding credential claim values
+     * @param credentialClaims Subject-attribute claims from the verified credential.
+     * @param idpConfig        IdP configuration carrying the claim mappings, or null.
+     * @return Map of local claim URIs to their corresponding credential claim values.
      */
     private Map<String, Object> mapToLocalClaims(Map<String, Object> credentialClaims,
                                                   ExternalIdPConfig idpConfig) {
@@ -364,9 +352,9 @@ public class PresentationExecutor extends AuthenticationExecutor {
     /**
      * Looks up the local WSO2 claim URI for a given credential claim key.
      *
-     * @param credentialClaimKey the claim name from the verified credential (e.g. {@code "email"})
-     * @param claimMappings      the IdP claim mappings to search, or {@code null}
-     * @return the matching local claim URI, or {@code null} if no mapping exists
+     * @param credentialClaimKey Claim name from the verified credential.
+     * @param claimMappings      IdP claim mappings to search, or null.
+     * @return Matching local claim URI, or null if no mapping exists.
      */
     private String findLocalUri(String credentialClaimKey, ClaimMapping[] claimMappings) {
 
@@ -381,10 +369,10 @@ public class PresentationExecutor extends AuthenticationExecutor {
     }
 
     /**
-     * Builds a {@code STATUS_USER_ERROR} response with the given error message.
+     * Builds a STATUS_USER_ERROR response with the given error message.
      *
-     * @param message a human-readable description of the user-facing error
-     * @return an {@link ExecutorResponse} with {@code STATUS_USER_ERROR}
+     * @param message Human-readable description of the user-facing error.
+     * @return Executor response with STATUS_USER_ERROR.
      */
     private ExecutorResponse userError(String message) {
 

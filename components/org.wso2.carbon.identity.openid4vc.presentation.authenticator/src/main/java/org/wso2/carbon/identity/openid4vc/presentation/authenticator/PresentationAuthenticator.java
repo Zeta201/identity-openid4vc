@@ -56,10 +56,7 @@ import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.cons
 import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorConstants.WALLET_URL;
 
 /**
- * OpenID for Verifiable Presentations (OpenID4VP) authenticator for WSO2 Identity Server.
- *
- * <p>This authenticator implements the OpenID for Verifiable Presentations (OpenID4VP) protocol
- * to authenticate users by verifying their verifiable credentials from a digital wallet.</p>
+ * This class represents the OpenID4VP wallet authenticator for WSO2 Identity Server.
  */
 public class PresentationAuthenticator extends AbstractApplicationAuthenticator
         implements FederatedApplicationAuthenticator {
@@ -239,12 +236,12 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
     }
 
     /**
-     * Builds the redirect URL for the wallet login page, appending all required query parameters.
+     * Builds the redirect URL for the wallet login page.
      *
-     * @param presentationRequestResponse the result from the VP flow service containing the request ID and wallet URL
-     * @param sessionDataKey   the IS authentication context identifier (distinct from the VP requestId)
-     * @param tenantDomain     the resolved tenant domain for the current authentication
-     * @return the fully constructed redirect URL
+     * @param presentationRequestResponse Result from the VP flow service.
+     * @param sessionDataKey              IS authentication context identifier.
+     * @param tenantDomain                Resolved tenant domain for the current authentication.
+     * @return Fully constructed redirect URL.
      */
     private String createRedirectUrl(PresentationRequestResponseDTO presentationRequestResponse, String sessionDataKey,
                                      String tenantDomain) {
@@ -283,17 +280,14 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
     }
 
     /**
-     * Handles the wallet callback by routing on the {@code status} parameter.
-     * {@code success} triggers full response processing; {@code failed} clears the session
-     * and retries the authentication step.
+     * Handles the wallet callback by routing on the status parameter.
      *
-     * @param request  the HTTP request carrying the status callback
-     * @param response the HTTP response
-     * @param context  the current authentication context
-     * @param status   the callback status value ({@code success} or {@code failed})
-     * @return {@link AuthenticatorFlowStatus#SUCCESS_COMPLETED} on success,
-     *         or {@link AuthenticatorFlowStatus#INCOMPLETE} for unrecognised status values
-     * @throws AuthenticationFailedException if status is {@code failed} or response processing fails
+     * @param request  HTTP request carrying the status callback.
+     * @param response HTTP response.
+     * @param context  Current authentication context.
+     * @param status   Callback status value.
+     * @return SUCCESS_COMPLETED on success, or INCOMPLETE for unrecognised status values.
+     * @throws AuthenticationFailedException If status is failed or response processing fails.
      */
     private AuthenticatorFlowStatus handleStatusCallback(HttpServletRequest request,
                                                          HttpServletResponse response,

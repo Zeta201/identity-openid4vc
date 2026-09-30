@@ -24,13 +24,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.P
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorServerException;
 
 /**
- * Factory for {@link PresentationAuthenticatorClientException} and
- * {@link PresentationAuthenticatorServerException}.
- *
- * <p>All throw sites in the presentation authenticator module must go through this handler
- * rather than constructing exceptions directly. This ensures every exception carries a
- * consistent {@link PresentationAuthenticatorErrorCode} and that descriptions are
- * formatted uniformly.</p>
+ * This class builds client and server exceptions for the presentation authenticator module.
  */
 public class PresentationAuthenticatorExceptionHandler {
 
@@ -39,11 +33,11 @@ public class PresentationAuthenticatorExceptionHandler {
     }
 
     /**
-     * Builds a {@link PresentationAuthenticatorClientException} for the given error code.
+     * Builds a client exception for the given error code.
      *
-     * @param errorCode the structured error code
-     * @param data      optional {@link String#format} arguments applied to the error code's description
-     * @return a fully populated client exception
+     * @param errorCode Structured error code.
+     * @param data      Optional format arguments applied to the error code's description.
+     * @return Client exception.
      */
     public static PresentationAuthenticatorClientException handleClientException(
             PresentationAuthenticatorErrorCode errorCode, String... data) {
@@ -56,14 +50,12 @@ public class PresentationAuthenticatorExceptionHandler {
     }
 
     /**
-     * Builds a {@link PresentationAuthenticatorServerException} for the given error code, wrapping a cause.
-     * Pass {@code null} as the cause when the error is detected by the code itself rather than
-     * caught from an underlying operation.
+     * Builds a server exception for the given error code, wrapping a cause.
      *
-     * @param errorCode the structured error code
-     * @param cause     the underlying exception, or {@code null} if none
-     * @param data      optional {@link String#format} arguments applied to the error code's description
-     * @return a fully populated server exception
+     * @param errorCode Structured error code.
+     * @param cause     Underlying exception, or null if none.
+     * @param data      Optional format arguments applied to the error code's description.
+     * @return Server exception.
      */
     public static PresentationAuthenticatorServerException handleServerException(
             PresentationAuthenticatorErrorCode errorCode, Throwable cause, String... data) {

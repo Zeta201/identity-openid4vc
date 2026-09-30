@@ -19,8 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception;
 
 /**
- * Represents a 4xx-class error where the client submitted an invalid or unprocessable
- * request. Every instance must carry a {@link PresentationAuthenticatorErrorCode}.
+ * This class represents the client exception for the presentation authenticator module.
  */
 public class PresentationAuthenticatorClientException extends PresentationAuthenticatorException {
 
