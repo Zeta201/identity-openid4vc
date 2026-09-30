@@ -29,7 +29,6 @@ import org.wso2.carbon.identity.flow.execution.engine.model.ExecutorResponse;
 import org.wso2.carbon.identity.flow.execution.engine.model.FlowExecutionContext;
 import org.wso2.carbon.identity.flow.mgt.Constants.FlowTypes;
 import org.wso2.carbon.identity.flow.mgt.model.MessageDTO;
-import org.wso2.carbon.identity.openid4vc.issuance.common.util.CommonUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorException;
@@ -121,7 +120,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
     @Override
     public ExecutorResponse execute(FlowExecutionContext context) {
 
-        String tenantDomain = CommonUtil.resolveTenantDomain();
+        String tenantDomain = context.getTenantDomain();
         try {
             if (context.getProperty(VP_REQUEST_ID) == null) {
                 return initiateVPFlow(context);
@@ -165,7 +164,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
                 vpSessionService.handleSessionFailed(requestId,
                         PresentationAuthenticatorErrorCode.FLOW_ABORTED.getErrorType(),
                         PresentationAuthenticatorErrorCode.FLOW_ABORTED.getDescription(),
-                        CommonUtil.resolveTenantDomain());
+                        context.getTenantDomain());
             } catch (PresentationCoreException e) {
                 LOG.warn("Could not mark session as failed on rollback. requestId: " + requestId);
             }
@@ -186,7 +185,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
 
         String presentationDefinitionId = authenticatorProperties.get(PROP_PRESENTATION_DEFINITION_ID);
 
-        String tenantDomain = CommonUtil.resolveTenantDomain();
+        String tenantDomain = context.getTenantDomain();
         PresentationRequestResponseDTO flowResult;
         try {
             flowResult = vpSessionService.startPresentationSession(presentationDefinitionId, tenantDomain);
@@ -230,7 +229,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
         String requestId = (String) context.getProperty(VP_REQUEST_ID);
         VPSession session;
         try {
-            session = vpSessionService.getPresentationSession(requestId, CommonUtil.resolveTenantDomain());
+            session = vpSessionService.getPresentationSession(requestId, context.getTenantDomain());
         } catch (PresentationCoreClientException e) {
             DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND);
             return userError("VP session expired or not found.");

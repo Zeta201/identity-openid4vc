@@ -31,7 +31,6 @@ import org.wso2.carbon.identity.application.authentication.framework.exception.A
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
-import org.wso2.carbon.identity.openid4vc.issuance.common.util.CommonUtil;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.PresentationAuthenticatorDataHolder;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.PresentationAuthenticatorDiagnosticLogger;
@@ -117,7 +116,7 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
         try {
 
-            String tenantDomain = CommonUtil.resolveTenantDomain();
+            String tenantDomain = context.getTenantDomain();
 
             String presentationDefinitionId = MapUtils.getString(
                     context.getAuthenticatorProperties(), PROP_PRESENTATION_DEFINITION_ID);
@@ -183,7 +182,7 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
         VPSession session;
         try {
-            String tenantDomain = CommonUtil.resolveTenantDomain();
+            String tenantDomain = context.getTenantDomain();
             session = PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
                     getPresentationSession(requestId, tenantDomain);
         } catch (PresentationCoreClientException e) {
@@ -304,7 +303,7 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
             String errorType = StringUtils.trimToNull(request.getParameter(PARAM_ERROR_TYPE));
             String tenantDomain = null;
             try {
-                tenantDomain = CommonUtil.resolveTenantDomain();
+                tenantDomain = context.getTenantDomain();
                 if (errorType == null) {
                     VPSession failedSession = PresentationAuthenticatorDataHolder.getInstance().
                             getPresentationSessionService().getPresentationSession(requestId, tenantDomain);
