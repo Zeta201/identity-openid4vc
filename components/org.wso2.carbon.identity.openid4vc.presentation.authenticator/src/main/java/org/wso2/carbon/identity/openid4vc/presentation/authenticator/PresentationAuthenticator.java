@@ -277,10 +277,15 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
                 LOG.debug("Could not retrieve error type from VP session for requestId: " + requestId, e);
             }
         }
+        if (errorType == null) {
+            errorType = PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getErrorType();
+        }
+        String errorDescription = String.format(
+                PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(), requestId);
         DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, errorType);
         try {
             PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
-                    handleSessionFailed(requestId, errorType, null, tenantDomain);
+                    handleSessionFailed(requestId, errorType, errorDescription, tenantDomain);
         } catch (PresentationCoreException ex) {
             LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
         }
