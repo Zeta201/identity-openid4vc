@@ -25,13 +25,13 @@ public enum PresentationAuthenticatorErrorCode {
 
     // Client errors (60xxx)
     INVALID_PRESENTATION_DEFINITION("VPA-60001", "invalid_presentation_definition",
-            "Invalid presentation definition.", "The presentation definition is invalid or missing."),
+            "Invalid presentation definition.", "The presentation definition '%s' is invalid or missing."),
 
     VP_REQUEST_NOT_FOUND("VPA-60002", "vp_request_not_found",
-            "VP request was not found.", "The VP request was not found or has expired."),
+            "VP request was not found.", "The VP request '%s' was not found or has expired."),
 
     VERIFICATION_FAILED("VPA-60003", "verification_failed",
-            "VP verification failed.", "The wallet returned a failed verification."),
+            "VP verification failed.", "The wallet returned a failed verification for VP request '%s'."),
 
     NO_VERIFIED_CLAIMS("VPA-60004", "no_verified_claims",
             "No verified claims found.",

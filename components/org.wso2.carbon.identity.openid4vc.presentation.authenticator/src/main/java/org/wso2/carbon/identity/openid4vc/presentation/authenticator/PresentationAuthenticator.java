@@ -137,12 +137,16 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
             response.sendRedirect(redirectUrl);
 
         } catch (PresentationCoreException e) {
-            DIAGNOSTIC_LOG.logVPFlowInitiationFailed(PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR);
+            DIAGNOSTIC_LOG.logVPFlowInitiationFailed(
+                    PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR.getErrorType(),
+                    PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR.getDescription());
             throw new AuthenticationFailedException(
                     PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR.getCode(),
                     PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR.getMessage(), e);
         } catch (IOException e) {
-            DIAGNOSTIC_LOG.logVPFlowInitiationFailed(PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR);
+            DIAGNOSTIC_LOG.logVPFlowInitiationFailed(
+                    PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
+                    PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getDescription());
             throw new AuthenticationFailedException(
                     PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                     PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getMessage(), e);
@@ -189,14 +193,19 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
             session = PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
                     getPresentationSession(requestId, tenantDomain);
         } catch (PresentationCoreClientException e) {
-            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
+                    PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getErrorType(),
+                    String.format(PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getDescription(),
+                            requestId));
             throw new AuthenticationFailedException(
                     PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getCode(),
                     PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getMessage(), e);
         } catch (PresentationCoreException e) {
             LOG.error("Failed to retrieve VP session for requestId: " + requestId, e);
             DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
-                    PresentationAuthenticatorErrorCode.VP_SESSION_RETRIEVAL_ERROR);
+                    PresentationAuthenticatorErrorCode.VP_SESSION_RETRIEVAL_ERROR.getErrorType(),
+                    String.format(PresentationAuthenticatorErrorCode.VP_SESSION_RETRIEVAL_ERROR.getDescription(),
+                            requestId));
             throw new AuthenticationFailedException(
                     PresentationAuthenticatorErrorCode.VP_SESSION_RETRIEVAL_ERROR.getCode(),
                     PresentationAuthenticatorErrorCode.VP_SESSION_RETRIEVAL_ERROR.getMessage(), e);
@@ -204,7 +213,10 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
         VerificationResponseDTO verificationResponse = session.getVerificationResponse();
         if (verificationResponse == null) {
-            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
+                    PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getErrorType(),
+                    String.format(PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getDescription(),
+                            subjectClaimName != null ? subjectClaimName : "(none)"));
             throw new AuthenticationFailedException(
                     PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getCode(),
                     PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getMessage());
@@ -215,7 +227,10 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
         String subjectIdentifier = PresentationAuthenticatorUtil.resolveSubjectIdentifier(
                 subjectClaims, subjectClaimName, verificationResponse);
         if (subjectIdentifier == null) {
-            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
+                    PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getErrorType(),
+                    String.format(PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getDescription(),
+                            subjectClaimName != null ? subjectClaimName : "(none)"));
             throw new AuthenticationFailedException(
                     PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getCode(),
                     PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getMessage());

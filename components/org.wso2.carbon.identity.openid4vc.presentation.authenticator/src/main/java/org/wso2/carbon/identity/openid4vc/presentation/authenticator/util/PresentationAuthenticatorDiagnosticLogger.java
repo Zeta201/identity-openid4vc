@@ -28,7 +28,7 @@ import org.wso2.carbon.utils.DiagnosticLog;
  */
 public class PresentationAuthenticatorDiagnosticLogger {
 
-    public void logVPFlowInitiationFailed(PresentationAuthenticatorErrorCode errorCode) {
+    public void logVPFlowInitiationFailed(String errorType, String errorDescription) {
 
         if (!LoggerUtils.isDiagnosticLogsEnabled()) {
             return;
@@ -38,11 +38,11 @@ public class PresentationAuthenticatorDiagnosticLogger {
                         PresentationAuthenticatorLogConstants.ActionIDs.INITIATE_VP_FLOW,
                         "VP authentication flow initiation failed.",
                         DiagnosticLog.ResultStatus.FAILED)
-                        .inputParam("errorType", errorCode.getErrorType())
-                        .inputParam("errorDescription", errorCode.getDescription()));
+                        .inputParam("errorType", errorType)
+                        .inputParam("errorDescription", errorDescription));
     }
 
-    public void logVPAuthenticationError(String requestId, PresentationAuthenticatorErrorCode errorCode) {
+    public void logVPAuthenticationError(String requestId, String errorType, String errorDescription) {
 
         if (!LoggerUtils.isDiagnosticLogsEnabled()) {
             return;
@@ -51,8 +51,8 @@ public class PresentationAuthenticatorDiagnosticLogger {
                 PresentationAuthenticatorLogConstants.ActionIDs.COMPLETE_VP_AUTHENTICATION,
                 "VP authentication failed.",
                 DiagnosticLog.ResultStatus.FAILED)
-                .inputParam("errorType", errorCode.getErrorType())
-                .inputParam("errorDescription", errorCode.getDescription());
+                .inputParam("errorType", errorType)
+                .inputParam("errorDescription", errorDescription);
         if (requestId != null) {
             builder.configParam("requestId", requestId);
         }
@@ -97,7 +97,10 @@ public class PresentationAuthenticatorDiagnosticLogger {
                         "VP authentication failed.",
                         DiagnosticLog.ResultStatus.FAILED)
                         .configParam("requestId", requestId)
-                        .inputParam("errorType", errorType != null ? errorType : "unknown"));
+                        .inputParam("errorType", errorType != null ? errorType : "unknown")
+                        .inputParam("errorDescription",
+                                String.format(PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(),
+                                        requestId)));
     }
 
     private DiagnosticLog.DiagnosticLogBuilder initializeDiagnosticLogBuilder(String actionId, String message,

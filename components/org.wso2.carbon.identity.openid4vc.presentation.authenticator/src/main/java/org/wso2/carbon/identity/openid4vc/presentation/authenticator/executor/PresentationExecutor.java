@@ -124,12 +124,12 @@ public class PresentationExecutor extends AuthenticationExecutor {
             try {
                 return initiateVPFlow(context);
             } catch (PresentationAuthenticatorClientException e) {
-                LOG.warn("VP flow initiation failed due to client error.", e);
-                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(e.getErrorCode());
+                LOG.warn("VP flow initiation failed due to client error: " + e.getDescription(), e);
+                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(e.getErrorType(), e.getDescription());
                 return userError(e.getMessage());
             } catch (PresentationAuthenticatorException e) {
-                LOG.error("VP flow initiation failed due to server error.", e);
-                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR);
+                LOG.error("VP flow initiation failed due to server error: " + e.getDescription(), e);
+                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(e.getErrorType(), e.getDescription());
                 ExecutorResponse errorResponse = new ExecutorResponse();
                 errorResponse.setResult(STATUS_ERROR);
                 errorResponse.addMessage(MessageDTO.MessageType.ERROR, e.getMessage(), null);
@@ -143,7 +143,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
         } catch (PresentationAuthenticatorClientException e) {
             String requestId = (String) context.getProperty(VP_REQUEST_ID);
             LOG.warn("VP registration flow failed due to client error. requestId: " + requestId, e);
-            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, e.getErrorCode());
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, e.getErrorType(), e.getDescription());
             try {
                 getPresentationSessionService().handleSessionFailed(requestId, e.getErrorType(), e.getMessage(),
                         tenantDomain);
@@ -155,8 +155,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
         } catch (PresentationAuthenticatorException e) {
             String requestId = (String) context.getProperty(VP_REQUEST_ID);
             LOG.error("VP registration flow failed due to server error. requestId: " + requestId, e);
-            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
-                    PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, e.getErrorType(), e.getDescription());
             try {
                 getPresentationSessionService().handleSessionFailed(requestId,
                         PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
@@ -210,7 +209,8 @@ public class PresentationExecutor extends AuthenticationExecutor {
                     .startPresentationSession(presentationDefinitionId, tenantDomain);
         } catch (PresentationCoreClientException e) {
             throw PresentationAuthenticatorExceptionHandler.handleClientException(
-                    PresentationAuthenticatorErrorCode.INVALID_PRESENTATION_DEFINITION);
+                    PresentationAuthenticatorErrorCode.INVALID_PRESENTATION_DEFINITION,
+                    StringUtils.defaultIfBlank(presentationDefinitionId, "(none)"));
         } catch (PresentationCoreException e) {
             throw PresentationAuthenticatorExceptionHandler.handleServerException(
                     PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR, e);
@@ -250,7 +250,10 @@ public class PresentationExecutor extends AuthenticationExecutor {
         try {
             session = getPresentationSessionService().getPresentationSession(requestId, context.getTenantDomain());
         } catch (PresentationCoreClientException e) {
-            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
+                    PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getErrorType(),
+                    String.format(PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getDescription(),
+                            requestId));
             return userError("VP session expired or not found.");
         } catch (PresentationCoreException e) {
             throw PresentationAuthenticatorExceptionHandler.handleServerException(
@@ -285,7 +288,8 @@ public class PresentationExecutor extends AuthenticationExecutor {
 
             default:
                 DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
-                        PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR);
+                        PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
+                        PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getDescription());
                 return userError("VP session is in an unexpected state: " + status);
         }
     }
