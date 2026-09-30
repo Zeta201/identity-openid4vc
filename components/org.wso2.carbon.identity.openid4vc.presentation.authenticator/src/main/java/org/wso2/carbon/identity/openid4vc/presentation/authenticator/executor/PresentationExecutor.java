@@ -41,8 +41,8 @@ import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResp
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
 import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
-import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSessionStatus;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession.VPSessionStatus;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,14 +76,14 @@ public class PresentationExecutor extends AuthenticationExecutor {
     private static final String EXECUTOR_NAME = "PresentationExecutor";
     private static final String AMR_VALUE = "PresentationAuthenticator";
 
-    private PresentationSessionService vpSessionService;
+    private PresentationCoreService vpSessionService;
 
     /**
      * Creates the executor with the given VP flow service.
      *
      * @param vpSessionService the service used to initiate and retrieve VP flow sessions
      */
-    public PresentationExecutor(PresentationSessionService vpSessionService) {
+    public PresentationExecutor(PresentationCoreService vpSessionService) {
 
         this.vpSessionService = vpSessionService;
     }

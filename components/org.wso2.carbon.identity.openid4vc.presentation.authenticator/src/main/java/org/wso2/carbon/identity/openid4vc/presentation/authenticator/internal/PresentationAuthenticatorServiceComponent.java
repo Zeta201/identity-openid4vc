@@ -31,7 +31,7 @@ import org.wso2.carbon.identity.flow.execution.engine.graph.Executor;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.PresentationAuthenticator;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.executor.PresentationExecutor;
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 
 /**
  * OSGi DS component for the VP authenticator bundle.
@@ -66,17 +66,17 @@ public class PresentationAuthenticatorServiceComponent {
 
     @Reference(
             name = "openid4vc.presentation.core.vp.session.service",
-            service = PresentationSessionService.class,
+            service = PresentationCoreService.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
             unbind = "unsetPresentationSessionService"
     )
-    protected void setPresentationSessionService(PresentationSessionService vpSessionService) {
+    protected void setPresentationSessionService(PresentationCoreService vpSessionService) {
 
         PresentationAuthenticatorDataHolder.getInstance().setPresentationSessionService(vpSessionService);
     }
 
-    protected void unsetPresentationSessionService(PresentationSessionService vpSessionService) {
+    protected void unsetPresentationSessionService(PresentationCoreService vpSessionService) {
 
         PresentationAuthenticatorDataHolder.getInstance().setPresentationSessionService(null);
     }

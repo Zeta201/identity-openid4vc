@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal;
 
 import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationConfigMgtService;
-import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationSessionService;
+import org.wso2.carbon.identity.openid4vc.presentation.core.service.PresentationCoreService;
 
 /**
  * Data holder for the VP authenticator bundle.
@@ -28,7 +28,7 @@ public class PresentationAuthenticatorDataHolder {
 
     private static final PresentationAuthenticatorDataHolder instance = new PresentationAuthenticatorDataHolder();
 
-    private PresentationSessionService vpSessionService;
+    private PresentationCoreService vpSessionService;
     private PresentationConfigMgtService vpConfigMgtService;
 
     private PresentationAuthenticatorDataHolder() {
@@ -40,12 +40,12 @@ public class PresentationAuthenticatorDataHolder {
         return instance;
     }
 
-    public PresentationSessionService getPresentationSessionService() {
+    public PresentationCoreService getPresentationSessionService() {
 
         return vpSessionService;
     }
 
-    public void setPresentationSessionService(PresentationSessionService vpSessionService) {
+    public void setPresentationSessionService(PresentationCoreService vpSessionService) {
 
         this.vpSessionService = vpSessionService;
     }
