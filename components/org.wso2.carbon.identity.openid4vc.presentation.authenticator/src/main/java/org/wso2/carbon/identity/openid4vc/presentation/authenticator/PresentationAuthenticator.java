@@ -241,7 +241,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
         AuthenticatedUser authenticatedUser = AuthenticatedUser
                 .createFederateAuthenticatedUserFromSubjectIdentifier(subjectIdentifier, idpName);
-        authenticatedUser.setTenantDomain(session.getTenantDomain());
 
         Map<ClaimMapping, String> federatedAttributes = PresentationAuthenticatorUtil.
                 buildUserAttributes(subjectClaims, context.getExternalIdP());
