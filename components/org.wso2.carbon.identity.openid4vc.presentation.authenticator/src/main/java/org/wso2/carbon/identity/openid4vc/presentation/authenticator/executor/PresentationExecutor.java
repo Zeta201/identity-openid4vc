@@ -258,7 +258,8 @@ public class PresentationExecutor extends AuthenticationExecutor {
                 return buildCompleteResponse(context, session);
 
             case FAILED:
-                DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, session.getErrorType());
+                DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, session.getErrorType(),
+                        session.getErrorDescription());
                 context.setProperty(VP_REQUEST_ID, null);
                 return userError("Wallet verification failed.");
 

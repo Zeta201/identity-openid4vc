@@ -20,7 +20,6 @@ package org.wso2.carbon.identity.openid4vc.presentation.authenticator.util;
 
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorLogConstants;
-import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorErrorCode;
 import org.wso2.carbon.utils.DiagnosticLog;
 
 /**
@@ -86,7 +85,7 @@ public class PresentationAuthenticatorDiagnosticLogger {
                         .configParam("requestId", requestId));
     }
 
-    public void logVPAuthenticationFailed(String requestId, String errorType) {
+    public void logVPAuthenticationFailed(String requestId, String errorType, String errorDescription) {
 
         if (!LoggerUtils.isDiagnosticLogsEnabled()) {
             return;
@@ -98,9 +97,7 @@ public class PresentationAuthenticatorDiagnosticLogger {
                         DiagnosticLog.ResultStatus.FAILED)
                         .configParam("requestId", requestId)
                         .inputParam("errorType", errorType != null ? errorType : "unknown")
-                        .inputParam("errorDescription",
-                                String.format(PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(),
-                                        requestId)));
+                        .inputParam("errorDescription", errorDescription));
     }
 
     private DiagnosticLog.DiagnosticLogBuilder initializeDiagnosticLogBuilder(String actionId, String message,

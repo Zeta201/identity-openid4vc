@@ -277,12 +277,17 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
                 LOG.debug("Could not retrieve error type from VP session for requestId: " + requestId, e);
             }
         }
-        if (errorType == null) {
+        String errorDescription;
+        if (errorType != null) {
+            errorDescription = String.format(
+                    "The wallet returned a failed verification for VP request '%s' with error type '%s'.",
+                    requestId, errorType);
+        } else {
             errorType = PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getErrorType();
+            errorDescription = String.format(
+                    PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(), requestId);
         }
-        String errorDescription = String.format(
-                PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(), requestId);
-        DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, errorType);
+        DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, errorType, errorDescription);
         try {
             PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
                     handleSessionFailed(requestId, errorType, errorDescription, tenantDomain);
