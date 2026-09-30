@@ -71,7 +71,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
     private static final String PARAM_TENANT_DOMAIN = "tenantDomain";
     private static final String PARAM_ROOT_TENANT_DOMAIN = "rootTenantDomain";
     private static final String PARAM_STATUS = "status";
-    private static final String PARAM_ERROR_TYPE = "error_type";
 
     /**
      * Returns the unique internal name of this authenticator, used by WSO2 IS
@@ -170,7 +169,7 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
         String status = StringUtils.trimToNull(request.getParameter(PARAM_STATUS));
         if (!STATUS_SUCCESS.equals(status)) {
             // Fail closed: any non-success status (including unrecognised values) is treated as a failure.
-            handleVerificationFailure(request, context);
+            handleVerificationFailure(context);
         }
 
         String subjectClaimName = PresentationAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdP());
@@ -255,23 +254,22 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
     /**
      * Handles a non-success status callback from the wallet by marking the VP session as failed.
      *
-     * @param request HTTP request carrying the status callback.
      * @param context Current authentication context.
      * @throws AuthenticationFailedException Always, to fail the current step.
      */
-    private void handleVerificationFailure(HttpServletRequest request, AuthenticationContext context)
+    private void handleVerificationFailure(AuthenticationContext context)
             throws AuthenticationFailedException {
 
         String requestId = (String) context.getProperty(VP_REQUEST_ID);
-        String errorType = StringUtils.trimToNull(request.getParameter(PARAM_ERROR_TYPE));
-        String tenantDomain = null;
+        String tenantDomain = context.getTenantDomain();
+        // The error type used for logging/storage always comes from the session presentation.core
+        // itself recorded (which may in turn reflect the wallet's own reported error) - never from
+        // the request parameter, since that is client-supplied and could be tampered with locally.
+        String errorType = null;
         try {
-            tenantDomain = context.getTenantDomain();
-            if (errorType == null) {
-                VPSession failedSession = PresentationAuthenticatorDataHolder.getInstance().
-                        getPresentationSessionService().getPresentationSession(requestId, tenantDomain);
-                errorType = failedSession != null ? failedSession.getErrorType() : null;
-            }
+            VPSession failedSession = PresentationAuthenticatorDataHolder.getInstance().
+                    getPresentationSessionService().getPresentationSession(requestId, tenantDomain);
+            errorType = failedSession != null ? failedSession.getErrorType() : null;
         } catch (PresentationCoreException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Could not retrieve error type from VP session for requestId: " + requestId, e);
