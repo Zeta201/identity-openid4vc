@@ -120,11 +120,25 @@ public class PresentationExecutor extends AuthenticationExecutor {
     @Override
     public ExecutorResponse execute(FlowExecutionContext context) {
 
+        if (context.getProperty(VP_REQUEST_ID) == null) {
+            try {
+                return initiateVPFlow(context);
+            } catch (PresentationAuthenticatorClientException e) {
+                LOG.warn("VP flow initiation failed due to client error.", e);
+                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(e.getErrorCode());
+                return userError(e.getMessage());
+            } catch (PresentationAuthenticatorException e) {
+                LOG.error("VP flow initiation failed due to server error.", e);
+                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR);
+                ExecutorResponse errorResponse = new ExecutorResponse();
+                errorResponse.setResult(STATUS_ERROR);
+                errorResponse.addMessage(MessageDTO.MessageType.ERROR, e.getMessage(), null);
+                return errorResponse;
+            }
+        }
+
         String tenantDomain = context.getTenantDomain();
         try {
-            if (context.getProperty(VP_REQUEST_ID) == null) {
-                return initiateVPFlow(context);
-            }
             return processVPResponse(context);
         } catch (PresentationAuthenticatorClientException e) {
             String requestId = (String) context.getProperty(VP_REQUEST_ID);
