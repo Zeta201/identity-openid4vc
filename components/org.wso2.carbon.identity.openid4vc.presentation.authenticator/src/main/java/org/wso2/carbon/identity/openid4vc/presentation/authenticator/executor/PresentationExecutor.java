@@ -258,8 +258,16 @@ public class PresentationExecutor extends AuthenticationExecutor {
                 return buildCompleteResponse(context, session);
 
             case FAILED:
-                DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, session.getErrorType(),
-                        session.getErrorDescription());
+                String failedErrorType = session.getErrorType();
+                String failedErrorDescription;
+                if (failedErrorType != null) {
+                    failedErrorDescription = session.getErrorDescription();
+                } else {
+                    failedErrorType = PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getErrorType();
+                    failedErrorDescription = String.format(
+                            PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(), requestId);
+                }
+                DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, failedErrorType, failedErrorDescription);
                 context.setProperty(VP_REQUEST_ID, null);
                 return userError("Wallet verification failed.");
 
@@ -300,9 +308,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
 
         VerificationResponseDTO result = session.getVerificationResponse();
 
-        Map<String, Object> credentialClaims = result != null
-                ? result.getSubjectClaims() : Collections.emptyMap();
-
+        Map<String, Object> credentialClaims = result != null ? result.getSubjectClaims() : Collections.emptyMap();
         String subjectClaimName = PresentationAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdPConfig());
         String subjectIdentifier = PresentationAuthenticatorUtil.resolveSubjectIdentifier(
                 credentialClaims, subjectClaimName, result);
@@ -397,5 +403,4 @@ public class PresentationExecutor extends AuthenticationExecutor {
         response.addMessage(MessageDTO.MessageType.ERROR, message, null);
         return response;
     }
-
 }

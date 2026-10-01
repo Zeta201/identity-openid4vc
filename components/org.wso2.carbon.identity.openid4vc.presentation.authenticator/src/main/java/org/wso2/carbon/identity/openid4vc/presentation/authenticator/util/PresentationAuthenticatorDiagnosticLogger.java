@@ -96,7 +96,7 @@ public class PresentationAuthenticatorDiagnosticLogger {
                         "VP authentication failed.",
                         DiagnosticLog.ResultStatus.FAILED)
                         .configParam("requestId", requestId)
-                        .inputParam("errorType", errorType != null ? errorType : "unknown")
+                        .inputParam("errorType", errorType)
                         .inputParam("errorDescription", errorDescription));
     }
 
