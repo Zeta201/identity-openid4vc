@@ -61,13 +61,11 @@ public class PresentationAuthenticatorUtil {
             LOG.warn("Configured subject attribute '" + subjectClaimName
                     + "' was not found in the verified credential claims; falling back to cnf.");
         }
-
         // 2. cnf (holder-binding) claim — the VC equivalent of OIDC's sub.
         String cnfIdentifier = resolveSubjectFromCnf(subjectClaims);
         if (cnfIdentifier != null) {
             return qualifyWithIssuer(cnfIdentifier, metadata);
         }
-
         return null;
     }
 

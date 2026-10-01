@@ -128,13 +128,9 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
             context.setProperty(VP_REQUEST_ID, presentationRequestResponse.getRequestId());
             DIAGNOSTIC_LOG.logVPFlowInitiated(presentationRequestResponse.getRequestId(), tenantDomain);
-
-
             String redirectUrl = createRedirectUrl(presentationRequestResponse, context.getContextIdentifier(),
                     tenantDomain);
-
             response.sendRedirect(redirectUrl);
-
         } catch (PresentationCoreException e) {
             DIAGNOSTIC_LOG.logVPFlowInitiationFailed(
                     PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR.getErrorType(),
@@ -235,18 +231,14 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
                     PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS.getMessage());
         }
 
-        String idpName = context.getExternalIdP() != null
-                ? context.getExternalIdP().getIdPName() : null;
-
+        String idpName = context.getExternalIdP() != null ? context.getExternalIdP().getIdPName() : null;
         AuthenticatedUser authenticatedUser = AuthenticatedUser
                 .createFederateAuthenticatedUserFromSubjectIdentifier(subjectIdentifier, idpName);
-
         Map<ClaimMapping, String> federatedAttributes = PresentationAuthenticatorUtil.
                 buildUserAttributes(subjectClaims, context.getExternalIdP());
         if (!federatedAttributes.isEmpty()) {
             authenticatedUser.setUserAttributes(federatedAttributes);
         }
-
         context.setSubject(authenticatedUser);
         DIAGNOSTIC_LOG.logVPAuthenticationSuccess((String) context.getProperty(VP_REQUEST_ID));
     }
@@ -354,5 +346,4 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
         return StringUtils.isNotBlank(status) && StringUtils.isNotBlank(sessionDataKey)
                 && StringUtils.isNotBlank(vpRequestId);
     }
-
 }
