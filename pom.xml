@@ -65,6 +65,7 @@
         <module>features/org.wso2.carbon.identity.openid4vc.presentation.core.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.presentation.verification.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.presentation.authenticator.server.feature</module>
+        <module>features/org.wso2.carbon.identity.openid4vc.presentation.endpoint.server.feature</module>
     </modules>
 
     <dependencyManagement>
@@ -147,6 +148,11 @@
             <dependency>
                 <groupId>org.wso2.carbon.identity.openid4vc</groupId>
                 <artifactId>org.wso2.carbon.identity.openid4vc.presentation.authenticator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+                <artifactId>org.wso2.carbon.identity.openid4vc.presentation.endpoint</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
