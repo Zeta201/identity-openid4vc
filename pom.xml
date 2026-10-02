@@ -61,6 +61,10 @@
         <module>features/org.wso2.carbon.identity.openid4vc.issuance.metadata.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.issuance.offer.server.feature</module>
         <module>features/org.wso2.carbon.identity.openid4vc.issuance.endpoint.server.feature</module>
+        <module>features/org.wso2.carbon.identity.openid4vc.presentation.common.server.feature</module>
+        <module>features/org.wso2.carbon.identity.openid4vc.presentation.core.server.feature</module>
+        <module>features/org.wso2.carbon.identity.openid4vc.presentation.verification.server.feature</module>
+        <module>features/org.wso2.carbon.identity.openid4vc.presentation.authenticator.server.feature</module>
     </modules>
 
     <dependencyManagement>
@@ -123,6 +127,26 @@
             <dependency>
                 <groupId>org.wso2.carbon.identity.openid4vc</groupId>
                 <artifactId>org.wso2.carbon.identity.sdjwt</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+                <artifactId>org.wso2.carbon.identity.openid4vc.presentation.common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+                <artifactId>org.wso2.carbon.identity.openid4vc.presentation.core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+                <artifactId>org.wso2.carbon.identity.openid4vc.presentation.verification</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.openid4vc</groupId>
+                <artifactId>org.wso2.carbon.identity.openid4vc.presentation.authenticator</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
