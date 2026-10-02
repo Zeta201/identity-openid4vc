@@ -164,7 +164,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
         String status = StringUtils.trimToNull(request.getParameter(PARAM_STATUS));
         if (!STATUS_SUCCESS.equals(status)) {
-            // Fail closed: any non-success status (including unrecognised values) is treated as a failure.
             handleVerificationFailure(context);
         }
 
@@ -254,9 +253,6 @@ public class PresentationAuthenticator extends AbstractApplicationAuthenticator
 
         String requestId = (String) context.getProperty(VP_REQUEST_ID);
         String tenantDomain = context.getTenantDomain();
-        // The error type used for logging/storage always comes from the session presentation.core
-        // itself recorded (which may in turn reflect the wallet's own reported error) - never from
-        // the request parameter, since that is client-supplied and could be tampered with locally.
         String errorType = null;
         try {
             VPSession failedSession = PresentationAuthenticatorDataHolder.getInstance().
