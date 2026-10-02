@@ -1,0 +1,406 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.carbon.identity.openid4vc.presentation.authenticator.executor;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.ExternalIdPConfig;
+import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.flow.execution.engine.graph.AuthenticationExecutor;
+import org.wso2.carbon.identity.flow.execution.engine.metadata.FlowExecutorMetadata;
+import org.wso2.carbon.identity.flow.execution.engine.model.ExecutorResponse;
+import org.wso2.carbon.identity.flow.execution.engine.model.FlowExecutionContext;
+import org.wso2.carbon.identity.flow.mgt.Constants.FlowTypes;
+import org.wso2.carbon.identity.flow.mgt.model.MessageDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorClientException;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorErrorCode;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.exception.PresentationAuthenticatorException;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.internal.PresentationAuthenticatorDataHolder;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.PresentationAuthenticatorDiagnosticLogger;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.PresentationAuthenticatorExceptionHandler;
+import org.wso2.carbon.identity.openid4vc.presentation.authenticator.util.PresentationAuthenticatorUtil;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.PresentationRequestResponseDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreClientException;
+import org.wso2.carbon.identity.openid4vc.presentation.core.exception.PresentationCoreException;
+import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession;
+import org.wso2.carbon.identity.openid4vc.presentation.core.model.VPSession.VPSessionStatus;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.ExecutorStatus.STATUS_COMPLETE;
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.ExecutorStatus.STATUS_ERROR;
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.ExecutorStatus.STATUS_EXTERNAL_REDIRECTION;
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.ExecutorStatus.STATUS_USER_ERROR;
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.REDIRECT_URL;
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.USERNAME_CLAIM_URI;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorConstants.PROP_PRESENTATION_DEFINITION_ID;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorConstants.SESSION_TTL_MS;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorConstants.VP_REQUEST_ID;
+import static org.wso2.carbon.identity.openid4vc.presentation.authenticator.constant.PresentationAuthenticatorConstants.WALLET_URL;
+
+/**
+ * This class represents the flow executor for wallet-based self-registration via OpenID4VP.
+ */
+public class PresentationExecutor extends AuthenticationExecutor {
+
+    private static final Log LOG = LogFactory.getLog(PresentationExecutor.class);
+    private static final PresentationAuthenticatorDiagnosticLogger DIAGNOSTIC_LOG =
+            new PresentationAuthenticatorDiagnosticLogger();
+
+    private static final String EXECUTOR_NAME = "PresentationExecutor";
+    private static final String AMR_VALUE = "PresentationAuthenticator";
+
+    @Override
+    public String getName() {
+
+        return EXECUTOR_NAME;
+    }
+
+    @Override
+    public String getAMRValue() {
+
+        return AMR_VALUE;
+    }
+
+    @Override
+    public List<String> getInitiationData() {
+
+        return Collections.emptyList();
+    }
+
+    @Override
+    public FlowExecutorMetadata getExecutorMetadata() {
+
+        return FlowExecutorMetadata.builder()
+                .associatedAuthenticator(AMR_VALUE)
+                .connectionRequired(true)
+                .build();
+    }
+
+    @Override
+    public Set<FlowTypes> getSupportedFlowTypes() {
+
+        return Collections.singleton(FlowTypes.REGISTRATION);
+    }
+
+    @Override
+    public ExecutorResponse execute(FlowExecutionContext context) {
+
+        if (context.getProperty(VP_REQUEST_ID) == null) {
+            try {
+                return initiateVPFlow(context);
+            } catch (PresentationAuthenticatorClientException e) {
+                LOG.warn("VP flow initiation failed due to client error: " + e.getDescription(), e);
+                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(e.getErrorType(), e.getDescription());
+                return userError(e.getMessage());
+            } catch (PresentationAuthenticatorException e) {
+                LOG.error("VP flow initiation failed due to server error: " + e.getDescription(), e);
+                DIAGNOSTIC_LOG.logVPFlowInitiationFailed(e.getErrorType(), e.getDescription());
+                ExecutorResponse errorResponse = new ExecutorResponse();
+                errorResponse.setResult(STATUS_ERROR);
+                errorResponse.addMessage(MessageDTO.MessageType.ERROR, e.getMessage(), null);
+                return errorResponse;
+            }
+        }
+
+        String tenantDomain = context.getTenantDomain();
+        try {
+            return processVPResponse(context);
+        } catch (PresentationAuthenticatorClientException e) {
+            String requestId = (String) context.getProperty(VP_REQUEST_ID);
+            LOG.warn("VP registration flow failed due to client error. requestId: " + requestId, e);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, e.getErrorType(), e.getDescription());
+            try {
+                PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
+                        handleSessionFailed(requestId, e.getErrorType(), e.getMessage(), tenantDomain);
+            } catch (PresentationCoreException ex) {
+                LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
+            }
+            context.setProperty(VP_REQUEST_ID, null);
+            return userError(e.getMessage());
+        } catch (PresentationAuthenticatorException e) {
+            String requestId = (String) context.getProperty(VP_REQUEST_ID);
+            LOG.error("VP registration flow failed due to server error. requestId: " + requestId, e);
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId, e.getErrorType(), e.getDescription());
+            try {
+                PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
+                        handleSessionFailed(requestId,
+                                PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
+                                PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getDescription(),
+                                tenantDomain);
+            } catch (PresentationCoreException ex) {
+                LOG.error("Failed to mark session as failed for requestId: " + requestId, ex);
+            }
+            context.setProperty(VP_REQUEST_ID, null);
+            ExecutorResponse errorResponse = new ExecutorResponse();
+            errorResponse.setResult(STATUS_ERROR);
+            errorResponse.addMessage(MessageDTO.MessageType.ERROR, e.getMessage(), null);
+            return errorResponse;
+        }
+    }
+
+    @Override
+    public ExecutorResponse rollback(FlowExecutionContext context) {
+
+        String requestId = (String) context.getProperty(VP_REQUEST_ID);
+        if (requestId != null) {
+            try {
+                PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
+                        handleSessionFailed(requestId,
+                                PresentationAuthenticatorErrorCode.FLOW_ABORTED.getErrorType(),
+                                PresentationAuthenticatorErrorCode.FLOW_ABORTED.getDescription(),
+                                context.getTenantDomain());
+            } catch (PresentationCoreException e) {
+                LOG.warn("Could not mark session as failed on rollback. requestId: " + requestId);
+            }
+            context.setProperty(VP_REQUEST_ID, null);
+        }
+        return new ExecutorResponse(STATUS_COMPLETE);
+    }
+
+    /**
+     * Initiates a new VP flow and returns a redirection response pointing to the wallet URL.
+     *
+     * @param context Current flow execution context.
+     * @return Executor response with STATUS_EXTERNAL_REDIRECTION carrying the wallet URL and request ID.
+     * @throws PresentationAuthenticatorException If inputs are invalid or the VP flow service fails to initiate.
+     */
+    private ExecutorResponse initiateVPFlow(FlowExecutionContext context) throws PresentationAuthenticatorException {
+
+        Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
+
+        String presentationDefinitionId = authenticatorProperties.get(PROP_PRESENTATION_DEFINITION_ID);
+
+        String tenantDomain = context.getTenantDomain();
+        PresentationRequestResponseDTO flowResult;
+        try {
+            flowResult = PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
+                    startPresentationSession(presentationDefinitionId, tenantDomain);
+        } catch (PresentationCoreClientException e) {
+            throw PresentationAuthenticatorExceptionHandler.handleClientException(
+                    PresentationAuthenticatorErrorCode.INVALID_PRESENTATION_DEFINITION,
+                    StringUtils.defaultIfBlank(presentationDefinitionId, "(none)"));
+        } catch (PresentationCoreException e) {
+            throw PresentationAuthenticatorExceptionHandler.handleServerException(
+                    PresentationAuthenticatorErrorCode.VP_FLOW_INITIATION_ERROR, e);
+        }
+
+        DIAGNOSTIC_LOG.logVPFlowInitiated(flowResult.getRequestId(), tenantDomain);
+
+        Map<String, Object> contextProperties = new HashMap<>();
+        contextProperties.put(VP_REQUEST_ID, flowResult.getRequestId());
+
+        long sessionTtlMs = Math.max(0, flowResult.getExpiresAt() - System.currentTimeMillis());
+        Map<String, String> additionalInfo = new HashMap<>();
+        additionalInfo.put(REDIRECT_URL, flowResult.getWalletUrl());
+        additionalInfo.put(VP_REQUEST_ID, flowResult.getRequestId());
+        additionalInfo.put(SESSION_TTL_MS, String.valueOf(sessionTtlMs));
+
+        ExecutorResponse response = new ExecutorResponse();
+        response.setResult(STATUS_EXTERNAL_REDIRECTION);
+        response.setContextProperty(contextProperties);
+        response.setAdditionalInfo(additionalInfo);
+        response.setRequiredData(Collections.singletonList(VP_REQUEST_ID));
+
+        return response;
+    }
+
+    /**
+     * Processes the VP flow response after the wallet has submitted the presentation.
+     *
+     * @param context Current flow execution context carrying the vp_request_id.
+     * @return STATUS_COMPLETE if verified, STATUS_USER_ERROR if failed, or STATUS_EXTERNAL_REDIRECTION if pending.
+     */
+    private ExecutorResponse processVPResponse(FlowExecutionContext context)
+            throws PresentationAuthenticatorException {
+
+        String requestId = (String) context.getProperty(VP_REQUEST_ID);
+        VPSession session;
+        try {
+            session = PresentationAuthenticatorDataHolder.getInstance().getPresentationSessionService().
+                    getPresentationSession(requestId, context.getTenantDomain());
+        } catch (PresentationCoreClientException e) {
+            DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
+                    PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getErrorType(),
+                    String.format(PresentationAuthenticatorErrorCode.VP_REQUEST_NOT_FOUND.getDescription(),
+                            requestId));
+            return userError("VP session expired or not found.");
+        } catch (PresentationCoreException e) {
+            throw PresentationAuthenticatorExceptionHandler.handleServerException(
+                    PresentationAuthenticatorErrorCode.VP_SESSION_RETRIEVAL_ERROR, e, requestId);
+        }
+
+        VPSessionStatus status = session.getStatus();
+        switch (status) {
+            case VERIFIED:
+                return buildCompleteResponse(context, session);
+
+            case FAILED:
+                String failedErrorType = session.getErrorType();
+                String failedErrorDescription;
+                if (failedErrorType != null) {
+                    failedErrorDescription = session.getErrorDescription();
+                } else {
+                    failedErrorType = PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getErrorType();
+                    failedErrorDescription = String.format(
+                            PresentationAuthenticatorErrorCode.VERIFICATION_FAILED.getDescription(), requestId);
+                }
+                DIAGNOSTIC_LOG.logVPAuthenticationFailed(requestId, failedErrorType, failedErrorDescription);
+                context.setProperty(VP_REQUEST_ID, null);
+                return userError("Wallet verification failed.");
+
+            case ACTIVE:
+                String walletUrl = session.getWalletUrl();
+                long sessionTtlMs = Math.max(0, session.getExpiresAt() - System.currentTimeMillis());
+                Map<String, String> additionalInfo = new HashMap<>();
+                additionalInfo.put(REDIRECT_URL, StringUtils.defaultString(walletUrl));
+                additionalInfo.put(VP_REQUEST_ID, requestId);
+                if (StringUtils.isNotBlank(walletUrl)) {
+                    additionalInfo.put(WALLET_URL, walletUrl);
+                }
+                additionalInfo.put(SESSION_TTL_MS, String.valueOf(sessionTtlMs));
+                ExecutorResponse redirectResponse = new ExecutorResponse();
+                redirectResponse.setResult(STATUS_EXTERNAL_REDIRECTION);
+                redirectResponse.setRequiredData(Collections.singletonList(VP_REQUEST_ID));
+                redirectResponse.setAdditionalInfo(additionalInfo);
+                return redirectResponse;
+
+            default:
+                DIAGNOSTIC_LOG.logVPAuthenticationError(requestId,
+                        PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getErrorType(),
+                        PresentationAuthenticatorErrorCode.INTERNAL_SERVER_ERROR.getDescription());
+                return userError("VP session is in an unexpected state: " + status);
+        }
+    }
+
+    /**
+     * Builds the STATUS_COMPLETE executor response after a successful VP verification.
+     *
+     * @param context Current flow execution context.
+     * @param session Verified VP flow session containing the verification result.
+     * @return STATUS_COMPLETE response with mapped user claims.
+     * @throws PresentationAuthenticatorClientException If the subject identifier cannot be resolved.
+     */
+    private ExecutorResponse buildCompleteResponse(FlowExecutionContext context,
+                                                   VPSession session) throws PresentationAuthenticatorException {
+
+        VerificationResponseDTO result = session.getVerificationResponse();
+
+        Map<String, Object> credentialClaims = result != null ? result.getSubjectClaims() : Collections.emptyMap();
+        String subjectClaimName = PresentationAuthenticatorUtil.resolveSubjectClaimName(context.getExternalIdPConfig());
+        String subjectIdentifier = PresentationAuthenticatorUtil.resolveSubjectIdentifier(
+                credentialClaims, subjectClaimName, result);
+        if (StringUtils.isBlank(subjectIdentifier)) {
+            throw PresentationAuthenticatorExceptionHandler.handleClientException(
+                    PresentationAuthenticatorErrorCode.NO_VERIFIED_CLAIMS,
+                    subjectClaimName != null ? subjectClaimName : "(none)");
+        }
+
+        Map<String, Object> localClaims = buildLocalClaims(credentialClaims, subjectIdentifier, subjectClaimName,
+                context.getExternalIdPConfig());
+        registerFederatedAssociation(context, subjectIdentifier);
+
+        String requestId = (String) context.getProperty(VP_REQUEST_ID);
+        DIAGNOSTIC_LOG.logVPAuthenticationSuccess(requestId);
+        ExecutorResponse response = new ExecutorResponse(STATUS_COMPLETE);
+        response.setUpdatedUserClaims(localClaims);
+        return response;
+    }
+
+    private Map<String, Object> buildLocalClaims(Map<String, Object> credentialClaims,
+                                                  String subjectIdentifier,
+                                                  String subjectClaimName,
+                                                  ExternalIdPConfig idpConfig) {
+
+        Map<String, Object> localClaims = mapToLocalClaims(credentialClaims, idpConfig);
+        String usernameValue = PresentationAuthenticatorUtil.resolveSubjectIdentifier(
+                credentialClaims, subjectClaimName, null);
+        localClaims.put(USERNAME_CLAIM_URI, StringUtils.isNotBlank(usernameValue) ? usernameValue : subjectIdentifier);
+        return localClaims;
+    }
+
+    private void registerFederatedAssociation(FlowExecutionContext context, String subjectIdentifier) {
+
+        if (context.getExternalIdPConfig() != null) {
+            context.getFlowUser().addFederatedAssociation(
+                    context.getExternalIdPConfig().getIdPName(), subjectIdentifier);
+        }
+    }
+
+    /**
+     * Translates credential claim keys to local WSO2 claim URIs using the IdP claim mappings.
+     *
+     * @param credentialClaims Subject-attribute claims from the verified credential.
+     * @param idpConfig        IdP configuration carrying the claim mappings, or null.
+     * @return Map of local claim URIs to their corresponding credential claim values.
+     */
+    private Map<String, Object> mapToLocalClaims(Map<String, Object> credentialClaims,
+                                                  ExternalIdPConfig idpConfig) {
+
+        Map<String, Object> localClaims = new HashMap<>();
+        ClaimMapping[] claimMappings = (idpConfig != null) ? idpConfig.getClaimMappings() : null;
+
+        for (Map.Entry<String, Object> entry : credentialClaims.entrySet()) {
+            String localUri = findLocalUri(entry.getKey(), claimMappings);
+            if (localUri != null) {
+                localClaims.put(localUri, entry.getValue());
+            }
+        }
+        return localClaims;
+    }
+
+    /**
+     * Looks up the local WSO2 claim URI for a given credential claim key.
+     *
+     * @param credentialClaimKey Claim name from the verified credential.
+     * @param claimMappings      IdP claim mappings to search, or null.
+     * @return Matching local claim URI, or null if no mapping exists.
+     */
+    private String findLocalUri(String credentialClaimKey, ClaimMapping[] claimMappings) {
+
+        if (claimMappings != null) {
+            for (ClaimMapping mapping : claimMappings) {
+                if (credentialClaimKey.equals(mapping.getRemoteClaim().getClaimUri())) {
+                    return mapping.getLocalClaim().getClaimUri();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Builds a STATUS_USER_ERROR response with the given error message.
+     *
+     * @param message Human-readable description of the user-facing error.
+     * @return Executor response with STATUS_USER_ERROR.
+     */
+    private ExecutorResponse userError(String message) {
+
+        ExecutorResponse response = new ExecutorResponse();
+        response.setResult(STATUS_USER_ERROR);
+        response.addMessage(MessageDTO.MessageType.ERROR, message, null);
+        return response;
+    }
+}
