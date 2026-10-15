@@ -217,8 +217,8 @@ public class PresentationCoreServiceImpl implements PresentationCoreService {
 
         // Mark the session failed and reject if the session is not active.
         if (session.getStatus() != VPSessionStatus.ACTIVE) {
-            handleSessionFailed(requestId, tenantDomain, PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getErrorType(),
-                    PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getDescription());
+            handleSessionFailed(requestId, PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getErrorType(),
+                    PresentationCoreErrorCode.VP_REQUEST_EXPIRED.getDescription(), tenantDomain);
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.VP_REQUEST_EXPIRED);
         }
@@ -395,12 +395,13 @@ public class PresentationCoreServiceImpl implements PresentationCoreService {
                     .build();
 
         } catch (PresentationCoreException e) {
-            handleSessionFailed(requestId, tenantDomain, e.getErrorType(), e.getDescription());
+            handleSessionFailed(requestId, e.getErrorType(), e.getDescription(), tenantDomain);
             throw e;
         } catch (ParseException | JOSEException e) {
-            handleSessionFailed(requestId, tenantDomain,
+            handleSessionFailed(requestId,
                     PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR.getErrorType(),
-                    PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR.getDescription());
+                    PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR.getDescription(),
+                    tenantDomain);
             throw PresentationCoreExceptionHandler.handleServerException(
                     PresentationCoreErrorCode.WALLET_RESPONSE_DECRYPTION_ERROR, e);
         }
@@ -422,12 +423,20 @@ public class PresentationCoreServiceImpl implements PresentationCoreService {
                     .build();
         }
 
-        if (StringUtils.isNotBlank(requestId)) {
-            VPSession session = getSessionFromCache(requestId, tenantId);
-            if (session != null) {
-                validateResponseMode(session.getResponseMode(), false);
-            }
+        if (StringUtils.isBlank(requestId)) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.INVALID_REQUEST);
         }
+        VPSession session = getSessionFromCache(requestId, tenantId);
+        if (session == null) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
+        if (tenantId != session.getTenantId()) {
+            throw PresentationCoreExceptionHandler.handleClientException(
+                    PresentationCoreErrorCode.VP_REQUEST_NOT_FOUND);
+        }
+        validateResponseMode(session.getResponseMode(), false);
 
         String vpToken = PresentationCoreUtil.extractFirstFormParam(formParams, Constants.ResponseParams.VP_TOKEN);
         try {
@@ -437,9 +446,10 @@ public class PresentationCoreServiceImpl implements PresentationCoreService {
                     .credentialTokens(PresentationCoreUtil.flattenVpTokenMap(rawMap))
                     .build();
         } catch (JsonSyntaxException e) {
-            handleSessionFailed(requestId, tenantDomain,
+            handleSessionFailed(requestId,
                     PresentationCoreErrorCode.INVALID_VP_TOKEN.getErrorType(),
-                    PresentationCoreErrorCode.INVALID_VP_TOKEN.getDescription());
+                    PresentationCoreErrorCode.INVALID_VP_TOKEN.getDescription(),
+                    tenantDomain);
             throw PresentationCoreExceptionHandler.handleClientException(
                     PresentationCoreErrorCode.INVALID_VP_TOKEN);
         }
