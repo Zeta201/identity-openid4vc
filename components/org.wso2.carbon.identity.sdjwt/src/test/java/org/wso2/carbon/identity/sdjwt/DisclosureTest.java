@@ -115,6 +115,8 @@ public class DisclosureTest {
         Assert.assertEquals(parsed.getSalt(), TEST_SALT);
         Assert.assertEquals(parsed.getClaimName(), TEST_CLAIM_NAME);
         Assert.assertEquals(parsed.getClaimValue(), TEST_CLAIM_VALUE);
+        Assert.assertEquals(parsed.getDisclosure(), encoded,
+                "A parsed disclosure must return the exact string it was parsed from, not a re-encoding");
     }
 
     @Test(priority = 6, description = "Test parsing invalid disclosure",

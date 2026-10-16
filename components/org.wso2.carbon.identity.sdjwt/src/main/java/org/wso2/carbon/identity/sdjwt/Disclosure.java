@@ -174,20 +174,25 @@ public final class Disclosure {
 
             JsonArray array = element.getAsJsonArray();
 
+            Disclosure disclosure;
             if (array.size() == 2) {
                 // Array element disclosure: [salt, value]
                 String salt = array.get(0).getAsString();
                 Object value = parseJsonElement(array.get(1));
-                return new Disclosure(salt, null, value);
+                disclosure = new Disclosure(salt, null, value);
             } else if (array.size() == 3) {
                 // Object property disclosure: [salt, claimName, value]
                 String salt = array.get(0).getAsString();
                 String claimName = array.get(1).getAsString();
                 Object value = parseJsonElement(array.get(2));
-                return new Disclosure(salt, claimName, value);
+                disclosure = new Disclosure(salt, claimName, value);
             } else {
                 throw new SDJWTException("Disclosure array must have 2 or 3 elements, found: " + array.size());
             }
+            // Retain the exact received string so digests are computed over the bytes actually
+            // transmitted, not a Gson re-encoding that may differ in formatting/escaping.
+            disclosure.cachedDisclosure = disclosureString;
+            return disclosure;
         } catch (IllegalArgumentException e) {
             throw new SDJWTException("Invalid base64url encoding in disclosure: " + e.getMessage(), e);
         } catch (JsonSyntaxException e) {
