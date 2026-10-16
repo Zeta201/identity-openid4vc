@@ -32,7 +32,7 @@ public final class PresentationCoreConstants {
     public static final String CONTEXT_OID4VP_RESPONSES = "/oid4vp/responses";
     public static final String CLAIM_CLIENT_METADATA = "client_metadata";
     public static final String METADATA_CLIENT_NAME = "client_name";
-    public static final String METADATA_VP_FORMATS = "vp_formats";
+    public static final String METADATA_VP_FORMATS_SUPPORTED = "vp_formats_supported";
     public static final String METADATA_SD_JWT_ALG_VALUES = "sd-jwt_alg_values";
     public static final String METADATA_KB_JWT_ALG_VALUES = "kb-jwt_alg_values";
     public static final String JOSE_TYPE_OAUTH_AUTHZ_REQ = "oauth-authz-req+jwt";

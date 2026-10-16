@@ -132,7 +132,7 @@ public class Constants {
         public static final String ES256 = "ES256";
         public static final String RS256 = "RS256";
         public static final String SHA_256 = "SHA-256";
-        public static final String ECDH_ES = "ECDH-ES";
+        public static final String A128GCM = "A128GCM";
         public static final String A256GCM = "A256GCM";
 
         private Algorithms() {
@@ -191,9 +191,8 @@ public class Constants {
 
         public static final String JWKS = "jwks";
         public static final String KEYS = "keys";
-        public static final String AUTHORIZATION_ENCRYPTED_RESPONSE_ALG = "authorization_encrypted_response_alg";
-        public static final String AUTHORIZATION_ENCRYPTED_RESPONSE_ENC = "authorization_encrypted_response_enc";
-        
+        public static final String ENCRYPTED_RESPONSE_ENC_VALUES_SUPPORTED = "encrypted_response_enc_values_supported";
+
         private ClientMetadata() {
 
         }

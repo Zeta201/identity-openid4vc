@@ -169,7 +169,7 @@ public class DcqlUtil {
                 Arrays.asList(Constants.Algorithms.ES256, Constants.Algorithms.EDDSA));
         Map<String, Object> vpFormats = new HashMap<>();
         vpFormats.put(VC_SD_JWT_FORMAT, vcSdJwt);
-        clientMetadata.put(PresentationCoreConstants.METADATA_VP_FORMATS, vpFormats);
+        clientMetadata.put(PresentationCoreConstants.METADATA_VP_FORMATS_SUPPORTED, vpFormats);
 
         if (ephemeralPublicKey != null) {
             List<Object> keysList = new ArrayList<>();
@@ -177,10 +177,8 @@ public class DcqlUtil {
             Map<String, Object> jwks = new HashMap<>();
             jwks.put(Constants.ClientMetadata.KEYS, keysList);
             clientMetadata.put(Constants.ClientMetadata.JWKS, jwks);
-            clientMetadata.put(Constants.ClientMetadata.AUTHORIZATION_ENCRYPTED_RESPONSE_ALG,
-                    Constants.Algorithms.ECDH_ES);
-            clientMetadata.put(Constants.ClientMetadata.AUTHORIZATION_ENCRYPTED_RESPONSE_ENC,
-                    Constants.Algorithms.A256GCM);
+            clientMetadata.put(Constants.ClientMetadata.ENCRYPTED_RESPONSE_ENC_VALUES_SUPPORTED,
+                    Arrays.asList(Constants.Algorithms.A128GCM, Constants.Algorithms.A256GCM));
         }
 
         return clientMetadata;
