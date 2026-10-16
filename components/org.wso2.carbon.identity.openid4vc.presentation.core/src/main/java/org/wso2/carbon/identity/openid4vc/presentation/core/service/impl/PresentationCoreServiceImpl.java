@@ -281,7 +281,6 @@ public class PresentationCoreServiceImpl implements PresentationCoreService {
                 .issuer(clientId)
                 .audience(Constants.Protocol.REQUEST_AUDIENCE)
                 .claim(Constants.RequestParams.CLIENT_ID, clientId)
-                .claim(Constants.JWTClaims.CLIENT_ID_SCHEME, session.getClientIdScheme())
                 .claim(Constants.RequestParams.RESPONSE_TYPE, Constants.Protocol.RESPONSE_TYPE_VP_TOKEN)
                 .claim(Constants.RequestParams.RESPONSE_MODE, session.getResponseMode())
                 .claim(Constants.RequestParams.RESPONSE_URI, session.getResponseUri())

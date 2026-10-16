@@ -114,7 +114,6 @@ public class Constants {
         public static final String JWK = "jwk";
         public static final String JKT = "jkt";
         public static final String VCT = "vct";
-        public static final String CLIENT_ID_SCHEME = "client_id_scheme";
         public static final String DCQL_QUERY = "dcql_query";
 
         private JWTClaims() {
