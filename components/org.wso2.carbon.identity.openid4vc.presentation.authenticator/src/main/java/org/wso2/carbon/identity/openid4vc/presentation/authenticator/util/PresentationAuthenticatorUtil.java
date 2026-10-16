@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.util;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWK;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,6 +28,7 @@ import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,11 +84,36 @@ public class PresentationAuthenticatorUtil {
         if (cnfRaw instanceof Map) {
             Map<?, ?> cnf = (Map<?, ?>) cnfRaw;
             Object jktRaw = cnf.get(Constants.JWTClaims.JKT);
-            // cnf.jkt (JWK thumbprint) — SHA-256 of the key
-            return jktRaw != null ? StringUtils.trimToNull(jktRaw.toString()) : null;
+            if (jktRaw != null) {
+                // cnf.jkt (JWK thumbprint) — SHA-256 of the key
+                return StringUtils.trimToNull(jktRaw.toString());
+            }
+            // cnf.jwk (full JWK) — the shape the SD-JWT holder-binding key is actually confirmed in;
+            // derive the same kind of identifier a cnf.jkt claim for this key would have carried.
+            return resolveSubjectFromCnfJwk(cnf.get(Constants.JWTClaims.JWK));
         } else {
             // cnf as a plain string (e.g. a DID)
             return StringUtils.trimToNull(cnfRaw.toString());
+        }
+    }
+
+    /**
+     * Computes the RFC 7638 JWK thumbprint of a cnf.jwk value.
+     *
+     * @param jwkRaw The cnf.jwk claim value; expected to be a JWK as a Map.
+     * @return The JWK thumbprint, or null if jwkRaw is not a valid JWK.
+     */
+    @SuppressWarnings("unchecked")
+    private static String resolveSubjectFromCnfJwk(Object jwkRaw) {
+
+        if (!(jwkRaw instanceof Map)) {
+            return null;
+        }
+        try {
+            return JWK.parse((Map<String, Object>) jwkRaw).computeThumbprint().toString();
+        } catch (ParseException | JOSEException | IllegalArgumentException e) {
+            LOG.warn("Could not compute a JWK thumbprint from the cnf.jwk claim.", e);
+            return null;
         }
     }
 

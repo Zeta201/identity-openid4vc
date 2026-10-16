@@ -84,6 +84,10 @@ public class JwksValidator implements CredentialSignatureValidator {
                     VerificationErrorCode.JWKS_RESOLUTION_ERROR, e);
         }
         verifyAgainstJwks(issuerJwt, jwksJson);
+
+        // iss was already matched against this trusted issuer's configured URL before the JWKS used to
+        // verify the signature was ever fetched, so it is already an authenticated identity: leave
+        // context.authenticatedSubject unset and let the caller use iss.
     }
 
     private static void verifyAgainstJwks(SignedJWT issuerJwt, String jwksJson)

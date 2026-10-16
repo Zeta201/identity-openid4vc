@@ -86,6 +86,10 @@ public class X5cValidator implements CredentialSignatureValidator {
         if (!JwsUtil.verifySignatureWithPublicKey(issuerJwt, leafCertificate.getPublicKey(), algorithm)) {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.INVALID_SIGNATURE);
         }
+
+        // The cryptographically authenticated identity is the signing certificate's subject, not the
+        // token's self-asserted (and here, unchecked) iss claim.
+        context.setAuthenticatedSubject(leafCertificate.getSubjectX500Principal().getName());
     }
 
     private void validateAgainstTrustedCa(List<X509Certificate> certificateChain,

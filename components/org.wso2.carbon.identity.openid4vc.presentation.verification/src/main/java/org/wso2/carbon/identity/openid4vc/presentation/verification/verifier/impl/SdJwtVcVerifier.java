@@ -97,7 +97,7 @@ public class SdJwtVcVerifier implements FormatVerifier {
         }
 
         // Validate issuer signature.
-        validateSignature(requestDTO.getCredential().getIdentifier(),
+        String authenticatedIssuer = validateSignature(requestDTO.getCredential().getIdentifier(),
                 requestDTO.getCredential().getIssuers(), issuerJwt);
 
         JWTClaimsSet claimsSet;
@@ -127,10 +127,16 @@ public class SdJwtVcVerifier implements FormatVerifier {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.CREDENTIAL_TYPE_MISMATCH);
         }
 
-        return buildVerificationResponse(requestDTO, issuerJwt, kbJwt, claimsSet, subjectClaims);
+        return buildVerificationResponse(requestDTO, issuerJwt, kbJwt, claimsSet, subjectClaims, authenticatedIssuer);
     }
 
-    private void validateSignature(String credentialId, List<Issuer> issuers,
+    /**
+     * Validates the issuer signature and resolves the authenticated issuer identity to report.
+     *
+     * @return The signing certificate's Subject DN for x5c, or the (here, already-authenticated) {@code
+     *         iss} claim for jwks_uri/pem.
+     */
+    private String validateSignature(String credentialId, List<Issuer> issuers,
             SignedJWT issuerJwt) throws VerificationException {
 
         if (issuers == null || issuers.isEmpty()) {
@@ -152,16 +158,17 @@ public class SdJwtVcVerifier implements FormatVerifier {
             if (method != KeyResolutionMethod.X5C) {
                 // jwks_uri / pem: match by issuer URL.
                 if (StringUtils.equals(iss, issuer.getIssuerUrl())) {
-                    resolveSignatureValidator(method).validateSignature(
-                            new SignatureValidationContext(issuerJwt, issuer));
-                    return;
+                    SignatureValidationContext context = new SignatureValidationContext(issuerJwt, issuer);
+                    resolveSignatureValidator(method).validateSignature(context);
+                    return context.getAuthenticatedSubject() != null ? context.getAuthenticatedSubject() : iss;
                 }
             } else {
                 // x5c: the trust anchor is determined by AKI matching inside the validator.
                 CredentialSignatureValidator validator = resolveSignatureValidator(KeyResolutionMethod.X5C);
+                SignatureValidationContext context = new SignatureValidationContext(issuerJwt, issuer);
                 try {
-                    validator.validateSignature(new SignatureValidationContext(issuerJwt, issuer));
-                    return;
+                    validator.validateSignature(context);
+                    return context.getAuthenticatedSubject() != null ? context.getAuthenticatedSubject() : iss;
                 } catch (VerificationException e) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("x5c trust anchor '" + issuer.getIssuerUrl()
@@ -491,12 +498,16 @@ public class SdJwtVcVerifier implements FormatVerifier {
      * @param claimsSet     Claims from the issuer-signed JWT.
      * @param subjectClaims Fully-resolved claim set, with all _sd digests and array placeholders replaced
      *                      by their disclosed values.
+     * @param authenticatedIssuer The authenticated issuer identity established during signature
+     *                      validation (see {@link #validateSignature}), reported in place of the token's
+     *                      self-asserted {@code iss} claim.
      * @return Verification response DTO.
      */
     private VerificationResponseDTO buildVerificationResponse(VerificationRequestDTO requestDTO,
             SignedJWT issuerJwt, SignedJWT kbJwt,
             JWTClaimsSet claimsSet,
-            Map<String, Object> subjectClaims) {
+            Map<String, Object> subjectClaims,
+            String authenticatedIssuer) {
 
         VerificationResponseDTO verificationResponse = new VerificationResponseDTO();
         verificationResponse.setCredentialId(requestDTO.getCredential().getIdentifier());
@@ -507,8 +518,8 @@ public class SdJwtVcVerifier implements FormatVerifier {
             verificationResponse.setSigningAlgorithm(issuerJwt.getHeader().getAlgorithm().getName());
         }
 
-        if (claimsSet.getIssuer() != null) {
-            verificationResponse.setIssuer(claimsSet.getIssuer());
+        if (authenticatedIssuer != null) {
+            verificationResponse.setIssuer(authenticatedIssuer);
         }
         if (claimsSet.getIssueTime() != null) {
             verificationResponse.setIssuedAt(claimsSet.getIssueTime().getTime());

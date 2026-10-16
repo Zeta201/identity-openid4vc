@@ -28,6 +28,7 @@ public class SignatureValidationContext {
 
     private final SignedJWT issuerJwt;
     private final Issuer issuer;
+    private String authenticatedSubject;
 
     public SignatureValidationContext(SignedJWT issuerJwt, Issuer issuer) {
 
@@ -43,5 +44,29 @@ public class SignatureValidationContext {
     public Issuer getIssuer() {
 
         return issuer;
+    }
+
+    /**
+     * Returns the cryptographically authenticated issuer identity established during signature
+     * validation, or {@code null} if the validator did not set one (in which case the caller should treat
+     * the token's own {@code iss} claim as already authenticated, as is the case for jwks_uri/pem).
+     *
+     * @return The authenticated identity, or {@code null}.
+     */
+    public String getAuthenticatedSubject() {
+
+        return authenticatedSubject;
+    }
+
+    /**
+     * Records the cryptographically authenticated issuer identity established during signature
+     * validation (e.g. a signing certificate's Subject DN for x5c), for use in place of the token's
+     * self-asserted {@code iss} claim.
+     *
+     * @param authenticatedSubject The authenticated identity.
+     */
+    public void setAuthenticatedSubject(String authenticatedSubject) {
+
+        this.authenticatedSubject = authenticatedSubject;
     }
 }

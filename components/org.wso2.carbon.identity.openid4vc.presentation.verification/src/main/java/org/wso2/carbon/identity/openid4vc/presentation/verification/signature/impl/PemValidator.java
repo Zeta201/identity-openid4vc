@@ -72,6 +72,9 @@ public class PemValidator implements CredentialSignatureValidator {
             if (!JwsUtil.verifySignatureWithPublicKey(issuerJwt, issuerPublicKey, signingAlgorithm)) {
                 throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.INVALID_SIGNATURE);
             }
+            // iss was already matched against this trusted issuer's configured PEM before that PEM's key
+            // was used to verify the signature, so it is already an authenticated identity: leave
+            // context.authenticatedSubject unset and let the caller use iss.
         } catch (VerificationException e) {
             throw e;
         } catch (CertificateExpiredException e) {

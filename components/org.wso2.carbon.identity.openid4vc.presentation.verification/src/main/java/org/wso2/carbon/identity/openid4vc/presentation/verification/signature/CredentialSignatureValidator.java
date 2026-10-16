@@ -33,7 +33,10 @@ public interface CredentialSignatureValidator {
     String getValidatorType();
 
     /**
-     * Validates the cryptographic signature of the issuer-signed JWT in the given request.
+     * Validates the cryptographic signature of the issuer-signed JWT in the given request. Implementations
+     * that establish a cryptographically authenticated identity more specific than the token's
+     * self-asserted {@code iss} claim (e.g. a signing certificate's Subject DN for x5c) should record it
+     * via {@link SignatureValidationContext#setAuthenticatedSubject(String)}.
      *
      * @param context Signature validation context.
      * @throws VerificationException If key resolution or signature verification fails.

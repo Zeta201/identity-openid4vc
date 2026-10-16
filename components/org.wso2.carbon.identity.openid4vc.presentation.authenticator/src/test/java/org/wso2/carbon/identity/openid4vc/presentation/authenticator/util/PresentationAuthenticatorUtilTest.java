@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.openid4vc.presentation.authenticator.util;
 
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.ExternalIdPConfig;
@@ -25,6 +27,8 @@ import org.wso2.carbon.identity.application.common.model.ClaimConfig;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 
+import java.security.KeyPairGenerator;
+import java.security.interfaces.ECPublicKey;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,18 +117,64 @@ public class PresentationAuthenticatorUtilTest {
                 "Result should be null when the claims map is empty");
     }
 
+    @Test(priority = 8, description = "Test resolveSubjectIdentifier falls back to cnf.jkt when no subject "
+            + "attribute is configured")
+    public void testResolveSubjectIdentifierFallsBackToCnfJkt() {
+
+        Map<String, Object> cnf = new HashMap<>();
+        cnf.put("jkt", "abc123thumbprint");
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("cnf", cnf);
+
+        Assert.assertEquals(PresentationAuthenticatorUtil.resolveSubjectIdentifier(claims, null, null),
+                "abc123thumbprint", "Result should fall back to cnf.jkt when no subject attribute is configured");
+    }
+
+    @Test(priority = 9, description = "Test resolveSubjectIdentifier falls back to a JWK thumbprint computed "
+            + "from cnf.jwk when cnf.jkt is absent")
+    public void testResolveSubjectIdentifierFallsBackToCnfJwkThumbprint() throws Exception {
+
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+        keyPairGenerator.initialize(256);
+        ECKey holderPublicJwk = new ECKey.Builder(Curve.P_256,
+                (ECPublicKey) keyPairGenerator.generateKeyPair().getPublic()).build();
+
+        Map<String, Object> cnf = new HashMap<>();
+        cnf.put("jwk", holderPublicJwk.toJSONObject());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("cnf", cnf);
+
+        String expectedThumbprint = holderPublicJwk.computeThumbprint().toString();
+
+        Assert.assertEquals(PresentationAuthenticatorUtil.resolveSubjectIdentifier(claims, null, null),
+                expectedThumbprint,
+                "Result should fall back to a JWK thumbprint computed from cnf.jwk when cnf.jkt is absent");
+    }
+
+    @Test(priority = 10, description = "Test resolveSubjectIdentifier returns null when cnf.jwk cannot be parsed")
+    public void testResolveSubjectIdentifierWithMalformedCnfJwk() {
+
+        Map<String, Object> cnf = new HashMap<>();
+        cnf.put("jwk", Collections.singletonMap("kty", "not-a-real-type"));
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("cnf", cnf);
+
+        Assert.assertNull(PresentationAuthenticatorUtil.resolveSubjectIdentifier(claims, null, null),
+                "Result should be null when cnf.jwk cannot be parsed as a JWK");
+    }
+
     // -------------------------------------------------------------------------
     // resolveSubjectClaimName
     // -------------------------------------------------------------------------
 
-    @Test(priority = 8, description = "Test resolveSubjectClaimName returns null when IdP config is null")
+    @Test(priority = 11, description = "Test resolveSubjectClaimName returns null when IdP config is null")
     public void testResolveSubjectClaimNameWithNullConfig() {
 
         Assert.assertNull(PresentationAuthenticatorUtil.resolveSubjectClaimName(null),
                 "Result should be null when the IdP config is null");
     }
 
-    @Test(priority = 9, description = "Test resolveSubjectClaimName returns null when claim config is null")
+    @Test(priority = 12, description = "Test resolveSubjectClaimName returns null when claim config is null")
     public void testResolveSubjectClaimNameWithNullClaimConfig() {
 
         ExternalIdPConfig mockConfig = mock(ExternalIdPConfig.class);
@@ -136,7 +186,7 @@ public class PresentationAuthenticatorUtilTest {
                 "Result should be null when the claim config is null");
     }
 
-    @Test(priority = 10, description = "Test resolveSubjectClaimName returns the user claim URI from the claim config")
+    @Test(priority = 13, description = "Test resolveSubjectClaimName returns the user claim URI from the claim config")
     public void testResolveSubjectClaimNameWithValidUri() {
 
         ExternalIdPConfig mockConfig = mock(ExternalIdPConfig.class);
