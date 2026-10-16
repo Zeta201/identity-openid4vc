@@ -94,6 +94,7 @@ public class PresentationExecutor extends AuthenticationExecutor {
     public FlowExecutorMetadata getExecutorMetadata() {
 
         return FlowExecutorMetadata.builder()
+                .displayName("Presentation Executor")
                 .associatedAuthenticator(AMR_VALUE)
                 .connectionRequired(true)
                 .build();
