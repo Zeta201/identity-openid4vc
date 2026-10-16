@@ -39,8 +39,11 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants.VC_SD_JWT_FORMAT;
 
@@ -70,16 +73,21 @@ public class DcqlUtil {
         dcqlQuery.put(Constants.DCQL.CREDENTIALS, credentials);
 
         if (!credentials.isEmpty()) {
-            List<String> allCredentialIds = new ArrayList<>();
-            for (Map<String, Object> cred : credentials) {
-                allCredentialIds.add((String) cred.get(Constants.DCQL.ID));
-            }
             Map<String, Object> credentialSet = new HashMap<>();
-            credentialSet.put(Constants.DCQL.OPTIONS, Collections.singletonList(allCredentialIds));
+            credentialSet.put(Constants.DCQL.OPTIONS, Collections.singletonList(extractDcqlIds(credentials)));
             dcqlQuery.put(Constants.DCQL.CREDENTIAL_SETS, Collections.singletonList(credentialSet));
         }
 
         return dcqlQuery;
+    }
+
+    private static List<String> extractDcqlIds(List<Map<String, Object>> entries) {
+
+        List<String> ids = new ArrayList<>();
+        for (Map<String, Object> entry : entries) {
+            ids.add((String) entry.get(Constants.DCQL.ID));
+        }
+        return ids;
     }
 
     private static Map<String, Object> buildCredentialEntry(Credential credential, List<Issuer> issuers) {
@@ -96,6 +104,7 @@ public class DcqlUtil {
 
         List<Map<String, Object>> claimsList = new ArrayList<>();
         List<String> mandatoryClaimIds = new ArrayList<>();
+        Set<String> usedClaimIds = new HashSet<>();
         boolean hasOptionalClaims = false;
 
         if (credential.getClaims() != null) {
@@ -103,7 +112,7 @@ public class DcqlUtil {
                 if (claim == null || StringUtils.isBlank(claim.getPath())) {
                     continue;
                 }
-                String claimId = claim.getPath();
+                String claimId = toDcqlClaimId(claim.getPath(), usedClaimIds);
 
                 Map<String, Object> claimEntry = new HashMap<>();
                 claimEntry.put(Constants.DCQL.ID, claimId);
@@ -121,16 +130,40 @@ public class DcqlUtil {
             dcqlCredential.put(Constants.DCQL.CLAIMS, claimsList);
         }
         if (hasOptionalClaims && !mandatoryClaimIds.isEmpty()) {
-            List<String> allClaimIds = new ArrayList<>();
-            for (Map<String, Object> claimEntry : claimsList) {
-                allClaimIds.add((String) claimEntry.get(Constants.DCQL.ID));
-            }
-            dcqlCredential.put(Constants.DCQL.CLAIM_SETS, Arrays.asList(allClaimIds, mandatoryClaimIds));
+            dcqlCredential.put(Constants.DCQL.CLAIM_SETS,
+                    Arrays.asList(extractDcqlIds(claimsList), mandatoryClaimIds));
         }
 
         addTrustedAuthorities(issuers, dcqlCredential);
 
         return dcqlCredential;
+    }
+
+    private static final Pattern DCQL_ID_ILLEGAL_CHARS = Pattern.compile("[^A-Za-z0-9_-]");
+
+    /**
+     * Derives a DCQL-spec-compliant claim {@code id} ({@code ^[A-Za-z0-9_-]+$}) from a claim path,
+     * which may itself contain characters the {@code id} field does not allow (e.g. a claim URI or a
+     * dotted claim name). Illegal characters are replaced with {@code _}, and the result is made unique
+     * within {@code usedClaimIds} by appending a numeric suffix on collision.
+     *
+     * @param path          Claim path to derive the id from.
+     * @param usedClaimIds  Ids already assigned to other claims of the same credential; the derived id
+     *                      is added to this set before being returned.
+     * @return A unique, DCQL-spec-compliant claim id.
+     */
+    private static String toDcqlClaimId(String path, Set<String> usedClaimIds) {
+
+        String sanitized = DCQL_ID_ILLEGAL_CHARS.matcher(path).replaceAll("_");
+        if (sanitized.isEmpty()) {
+            sanitized = "claim";
+        }
+        String claimId = sanitized;
+        int suffix = 2;
+        while (!usedClaimIds.add(claimId)) {
+            claimId = sanitized + "_" + suffix++;
+        }
+        return claimId;
     }
 
     private static void addTrustedAuthorities(List<Issuer> issuers, Map<String, Object> dcqlCredential) {
