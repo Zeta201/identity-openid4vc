@@ -87,9 +87,7 @@ public class PresentationCoreServiceComponent {
                     resourceTypeAdd.setName(PresentationConfigMgtServiceImpl.VP_CONFIG_RESOURCE_TYPE_NAME);
                     resourceTypeAdd.setDescription("OpenID4VP tenant configuration resource type.");
                     configurationManager.addResourceType(resourceTypeAdd);
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Registered OpenID4VP config resource type.");
-                    }
+                    LOG.debug("Registered OpenID4VP config resource type.");
                 } else {
                     throw e;
                 }
