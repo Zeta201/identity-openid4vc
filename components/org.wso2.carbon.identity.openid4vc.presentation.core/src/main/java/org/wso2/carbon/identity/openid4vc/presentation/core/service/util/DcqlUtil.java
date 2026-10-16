@@ -36,9 +36,9 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -143,7 +143,7 @@ public class DcqlUtil {
             if (issuer.getKeyResolutionMethod() != KeyResolutionMethod.X5C) {
                 continue;
             }
-            String ski = extractSubjectKeyIdentifierHex(issuer.getCertificate());
+            String ski = extractSubjectKeyIdentifierBase64Url(issuer.getCertificate());
             if (ski != null) {
                 akiValues.add(ski);
             }
@@ -186,12 +186,12 @@ public class DcqlUtil {
 
     /**
      * Parses a PEM-encoded X.509 certificate and returns its Subject Key Identifier (SKI)
-     * as a lowercase hex string. The SKI of a CA cert matches the AKI extension of its issued leaf certs,
+     * as a base64url-encoded string. The SKI of a CA cert matches the AKI extension of its issued leaf certs,
      * making it the correct value for DCQL {@code trusted_authorities} of type {@code aki}.
      *
      * Returns {@code null} if the certificate cannot be parsed or has no SKI extension.
      */
-    private static String extractSubjectKeyIdentifierHex(String pemCertificate) {
+    private static String extractSubjectKeyIdentifierBase64Url(String pemCertificate) {
 
         if (StringUtils.isBlank(pemCertificate)) {
             return null;
@@ -202,7 +202,8 @@ public class DcqlUtil {
                     new ByteArrayInputStream(pemCertificate.getBytes(StandardCharsets.UTF_8)));
             SubjectKeyIdentifier ski = SubjectKeyIdentifier.fromExtensions(
                     new JcaX509CertificateHolder(cert).getExtensions());
-            return ski != null ? HexFormat.of().formatHex(ski.getKeyIdentifier()) : null;
+            return ski != null ? Base64.getUrlEncoder().withoutPadding().encodeToString(ski.getKeyIdentifier())
+                    : null;
         } catch (Exception e) {
             return null;
         }
