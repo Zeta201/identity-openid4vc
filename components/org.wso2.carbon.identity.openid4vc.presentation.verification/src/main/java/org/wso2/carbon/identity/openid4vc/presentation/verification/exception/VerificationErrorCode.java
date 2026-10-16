@@ -86,6 +86,10 @@ public enum VerificationErrorCode {
     STALE_KB_JWT("VPV-60021",
             "Stale key-binding JWT.",
             "The key-binding JWT iat is outside the allowed freshness window."),
+    DUPLICATE_DISCLOSURE_DIGEST("VPV-60022",
+            "Duplicate disclosure digest.",
+            "The same disclosure digest value was encountered more than once in the SD-JWT, which may "
+                    + "indicate a forged or substituted presentation."),
 
     // Server errors (65xxx)
     INTERNAL_SERVER_ERROR("VPV-65001",

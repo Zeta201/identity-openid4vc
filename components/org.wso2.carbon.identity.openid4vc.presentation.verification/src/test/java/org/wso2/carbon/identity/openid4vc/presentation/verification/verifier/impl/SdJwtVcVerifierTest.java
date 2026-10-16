@@ -36,6 +36,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.openid4vc.issuance.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
+import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -45,6 +46,7 @@ import org.wso2.carbon.identity.openid4vc.presentation.verification.signature.Si
 import org.wso2.carbon.identity.openid4vc.template.management.model.Credential;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer.KeyResolutionMethod;
+import org.wso2.carbon.identity.sdjwt.Disclosure;
 import org.wso2.carbon.identity.sdjwt.SDJWT;
 
 import java.nio.charset.StandardCharsets;
@@ -54,9 +56,11 @@ import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -193,7 +197,7 @@ public class SdJwtVcVerifierTest {
                 .claim("vct", "https://example.com/credential-type-a")
                 .claim("cnf", cnf)
                 .build();
-        String sdJwtToken = buildSdJwtWithKeyBinding(claims, holderKeyPair.getPrivate());
+        String sdJwtToken = buildSdJwtWithKeyBinding(claims, holderKeyPair.getPrivate(), Collections.emptyList());
 
         Issuer x5cIssuer = new Issuer();
         x5cIssuer.setKeyResolutionMethod(KeyResolutionMethod.X5C);
@@ -289,9 +293,10 @@ public class SdJwtVcVerifierTest {
     }
 
     /**
-     * Builds an SD-JWT presentation string with zero disclosures and a valid KB-JWT.
+     * Builds an SD-JWT presentation string with the given disclosures and a valid KB-JWT.
      */
-    private String buildSdJwtWithKeyBinding(JWTClaimsSet claims, PrivateKey holderPrivateKey) throws Exception {
+    private String buildSdJwtWithKeyBinding(JWTClaimsSet claims, PrivateKey holderPrivateKey,
+            List<Disclosure> disclosures) throws Exception {
 
         SignedJWT issuerJwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256)
@@ -300,7 +305,7 @@ public class SdJwtVcVerifierTest {
                 claims);
         issuerJwt.sign(new RSASSASigner(rsaPrivateKey));
 
-        String presentationString = new SDJWT(issuerJwt.serialize(), Collections.emptyList()).serialize();
+        String presentationString = new SDJWT(issuerJwt.serialize(), disclosures).serialize();
         byte[] sdHashBytes = MessageDigest.getInstance("SHA-256")
                 .digest(presentationString.getBytes(StandardCharsets.US_ASCII));
 
@@ -316,5 +321,122 @@ public class SdJwtVcVerifierTest {
         kbJwt.sign(new ECDSASigner((ECPrivateKey) holderPrivateKey));
 
         return presentationString + kbJwt.serialize();
+    }
+
+    /**
+     * Builds an SD-JWT presentation string with the given disclosures and no KB-JWT.
+     */
+    private String buildSdJwtWithDisclosures(JWTClaimsSet claims, List<Disclosure> disclosures) throws Exception {
+
+        SignedJWT issuerJwt = new SignedJWT(
+                new JWSHeader.Builder(JWSAlgorithm.RS256)
+                        .type(JOSEObjectType.JWT)
+                        .build(),
+                claims);
+        issuerJwt.sign(new RSASSASigner(rsaPrivateKey));
+        return new SDJWT(issuerJwt.serialize(), disclosures).serialize();
+    }
+
+    @Test(priority = 7,
+            description = "Test verifyCredential throws DUPLICATE_DISCLOSURE_DIGEST when the same digest "
+                    + "appears twice in _sd")
+    public void testVerifyCredentialWithDuplicateDigestThrowsDuplicateDisclosureDigest() throws Exception {
+
+        Disclosure disclosure = new Disclosure("given_name", "John");
+        String digest = disclosure.digest();
+
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("https://issuer.example.com")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000L))
+                .claim("_sd", Arrays.asList(digest, digest))
+                .build();
+        String sdJwtToken = buildSdJwtWithDisclosures(claims, Collections.singletonList(disclosure));
+
+        VerificationRequestDTO ctx = new VerificationRequestDTO(sdJwtToken, baseCredential, null, null);
+
+        try {
+            sdJwtVcVerifier.verifyCredential(ctx);
+        } catch (VerificationClientException e) {
+            Assert.assertEquals(e.getErrorCode(), VerificationErrorCode.DUPLICATE_DISCLOSURE_DIGEST,
+                    "Expected DUPLICATE_DISCLOSURE_DIGEST for a repeated _sd digest, got: " + e.getErrorCode());
+            return;
+        }
+        throw new AssertionError("Expected VerificationClientException but no exception was thrown");
+    }
+
+    @Test(priority = 8,
+            description = "Test verifyCredential throws DISCLOSURE_HASH_MISMATCH when a disclosure is never "
+                    + "referenced by any digest")
+    public void testVerifyCredentialWithUnreferencedDisclosureThrowsDisclosureHashMismatch() throws Exception {
+
+        Disclosure disclosure = new Disclosure("given_name", "John");
+
+        // No _sd claim at all, so the disclosure below is never referenced by any digest.
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("https://issuer.example.com")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000L))
+                .build();
+        String sdJwtToken = buildSdJwtWithDisclosures(claims, Collections.singletonList(disclosure));
+
+        VerificationRequestDTO ctx = new VerificationRequestDTO(sdJwtToken, baseCredential, null, null);
+
+        try {
+            sdJwtVcVerifier.verifyCredential(ctx);
+        } catch (VerificationClientException e) {
+            Assert.assertEquals(e.getErrorCode(), VerificationErrorCode.DISCLOSURE_HASH_MISMATCH,
+                    "Expected DISCLOSURE_HASH_MISMATCH for an unreferenced disclosure, got: " + e.getErrorCode());
+            return;
+        }
+        throw new AssertionError("Expected VerificationClientException but no exception was thrown");
+    }
+
+    @Test(priority = 9,
+            description = "Test verifyCredential recursively resolves a nested _sd object and an array "
+                    + "placeholder disclosure")
+    public void testVerifyCredentialResolvesNestedAndArrayDisclosures() throws Exception {
+
+        KeyPairGenerator ecKpg = KeyPairGenerator.getInstance("EC");
+        ecKpg.initialize(256);
+        KeyPair holderKeyPair = ecKpg.generateKeyPair();
+        ECKey holderPublicJwk = new ECKey.Builder(Curve.P_256, (ECPublicKey) holderKeyPair.getPublic()).build();
+
+        Map<String, Object> cnf = new HashMap<>();
+        cnf.put("jwk", holderPublicJwk.toJSONObject());
+
+        // Nested disclosure: address._sd -> street_address.
+        Disclosure streetDisclosure = new Disclosure("street_address", "123 Main St");
+        Map<String, Object> address = new HashMap<>();
+        address.put("_sd", Collections.singletonList(streetDisclosure.digest()));
+
+        // Array-element disclosure: nationalities[1] -> "DE".
+        Disclosure nationalityDisclosure = new Disclosure("DE");
+        Map<String, Object> placeholder = new HashMap<>();
+        placeholder.put("...", nationalityDisclosure.digest());
+        List<Object> nationalities = Arrays.asList("US", placeholder);
+
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("https://issuer.example.com")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000L))
+                .claim("cnf", cnf)
+                .claim("address", address)
+                .claim("nationalities", nationalities)
+                .build();
+
+        List<Disclosure> disclosures = Arrays.asList(streetDisclosure, nationalityDisclosure);
+        String sdJwtToken = buildSdJwtWithKeyBinding(claims, holderKeyPair.getPrivate(), disclosures);
+
+        VerificationRequestDTO ctx = new VerificationRequestDTO(sdJwtToken, baseCredential, null, null);
+
+        VerificationResponseDTO response = sdJwtVcVerifier.verifyCredential(ctx);
+
+        Map<String, Object> subjectClaims = response.getSubjectClaims();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> resolvedAddress = (Map<String, Object>) subjectClaims.get("address");
+        Assert.assertEquals(resolvedAddress.get("street_address"), "123 Main St",
+                "Nested _sd digest should resolve to its disclosed claim");
+        Assert.assertNull(resolvedAddress.get("_sd"), "_sd key should be removed after resolution");
+
+        Assert.assertEquals(subjectClaims.get("nationalities"), Arrays.asList("US", "DE"),
+                "Array placeholder should be replaced with its disclosed value in position");
     }
 }

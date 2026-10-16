@@ -53,11 +53,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class verifies dc+sd-jwt credential presentations.
@@ -108,13 +111,11 @@ public class SdJwtVcVerifier implements FormatVerifier {
         if (claimsSet.getExpirationTime() != null && claimsSet.getExpirationTime().before(new Date())) {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.EXPIRED_CREDENTIAL);
         }
-        @SuppressWarnings("unchecked")
-        List<String> sdHashes = claimsSet.getClaim(SDJWTConstants.CLAIM_SD) instanceof List
-                ? (List<String>) claimsSet.getClaim(SDJWTConstants.CLAIM_SD) : null;
         String sdAlg = (String) claimsSet.getClaim(SDJWTConstants.CLAIM_SD_ALG);
 
-        // Verify each disclosure's hash appears in the issuer-signed _sd array.
-        verifyDisclosureHashes(sdHashes, sdAlg, sdJwt.getDisclosures());
+        // Resolve _sd digests and array placeholders (recursively, at any depth) into the actual
+        // disclosed claim values, rejecting duplicate digests and disclosures that go unreferenced.
+        Map<String, Object> subjectClaims = resolveDisclosedClaims(claimsSet, sdJwt.getDisclosures(), sdAlg);
 
         // Verify holder key binding: kb+jwt is signed by the wallet's key and covers this presentation.
         SignedJWT kbJwt = verifyKeyBinding(sdJwt, claimsSet, requestDTO.getExpectedNonce(),
@@ -124,11 +125,6 @@ public class SdJwtVcVerifier implements FormatVerifier {
         if (StringUtils.isNotBlank(expectedType)
                 && !expectedType.equals(vctClaim != null ? vctClaim.toString() : null)) {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.CREDENTIAL_TYPE_MISMATCH);
-        }
-
-        Map<String, Object> subjectClaims = new HashMap<>();
-        for (Disclosure disclosure : sdJwt.getDisclosures()) {
-            subjectClaims.put(disclosure.getClaimName(), disclosure.getClaimValue());
         }
 
         return buildVerificationResponse(requestDTO, issuerJwt, kbJwt, claimsSet, subjectClaims);
@@ -191,34 +187,153 @@ public class SdJwtVcVerifier implements FormatVerifier {
 
 
     /**
-     * Verifies each disclosure against the _sd hash array in the issuer-signed JWT.
+     * Reconstructs the disclosed claim set from the issuer-signed JWT payload and the presentation's
+     * Disclosures, per the SD-JWT verification algorithm (RFC 9901 Section 7.1): {@code _sd} digest
+     * arrays and {@code "..."} array placeholders are resolved recursively at every nesting level, not
+     * just the top level. The same digest value appearing more than once anywhere in the structure, or
+     * a Disclosure the wallet sent that is never referenced by any digest, causes rejection.
      *
-     * @param sdHashes    _sd hash list from the issuer-signed JWT, or null if absent.
-     * @param sdAlgorithm _sd_alg value, or null to default to sha-256.
+     * @param claimsSet   Claims from the issuer-signed JWT.
      * @param disclosures Disclosures attached to the SD-JWT presentation.
-     * @throws VerificationException If a disclosure hash is not found in _sd or hashing fails.
+     * @param sdAlgorithm _sd_alg value from the issuer-signed JWT, or null to default to sha-256.
+     * @return The claim set with all resolvable _sd digests and array placeholders replaced by their
+     *         disclosed values.
+     * @throws VerificationException If a digest is duplicated, a disclosure is unreferenced, or hashing fails.
      */
-    private void verifyDisclosureHashes(List<String> sdHashes, String sdAlgorithm,
-            List<Disclosure> disclosures) throws VerificationException {
+    private Map<String, Object> resolveDisclosedClaims(JWTClaimsSet claimsSet, List<Disclosure> disclosures,
+            String sdAlgorithm) throws VerificationException {
 
-        if (disclosures.isEmpty()) {
-            return;
-        }
-        if (sdHashes == null || sdHashes.isEmpty()) {
-            throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.DISCLOSURE_HASH_MISMATCH);
-        }
+        String algorithm = sdAlgorithm != null ? sdAlgorithm : SDJWTConstants.DEFAULT_HASH_ALGORITHM;
+        Map<String, Disclosure> digestToDisclosure = mapDisclosuresByDigest(disclosures, algorithm);
+        Set<String> seenDigests = new HashSet<>();
+        Set<Disclosure> usedDisclosures = new HashSet<>();
 
+        Map<String, Object> resolvedClaims = resolveDisclosures(new HashMap<>(claimsSet.getClaims()),
+                digestToDisclosure, seenDigests, usedDisclosures);
+
+        for (Disclosure disclosure : disclosures) {
+            if (!usedDisclosures.contains(disclosure)) {
+                throw VerificationExceptionHandler.handleClientException(
+                        VerificationErrorCode.DISCLOSURE_HASH_MISMATCH);
+            }
+        }
+        return resolvedClaims;
+    }
+
+    private Map<String, Disclosure> mapDisclosuresByDigest(List<Disclosure> disclosures, String sdAlgorithm)
+            throws VerificationException {
+
+        Map<String, Disclosure> digestToDisclosure = new HashMap<>();
         try {
             for (Disclosure disclosure : disclosures) {
-                String calculatedHash = disclosure.digest(sdAlgorithm);
-                if (!sdHashes.contains(calculatedHash)) {
-                    throw VerificationExceptionHandler.handleClientException(
-                            VerificationErrorCode.DISCLOSURE_HASH_MISMATCH);
-                }
+                digestToDisclosure.put(disclosure.digest(sdAlgorithm), disclosure);
             }
         } catch (SDJWTException e) {
             throw VerificationExceptionHandler.handleServerException(
                     VerificationErrorCode.DISCLOSURE_DIGEST_ERROR, e);
+        }
+        return digestToDisclosure;
+    }
+
+    /**
+     * Resolves the {@code _sd} digest array of a single object (in place) by looking up each digest's
+     * matching Disclosure, then recurses into every remaining value (including newly disclosed ones) to
+     * resolve further nested {@code _sd} arrays and array placeholders.
+     */
+    private Map<String, Object> resolveDisclosures(Map<String, Object> claims,
+            Map<String, Disclosure> digestToDisclosure, Set<String> seenDigests, Set<Disclosure> usedDisclosures)
+            throws VerificationException {
+
+        Object sdClaim = claims.remove(SDJWTConstants.CLAIM_SD);
+        claims.remove(SDJWTConstants.CLAIM_SD_ALG);
+
+        if (sdClaim instanceof List) {
+            for (Object digestEntry : (List<?>) sdClaim) {
+                if (!(digestEntry instanceof String)) {
+                    continue;
+                }
+                String digest = (String) digestEntry;
+                recordDigest(digest, seenDigests);
+
+                Disclosure disclosure = digestToDisclosure.get(digest);
+                if (disclosure != null && !disclosure.isArrayElement()) {
+                    usedDisclosures.add(disclosure);
+                    Object value = resolveValue(disclosure.getClaimValue(), digestToDisclosure, seenDigests,
+                            usedDisclosures);
+                    claims.put(disclosure.getClaimName(), value);
+                }
+                // Else: no matching Disclosure - that claim simply was not selectively disclosed.
+            }
+        }
+
+        for (Map.Entry<String, Object> entry : claims.entrySet()) {
+            entry.setValue(resolveValue(entry.getValue(), digestToDisclosure, seenDigests, usedDisclosures));
+        }
+        return claims;
+    }
+
+    /**
+     * Resolves {@code "..."} array-element placeholders by looking up each placeholder's matching
+     * Disclosure. Placeholders with no matching Disclosure are dropped from the result, per spec.
+     */
+    private List<Object> resolveArrayDisclosures(List<Object> array, Map<String, Disclosure> digestToDisclosure,
+            Set<String> seenDigests, Set<Disclosure> usedDisclosures) throws VerificationException {
+
+        List<Object> resolved = new ArrayList<>();
+        for (Object element : array) {
+            String placeholderDigest = asArrayPlaceholderDigest(element);
+            if (placeholderDigest != null) {
+                recordDigest(placeholderDigest, seenDigests);
+
+                Disclosure disclosure = digestToDisclosure.get(placeholderDigest);
+                if (disclosure != null && disclosure.isArrayElement()) {
+                    usedDisclosures.add(disclosure);
+                    resolved.add(resolveValue(disclosure.getClaimValue(), digestToDisclosure, seenDigests,
+                            usedDisclosures));
+                }
+                // Else: no matching Disclosure - the undisclosed element is omitted, per spec.
+                continue;
+            }
+            resolved.add(resolveValue(element, digestToDisclosure, seenDigests, usedDisclosures));
+        }
+        return resolved;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object resolveValue(Object value, Map<String, Disclosure> digestToDisclosure, Set<String> seenDigests,
+            Set<Disclosure> usedDisclosures) throws VerificationException {
+
+        if (value instanceof Map) {
+            return resolveDisclosures(new HashMap<>((Map<String, Object>) value), digestToDisclosure, seenDigests,
+                    usedDisclosures);
+        }
+        if (value instanceof List) {
+            return resolveArrayDisclosures(new ArrayList<>((List<Object>) value), digestToDisclosure, seenDigests,
+                    usedDisclosures);
+        }
+        return value;
+    }
+
+    /**
+     * Returns the digest carried by an SD-JWT array-element placeholder (an object with exactly one key,
+     * {@code "..."}, mapped to a digest string), or {@code null} if {@code element} is not such a
+     * placeholder.
+     */
+    private static String asArrayPlaceholderDigest(Object element) {
+
+        if (!(element instanceof Map)) {
+            return null;
+        }
+        Map<?, ?> map = (Map<?, ?>) element;
+        Object digest = map.get(SDJWTConstants.ARRAY_ELEMENT_KEY);
+        return map.size() == 1 && digest instanceof String ? (String) digest : null;
+    }
+
+    private static void recordDigest(String digest, Set<String> seenDigests) throws VerificationException {
+
+        if (!seenDigests.add(digest)) {
+            throw VerificationExceptionHandler.handleClientException(
+                    VerificationErrorCode.DUPLICATE_DISCLOSURE_DIGEST);
         }
     }
 
@@ -374,7 +489,8 @@ public class SdJwtVcVerifier implements FormatVerifier {
      * @param issuerJwt     Parsed issuer-signed JWT.
      * @param kbJwt         Parsed KB-JWT, or null if no holder binding was present.
      * @param claimsSet     Claims from the issuer-signed JWT.
-     * @param subjectClaims Subject-attribute claims extracted from the disclosures.
+     * @param subjectClaims Fully-resolved claim set, with all _sd digests and array placeholders replaced
+     *                      by their disclosed values.
      * @return Verification response DTO.
      */
     private VerificationResponseDTO buildVerificationResponse(VerificationRequestDTO requestDTO,
