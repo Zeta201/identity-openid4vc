@@ -30,7 +30,6 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.openid4vc.presentation.common.constant.Constants;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationRequestDTO;
 import org.wso2.carbon.identity.openid4vc.presentation.core.dto.VerificationResponseDTO;
-import org.wso2.carbon.identity.openid4vc.presentation.verification.constant.VerificationConstants;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationClientException;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationErrorCode;
 import org.wso2.carbon.identity.openid4vc.presentation.verification.exception.VerificationException;
@@ -47,6 +46,7 @@ import org.wso2.carbon.identity.sdjwt.Disclosure;
 import org.wso2.carbon.identity.sdjwt.SDJWT;
 import org.wso2.carbon.identity.sdjwt.constant.SDJWTConstants;
 import org.wso2.carbon.identity.sdjwt.exception.SDJWTException;
+import org.wso2.carbon.identity.sdjwt.util.SDJWTUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -58,7 +58,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -96,6 +95,11 @@ public class SdJwtVcVerifier implements FormatVerifier {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.INVALID_ISSUER_JWT);
         }
 
+        if (issuerJwt.getHeader().getType() == null
+                || !SDJWTConstants.TYP_DC_SD_JWT.equals(issuerJwt.getHeader().getType().getType())) {
+            throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.INVALID_ISSUER_JWT);
+        }
+
         // Validate issuer signature.
         String authenticatedIssuer = validateSignature(requestDTO.getCredential().getIdentifier(),
                 requestDTO.getCredential().getIssuers(), issuerJwt);
@@ -110,6 +114,10 @@ public class SdJwtVcVerifier implements FormatVerifier {
         // Verify expiration.
         if (claimsSet.getExpirationTime() != null && claimsSet.getExpirationTime().before(new Date())) {
             throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.EXPIRED_CREDENTIAL);
+        }
+        // Verify not-before.
+        if (claimsSet.getNotBeforeTime() != null && claimsSet.getNotBeforeTime().after(new Date())) {
+            throw VerificationExceptionHandler.handleClientException(VerificationErrorCode.CREDENTIAL_NOT_YET_VALID);
         }
         String sdAlg = (String) claimsSet.getClaim(SDJWTConstants.CLAIM_SD_ALG);
 
@@ -552,23 +560,20 @@ public class SdJwtVcVerifier implements FormatVerifier {
     }
 
     /**
-     * Maps the SD-JWT _sd_alg identifier to the JCA algorithm name.
+     * Maps the SD-JWT _sd_alg identifier to the JCA algorithm name, defaulting to sha-256 only when
+     * _sd_alg is absent. An unrecognized (but present) value is rejected rather than silently downgraded.
      *
      * @param sdAlg _sd_alg value from the issuer-signed JWT, or null.
      * @return JCA algorithm name.
+     * @throws VerificationException If sdAlg is present but not a supported hash algorithm.
      */
-    private static String mapSdAlgToJca(String sdAlg) {
+    private static String mapSdAlgToJca(String sdAlg) throws VerificationException {
 
-        if (sdAlg == null) {
-            return VerificationConstants.SHA_256;
-        }
-        switch (sdAlg.toLowerCase(Locale.ROOT)) {
-            case VerificationConstants.SD_JWT_HASH_ALG_SHA_384:
-                return VerificationConstants.SHA_384;
-            case VerificationConstants.SD_JWT_HASH_ALG_SHA_512:
-                return VerificationConstants.SHA_512;
-            default:
-                return VerificationConstants.SHA_256;
+        try {
+            return SDJWTUtil.toJavaAlgorithm(sdAlg != null ? sdAlg : SDJWTConstants.DEFAULT_HASH_ALGORITHM);
+        } catch (SDJWTException e) {
+            throw VerificationExceptionHandler.handleClientException(
+                    VerificationErrorCode.UNSUPPORTED_SD_HASH_ALGORITHM);
         }
     }
 }

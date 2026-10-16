@@ -47,7 +47,7 @@ public enum VerificationErrorCode {
             "The SD-JWT token is malformed and could not be parsed."),
     INVALID_ISSUER_JWT("VPV-60009",
             "Invalid issuer JWT.",
-            "The issuer-signed JWT is malformed or its claims could not be parsed."),
+            "The issuer-signed JWT is malformed, has the wrong type, or its claims could not be parsed."),
     INVALID_KB_JWT("VPV-60010",
             "Invalid key-binding JWT.",
             "The key-binding JWT is malformed, has the wrong type, or is missing required claims."),
@@ -90,6 +90,12 @@ public enum VerificationErrorCode {
             "Duplicate disclosure digest.",
             "The same disclosure digest value was encountered more than once in the SD-JWT, which may "
                     + "indicate a forged or substituted presentation."),
+    UNSUPPORTED_SD_HASH_ALGORITHM("VPV-60023",
+            "Unsupported SD-JWT hash algorithm.",
+            "The _sd_alg value in the issuer-signed JWT is not a supported hash algorithm."),
+    CREDENTIAL_NOT_YET_VALID("VPV-60024",
+            "Credential not yet valid.",
+            "The Verifiable Credential's nbf (not-before) time is in the future."),
 
     // Server errors (65xxx)
     INTERNAL_SERVER_ERROR("VPV-65001",

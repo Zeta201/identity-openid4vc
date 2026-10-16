@@ -48,6 +48,7 @@ import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer;
 import org.wso2.carbon.identity.openid4vc.template.management.model.Issuer.KeyResolutionMethod;
 import org.wso2.carbon.identity.sdjwt.Disclosure;
 import org.wso2.carbon.identity.sdjwt.SDJWT;
+import org.wso2.carbon.identity.sdjwt.constant.SDJWTConstants;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
@@ -285,7 +286,7 @@ public class SdJwtVcVerifierTest {
 
         SignedJWT issuerJwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256)
-                        .type(JOSEObjectType.JWT)
+                        .type(new JOSEObjectType(SDJWTConstants.TYP_DC_SD_JWT))
                         .build(),
                 claims);
         issuerJwt.sign(new RSASSASigner(rsaPrivateKey));
@@ -300,7 +301,7 @@ public class SdJwtVcVerifierTest {
 
         SignedJWT issuerJwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256)
-                        .type(JOSEObjectType.JWT)
+                        .type(new JOSEObjectType(SDJWTConstants.TYP_DC_SD_JWT))
                         .build(),
                 claims);
         issuerJwt.sign(new RSASSASigner(rsaPrivateKey));
@@ -330,7 +331,7 @@ public class SdJwtVcVerifierTest {
 
         SignedJWT issuerJwt = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256)
-                        .type(JOSEObjectType.JWT)
+                        .type(new JOSEObjectType(SDJWTConstants.TYP_DC_SD_JWT))
                         .build(),
                 claims);
         issuerJwt.sign(new RSASSASigner(rsaPrivateKey));
@@ -438,5 +439,88 @@ public class SdJwtVcVerifierTest {
 
         Assert.assertEquals(subjectClaims.get("nationalities"), Arrays.asList("US", "DE"),
                 "Array placeholder should be replaced with its disclosed value in position");
+    }
+
+    @Test(priority = 10,
+            description = "Test verifyCredential throws CREDENTIAL_NOT_YET_VALID when nbf is in the future")
+    public void testVerifyCredentialWithFutureNotBeforeThrowsCredentialNotYetValid() throws Exception {
+
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("https://issuer.example.com")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000L))
+                .notBeforeTime(new Date(System.currentTimeMillis() + 1800_000L))
+                .build();
+        String sdJwtToken = buildMinimalSdJwt(claims);
+
+        VerificationRequestDTO ctx = new VerificationRequestDTO(sdJwtToken, baseCredential, null, null);
+
+        try {
+            sdJwtVcVerifier.verifyCredential(ctx);
+        } catch (VerificationClientException e) {
+            Assert.assertEquals(e.getErrorCode(), VerificationErrorCode.CREDENTIAL_NOT_YET_VALID,
+                    "Expected CREDENTIAL_NOT_YET_VALID for a future nbf, got: " + e.getErrorCode());
+            return;
+        }
+        throw new AssertionError("Expected VerificationClientException but no exception was thrown");
+    }
+
+    @Test(priority = 11,
+            description = "Test verifyCredential throws INVALID_ISSUER_JWT when the issuer JWT typ is not dc+sd-jwt")
+    public void testVerifyCredentialWithWrongIssuerJwtTypeThrowsInvalidIssuerJwt() throws Exception {
+
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("https://issuer.example.com")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000L))
+                .build();
+        SignedJWT issuerJwt = new SignedJWT(
+                new JWSHeader.Builder(JWSAlgorithm.RS256)
+                        .type(JOSEObjectType.JWT)
+                        .build(),
+                claims);
+        issuerJwt.sign(new RSASSASigner(rsaPrivateKey));
+        String sdJwtToken = issuerJwt.serialize() + "~";
+
+        VerificationRequestDTO ctx = new VerificationRequestDTO(sdJwtToken, baseCredential, null, null);
+
+        try {
+            sdJwtVcVerifier.verifyCredential(ctx);
+        } catch (VerificationClientException e) {
+            Assert.assertEquals(e.getErrorCode(), VerificationErrorCode.INVALID_ISSUER_JWT,
+                    "Expected INVALID_ISSUER_JWT for a wrong issuer JWT typ, got: " + e.getErrorCode());
+            return;
+        }
+        throw new AssertionError("Expected VerificationClientException but no exception was thrown");
+    }
+
+    @Test(priority = 12,
+            description = "Test verifyCredential throws UNSUPPORTED_SD_HASH_ALGORITHM for an unrecognized _sd_alg")
+    public void testVerifyCredentialWithUnsupportedSdAlgThrowsUnsupportedSdHashAlgorithm() throws Exception {
+
+        KeyPairGenerator ecKpg = KeyPairGenerator.getInstance("EC");
+        ecKpg.initialize(256);
+        KeyPair holderKeyPair = ecKpg.generateKeyPair();
+        ECKey holderPublicJwk = new ECKey.Builder(Curve.P_256, (ECPublicKey) holderKeyPair.getPublic()).build();
+
+        Map<String, Object> cnf = new HashMap<>();
+        cnf.put("jwk", holderPublicJwk.toJSONObject());
+
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("https://issuer.example.com")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000L))
+                .claim("cnf", cnf)
+                .claim("_sd_alg", "md5")
+                .build();
+        String sdJwtToken = buildSdJwtWithKeyBinding(claims, holderKeyPair.getPrivate(), Collections.emptyList());
+
+        VerificationRequestDTO ctx = new VerificationRequestDTO(sdJwtToken, baseCredential, null, null);
+
+        try {
+            sdJwtVcVerifier.verifyCredential(ctx);
+        } catch (VerificationClientException e) {
+            Assert.assertEquals(e.getErrorCode(), VerificationErrorCode.UNSUPPORTED_SD_HASH_ALGORITHM,
+                    "Expected UNSUPPORTED_SD_HASH_ALGORITHM for an unrecognized _sd_alg, got: " + e.getErrorCode());
+            return;
+        }
+        throw new AssertionError("Expected VerificationClientException but no exception was thrown");
     }
 }
